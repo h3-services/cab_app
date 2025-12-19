@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'kyc_upload_screen.dart';
+import '../services/database_service.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
@@ -20,9 +21,12 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   final _vehicleMakeController = TextEditingController();
   final _vehicleModelController = TextEditingController();
   final _vehicleColorController = TextEditingController();
+  final _otherBrandController = TextEditingController();
   
   String? _selectedVehicleType;
   String? _selectedSeatingCapacity;
+  String? _selectedVehicleBrand;
+  String? _selectedVehicleYear;
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +103,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           const SizedBox(height: 16),
                           _buildTextField('License Number*', _licenseController),
                           const SizedBox(height: 16),
-                          _buildTextField('Aashaar Number*', _aadharController),
+                          _buildTextField('Aadhaar Number*', _aadharController),
                         ],
                       ),
                     ),
@@ -127,7 +131,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           const SizedBox(height: 16),
                           _buildDateField('FC Expiry Date*', _fcExpiryController, true),
                           const SizedBox(height: 16),
-                          _buildDropdownField('Vehicle Type*', _selectedVehicleType, ['Car', 'Auto', 'Bike'], (value) {
+                          _buildDropdownField('Vehicle Type*', _selectedVehicleType, ['sedan', 'suv', 'innova'], (value) {
                             setState(() {
                               _selectedVehicleType = value;
                             });
@@ -135,13 +139,17 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           const SizedBox(height: 16),
                           _buildTextField('Vehicle Number*', _vehicleNumberController),
                           const SizedBox(height: 16),
-                          _buildTextField('Vehicle Make*', _vehicleMakeController),
+                          _buildVehicleBrandDropdown(),
                           const SizedBox(height: 16),
-                          _buildTextField('Vehicle model*', _vehicleModelController),
+                          _buildDropdownField('Vehicle Year*', _selectedVehicleYear, List.generate(25, (index) => (DateTime.now().year - index).toString()), (value) {
+                            setState(() {
+                              _selectedVehicleYear = value;
+                            });
+                          }),
                           const SizedBox(height: 16),
                           _buildTextField('Vehicle Color*', _vehicleColorController),
                           const SizedBox(height: 16),
-                          _buildDropdownField('Seating Capacity', _selectedSeatingCapacity, ['2', '4', '6', '8'], (value) {
+                          _buildDropdownField('Number of Seats', _selectedSeatingCapacity, ['2', '4', '6', '8'], (value) {
                             setState(() {
                               _selectedSeatingCapacity = value;
                             });
@@ -155,18 +163,73 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate() && 
-                              _selectedVehicleType != null &&
-                              _drivingLicenseExpiryController.text.isNotEmpty &&
-                              _fcExpiryController.text.isNotEmpty) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const KycUploadScreen()),
-                            );
-                          } else {
+                        onPressed: () async {
+                          // Check all required fields
+                          if (!_formKey.currentState!.validate()) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please fill all required fields')),
+                              const SnackBar(content: Text('Please fill all required fields correctly')),
+                            );
+                            return;
+                          }
+                          
+                          if (_selectedVehicleType == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please select vehicle type')),
+                            );
+                            return;
+                          }
+                          
+                          if (_selectedVehicleBrand == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please select vehicle brand')),
+                            );
+                            return;
+                          }
+                          
+                          if (_selectedVehicleYear == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please select vehicle year')),
+                            );
+                            return;
+                          }
+                          
+                          final phoneNumber = ModalRoute.of(context)?.settings.arguments as String?;
+                          if (phoneNumber == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Phone number not found')),
+                            );
+                            return;
+                          }
+                          
+                          try {
+                            final dbService = DatabaseService();
+                            final success = await dbService.createDriver(
+                              phone: phoneNumber,
+                              name: _nameController.text.trim(),
+                              email: _emailController.text.trim(),
+                              licenseNumber: _licenseController.text.trim(),
+                              aadhaarNumber: _aadharController.text.trim(),
+                              vehicleType: _selectedVehicleType!,
+                              vehicleNumber: _vehicleNumberController.text.trim(),
+                              vehicleBrand: _selectedVehicleBrand == 'Other' ? _otherBrandController.text.trim() : _selectedVehicleBrand!,
+                              vehicleColor: _vehicleColorController.text.trim(),
+                              vehicleYear: int.parse(_selectedVehicleYear!),
+                              numberOfSeats: int.parse(_selectedSeatingCapacity ?? '4'),
+                            );
+                            
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Registration successful!')),
+                              );
+                              Navigator.pushReplacementNamed(context, '/dashboard');
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Failed to save details. Please try again.')),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
                             );
                           }
                         },
@@ -383,6 +446,32 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           }).toList(),
           onChanged: onChanged,
         ),
+      ],
+    );
+  }
+
+  Widget _buildVehicleBrandDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildDropdownField('Vehicle Brand*', _selectedVehicleBrand, [
+          'Tata Motors',
+          'Mahindra & Mahindra',
+          'Maruti Suzuki',
+          'Hyundai',
+          'Toyota',
+          'Honda',
+          'Kia',
+          'Other'
+        ], (value) {
+          setState(() {
+            _selectedVehicleBrand = value;
+          });
+        }),
+        if (_selectedVehicleBrand == 'Other')
+          const SizedBox(height: 16),
+        if (_selectedVehicleBrand == 'Other')
+          _buildTextField('Other Brand*', _otherBrandController),
       ],
     );
   }

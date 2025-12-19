@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/database_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,32 +15,35 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE8E8E8),
-              Color(0xFF808080),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 50.0,vertical: 20.0),
-            child: SingleChildScrollView(
-              child: Column(
-              children: [
-                const SizedBox(height: 40),
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFFE8E8E8),
+                    Color(0xFF808080),
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 20.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                const SizedBox(height: 20),
                 // Chola Cabs Logo
                 Image.asset(
                   'assets/images/chola_cabs_logo.png',
-                  width: 300,
-                  height: 300,
+                  width: 150,
+                  height: 150,
                   fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
                 // OTP Verification Title
                 const Align(
                   alignment: Alignment.centerLeft,
@@ -148,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (_phoneController.text.length == 10) {
-                          Navigator.pushNamed(context, '/verification');
+                          Navigator.pushNamed(context, '/verification', arguments: _phoneController.text);
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Please enter a valid 10-digit phone number')),
@@ -173,12 +177,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height:40),
-              ],
-            ),
+                        const SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

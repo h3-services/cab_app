@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'kyc_complete_screen.dart';
 import '../services/image_picker_service.dart';
 import 'dart:io';
+import 'dashboard_screen.dart';
 
 class KycUploadScreen extends StatefulWidget {
   const KycUploadScreen({super.key});
@@ -167,7 +167,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                     if (allUploaded) {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const KycCompleteScreen()),
+                        MaterialPageRoute(builder: (context) => DashboardScreen()),
                       );
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(

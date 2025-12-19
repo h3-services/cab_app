@@ -20,17 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.grey.shade800,
         elevation: 0,
-        leading: Row(
-          children: [
-            const SizedBox(width: 8),
-            const Icon(Icons.signal_cellular_4_bar, color: Colors.white, size: 16),
-            const SizedBox(width: 4),
-            const Icon(Icons.wifi, color: Colors.white, size: 16),
-            const SizedBox(width: 4),
-            const Icon(Icons.battery_full, color: Colors.white, size: 16),
-          ],
-        ),
-        leadingWidth: 80,
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             CircleAvatar(
@@ -52,14 +42,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
-          const Text(
-            '2:41',
-            style: TextStyle(color: Colors.white, fontSize: 16),
+          Image.asset(
+            'assets/menu_icon.png',
+            width: 24,
+            height: 24,
+            color: Colors.white,
           ),
-          const SizedBox(width: 8),
-          const Icon(Icons.access_time, color: Colors.white, size: 16),
-          const SizedBox(width: 8),
-          const Icon(Icons.menu, color: Colors.white),
           const SizedBox(width: 16),
         ],
       ),
