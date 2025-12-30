@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'kyc_complete_screen.dart';
 import '../services/image_picker_service.dart';
+import '../services/firebase_storage_service.dart';
+import '../services/user_service.dart';
+import '../constants/app_colors.dart';
+import '../widgets/widgets.dart';
 import 'dart:io';
 
 class KycUploadScreen extends StatefulWidget {
@@ -24,26 +27,22 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   };
   
   final Map<String, File?> _uploadedImages = {};
+  final Map<String, String> _imageUrls = {};
+  Map<String, dynamic>? userData;
+  bool _isSubmitting = false;
+
+  bool get _allDocumentsUploaded => _uploadedDocuments.values.every((uploaded) => uploaded);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    userData = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF424242),
-        title: const Text(
-          'CHOLA CABS',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: const CustomAppBar(showBackButton: true),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -58,14 +57,12 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         child: Column(
           children: [
             const SizedBox(height: 40),
-            // Shield Icon
-            const Icon(
+            Icon(
               Icons.verified_user,
               size: 60,
-              color: Color(0xFF424242),
+              color: _allDocumentsUploaded ? AppColors.greenLight : const Color(0xFF424242),
             ),
             const SizedBox(height: 20),
-            // Title
             const Text(
               'Upload KYC Documents',
               style: TextStyle(
@@ -75,7 +72,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            // Subtitle
             const Text(
               'Upload your documents to activate your account',
               style: TextStyle(
@@ -89,7 +85,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
-                    // Required Documents Card
                     Container(
                       padding: const EdgeInsets.all(16.0),
                       decoration: BoxDecoration(
@@ -117,7 +112,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Vehicle Details Card
                     Container(
                       padding: const EdgeInsets.all(16.0),
                       decoration: BoxDecoration(
@@ -155,40 +149,94 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                 ),
               ),
             ),
-            // Submit Button
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    bool allUploaded = _uploadedDocuments.values.every((uploaded) => uploaded);
-                    if (allUploaded) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const KycCompleteScreen()),
-                      );
+                  onPressed: _isSubmitting ? null : () async {
+                    if (_allDocumentsUploaded && userData != null) {
+                      setState(() {
+                        _isSubmitting = true;
+                      });
+                      
+                      try {
+                        for (String docType in _uploadedImages.keys) {
+                          if (_uploadedImages[docType] != null) {
+                            String imageUrl = await FirebaseStorageService.uploadImage(
+                              _uploadedImages[docType]!,
+                              '${userData!['phoneNumber']}/$docType',
+                            );
+                            _imageUrls[docType] = imageUrl;
+                          }
+                        }
+                        
+                        bool success = await UserService.createUser(
+                          phoneNumber: userData!['phoneNumber'],
+                          name: userData!['name'],
+                          email: userData!['email'],
+                          licenseNumber: userData!['licenseNumber'],
+                          aadhaarNumber: userData!['aadhaarNumber'],
+                          vehicleType: userData!['vehicleType'],
+                          vehicleNumber: userData!['vehicleNumber'],
+                          vehicleBrand: userData!['vehicleBrand'],
+                          vehicleModel: userData!['vehicleModel'],
+                          vehicleColor: userData!['vehicleColor'],
+                          numberOfSeats: userData!['numberOfSeats'],
+                          imageUrls: _imageUrls,
+                        );
+                        
+                        setState(() {
+                          _isSubmitting = false;
+                        });
+                        
+                        if (success) {
+                          Navigator.pushReplacementNamed(context, '/approval-pending');
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to submit documents. Please try again.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        setState(() {
+                          _isSubmitting = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please upload all required documents')),
+                        const SnackBar(
+                          content: Text('Please upload all required documents'),
+                          backgroundColor: Colors.orange,
+                        ),
                       );
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF616161),
+                    backgroundColor: _allDocumentsUploaded ? AppColors.greenLight : Colors.grey,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    'Submit for Verification',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Submit Documents',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -200,9 +248,10 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
   Widget _buildUploadItem(String title, String subtitle, IconData icon) {
     bool isUploaded = _uploadedDocuments[title] ?? false;
+    
     return GestureDetector(
       onTap: () async {
-        final image = await ImagePickerService.showImageSourceDialog(context);
+        File? image = await ImagePickerService.showImageSourceDialog(context);
         if (image != null) {
           setState(() {
             _uploadedDocuments[title] = true;
@@ -216,18 +265,19 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       child: Container(
         padding: const EdgeInsets.all(12.0),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: isUploaded ? const Color(0xFF4CAF50) : Colors.grey.shade300,
-            width: isUploaded ? 2 : 1,
-          ),
+          color: isUploaded ? AppColors.greenLight.withOpacity(0.1) : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isUploaded ? AppColors.greenLight : Colors.grey.shade300,
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
             Icon(
               icon,
+              color: isUploaded ? AppColors.greenLight : Colors.grey,
               size: 24,
-              color: Colors.grey.shade600,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -236,42 +286,28 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                      color: isUploaded ? AppColors.greenLight : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: Colors.grey,
                     ),
                   ),
                 ],
               ),
             ),
-            isUploaded
-                ? Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4CAF50),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                  )
-                : Icon(
-                    Icons.cloud_upload_outlined,
-                    size: 24,
-                    color: Colors.grey.shade600,
-                  ),
+            Icon(
+              isUploaded ? Icons.check_circle : Icons.upload,
+              color: isUploaded ? AppColors.greenLight : Colors.grey,
+              size: 20,
+            ),
           ],
         ),
       ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'kyc_upload_screen.dart';
+import '../widgets/widgets.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
@@ -23,26 +23,18 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   
   String? _selectedVehicleType;
   String? _selectedSeatingCapacity;
+  String? phoneNumber;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    phoneNumber = ModalRoute.of(context)!.settings.arguments as String?;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF424242),
-        title: const Text(
-          'CHOLA CABS',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: const CustomAppBar(showBackButton: true),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -160,9 +152,25 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                               _selectedVehicleType != null &&
                               _drivingLicenseExpiryController.text.isNotEmpty &&
                               _fcExpiryController.text.isNotEmpty) {
-                            Navigator.push(
+                            
+                            Map<String, dynamic> userData = {
+                              'phoneNumber': phoneNumber,
+                              'name': _nameController.text,
+                              'email': _emailController.text,
+                              'licenseNumber': _licenseController.text,
+                              'aadhaarNumber': _aadharController.text,
+                              'vehicleType': _selectedVehicleType,
+                              'vehicleNumber': _vehicleNumberController.text,
+                              'vehicleBrand': _vehicleMakeController.text,
+                              'vehicleModel': _vehicleModelController.text,
+                              'vehicleColor': _vehicleColorController.text,
+                              'numberOfSeats': int.tryParse(_selectedSeatingCapacity ?? '4') ?? 4,
+                            };
+                            
+                            Navigator.pushNamed(
                               context,
-                              MaterialPageRoute(builder: (context) => const KycUploadScreen()),
+                              '/kyc_upload',
+                              arguments: userData,
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(

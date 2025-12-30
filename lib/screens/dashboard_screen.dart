@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'trip_start_screen.dart';
 import 'dart:math' as math;
-import 'wallet_screen.dart';
+import '../widgets/common/custom_app_bar.dart';
+import '../widgets/bottom_navigation.dart';
+import '../constants/app_colors.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -16,64 +19,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF9E9E9E),
-      appBar: AppBar(
-        backgroundColor: Colors.grey.shade800,
-        elevation: 0,
-        leading: Row(
-          children: [
-            const SizedBox(width: 8),
-            const Icon(Icons.signal_cellular_4_bar, color: Colors.white, size: 16),
-            const SizedBox(width: 4),
-            const Icon(Icons.wifi, color: Colors.white, size: 16),
-            const SizedBox(width: 4),
-            const Icon(Icons.battery_full, color: Colors.white, size: 16),
-          ],
-        ),
-        leadingWidth: 80,
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundImage: AssetImage('assets/profile.jpg'),
-              backgroundColor: Colors.grey.shade300,
-              child: const Icon(Icons.person, color: Colors.grey),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'CHOLA CABS',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          const Text(
-            '2:41',
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          const SizedBox(width: 8),
-          const Icon(Icons.access_time, color: Colors.white, size: 16),
-          const SizedBox(width: 8),
-          const Icon(Icons.menu, color: Colors.white),
-          const SizedBox(width: 16),
-        ],
-      ),
+      backgroundColor: const Color(0xFFB0B0B0),
+      appBar: const CustomAppBar(),
+      endDrawer: _buildDrawer(),
       body: Column(
         children: [
-          // Ready for Trip Toggle
+          // Ready for Trip Toggle Section
           Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFE0E0E0),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,60 +49,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const Text(
                       'Ready For Trip',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF424242),
                       ),
                     ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Container(
-                          width: 8,
-                          height: 8,
+                          width: 10,
+                          height: 10,
                           decoration: BoxDecoration(
                             color: isReadyForTrip ? Colors.green : Colors.red,
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Text(
                           isReadyForTrip ? 'Active' : 'Inactive',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 15,
                             color: isReadyForTrip ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                const Spacer(),
-                Switch(
-                  value: isReadyForTrip,
-                  onChanged: (value) {
-                    setState(() {
-                      isReadyForTrip = value;
-                    });
-                  },
-                  activeColor: Colors.green,
-                  inactiveThumbColor: Colors.grey.shade600,
-                  inactiveTrackColor: Colors.grey.shade400,
+                Transform.scale(
+                  scale: 1.2,
+                  child: Switch(
+                    value: isReadyForTrip,
+                    onChanged: (value) {
+                      setState(() {
+                        isReadyForTrip = value;
+                      });
+                    },
+                    activeColor: Colors.white,
+                    activeTrackColor: Colors.grey.shade400,
+                    inactiveThumbColor: Colors.grey.shade600,
+                    inactiveTrackColor: Colors.grey.shade400,
+                  ),
                 ),
               ],
             ),
           ),
           
-          // Tab Buttons
+          // Tab Buttons Section
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: const Color(0xFFC0C0C0),
             child: Row(
               children: [
-                _buildTabButton('Available (2)', 0, isReadyForTrip ? Colors.green : Colors.grey.shade600),
+                _buildTabButton('Available (2)', 0, const Color(0xFF757575)),
                 const SizedBox(width: 8),
-                _buildTabButton('Pending (1)', 1, Colors.orange),
+                _buildTabButton('Pending (1)', 1, const Color(0xFFDAA520)),
                 const SizedBox(width: 8),
-                _buildTabButton('Approved (2)', 2, Colors.blue),
+                _buildTabButton('Approved (2)', 2, const Color(0xFF1E88E5)),
                 const SizedBox(width: 8),
                 _buildHistoryButton(),
               ],
@@ -149,57 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           
           // Bottom Navigation
-          Container(
-            color: Colors.grey.shade300,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.home,
-                      color: Colors.blue,
-                      size: 24,
-                    ),
-                    const Text(
-                      'Home',
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const WalletScreen()),
-                    );
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.account_balance_wallet,
-                        color: Colors.grey.shade600,
-                        size: 24,
-                      ),
-                      Text(
-                        'Wallet',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const BottomNavigation(currentRoute: '/dashboard'),
         ],
       ),
     );
@@ -215,10 +138,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           });
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? color : Colors.grey.shade600,
-            borderRadius: BorderRadius.circular(8),
+            color: isSelected ? color : const Color(0xFF9E9E9E),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             text,
@@ -226,7 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
@@ -245,13 +168,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.grey.shade800 : Colors.grey.shade600,
-          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? Colors.black : const Color(0xFF9E9E9E),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(
           Icons.history,
           color: Colors.white,
-          size: 20,
+          size: 24,
         ),
       ),
     );
@@ -274,235 +197,238 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildAvailableContent() {
     if (isReadyForTrip) {
-      return Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'New trip requests are available for you to accept',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'New trip requests are available for you to accept',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
               ),
             ),
-          ),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Airport Terminal 1',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Text(
-                      'One-way',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'City Center Mall',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Fare: ₹250',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                        Text(
-                          'customer: Nagaraj',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Airport Terminal 1',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'One-way',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'City Center Mall',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.check, color: Colors.white, size: 16),
-                          SizedBox(width: 4),
                           Text(
-                            'Accept Ride',
-                            style: TextStyle(color: Colors.white),
+                            'Fare: ₹250',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            'customer: Nagaraj',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Karaikudi',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Text(
-                      'Round',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Thanjavur',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Fare: ₹1,450',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                      const Spacer(),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        Text(
-                          'customer: Aarif',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check, color: Colors.white, size: 16),
+                            SizedBox(width: 4),
+                            Text(
+                              'Accept Ride',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
                         ),
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Karaikudi',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'Round',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Thanjavur',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.check, color: Colors.white, size: 16),
-                          SizedBox(width: 4),
                           Text(
-                            'Accept Ride',
-                            style: TextStyle(color: Colors.white),
+                            'Fare: ₹1,450',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            'customer: Aarif',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const Spacer(),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check, color: Colors.white, size: 16),
+                            SizedBox(width: 4),
+                            Text(
+                              'Accept Ride',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+          ],
+        ),
       );
     }
     
@@ -569,244 +495,497 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildPendingContent() {
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            'Under admin review, please wait for approval',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black87,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Under admin review, please wait for approval',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black54,
+              ),
             ),
           ),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+          _buildPendingCard(
+            headerText: 'Waiting for Admin Approval',
+            headerColor: const Color(0xFFFF8C00),
+            customerName: 'Nagaraj',
+            isDelete: false,
           ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Airport Terminal 1',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Text(
-                    'One-way',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 16),
+          _buildPendingCard(
+            headerText: 'The admin has assigned another driver',
+            headerColor: Colors.black,
+            customerName: 'Nagaraj',
+            isDelete: true,
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingCard({
+    required String headerText,
+    required Color headerColor,
+    required String customerName,
+    required bool isDelete,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFDCDCDC),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF0F0F0),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'City Center Mall',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
+            ),
+            child: Text(
+              headerText,
+              style: TextStyle(
+                color: headerColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Fare: ₹250',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Text(
-                        'Customer: Nagaraj',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
+                        const Icon(Icons.location_on, color: Colors.green, size: 24),
+                        Container(width: 2, height: 20, color: Colors.grey.shade400),
+                        const Icon(Icons.location_on, color: Colors.red, size: 24),
+                      ],
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Airport Terminal 1',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'City Center Mall',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Text(
+                      'One-way',
+                      style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Pickup at 6:30 PM ( 12 Mar )',
+                          style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
                         Text(
-                          'Trip Info',
-                          style: TextStyle(color: Colors.white),
+                          'customer : $customerName',
+                          style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    Flexible(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!isDelete) {
+                            _showPendingCancelDialog(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDelete ? Colors.black : const Color(0xFFD32F2F),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(isDelete ? Icons.delete : Icons.cancel, color: Colors.white, size: 18),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                isDelete ? 'Delete' : 'Cancel',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildApprovedContent() {
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            'The trip has been approved and is ready to start',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black87,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'The trip has been approved and is ready to start',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black54,
+              ),
             ),
           ),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+          _buildApprovedCard(
+            pickup: 'Karaikudi',
+            drop: 'Chennai',
+            type: 'One-way',
+            isCompleted: true,
+            customer: 'Sham',
+            phone: '+91 9876543210',
+            odometer: '1200',
           ),
+          const SizedBox(height: 16),
+          _buildApprovedCard(
+            pickup: 'kanyakumari',
+            drop: 'Chennai',
+            type: 'Round',
+            isCompleted: false,
+            customer: 'Sham',
+            phone: '+91 9876543210',
+            odometer: '',
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApprovedCard({
+    required String pickup,
+    required String drop,
+    required String type,
+    required bool isCompleted,
+    required String customer,
+    required String phone,
+    required String odometer,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFDCDCDC),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.green, size: 22),
+                  const SizedBox(height: 12),
+                  const Icon(Icons.location_on, color: Colors.red, size: 22),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pickup,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      drop,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    type,
+                    style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildActionIcon(Icons.close, Colors.red, onTap: () => _showApprovedCancelDialog(context)),
+                      const SizedBox(width: 8),
+                      _buildActionIcon(Icons.navigation, Colors.blue, onTap: () {
+                        // Add navigation logic here
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Opening navigation...')),
+                        );
+                      }),
+                      const SizedBox(width: 8),
+                      _buildActionIcon(Icons.call, Colors.green, onTap: () {
+                        // Add call logic here
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Calling $customer...')),
+                        );
+                      }),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Pickup at 6:30 PM ( 12 Mar )',
+                      style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'customer : $customer',
+                      style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      phone,
+                      style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    if (isCompleted) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Flexible(
+                            child: Text(
+                              'Starting Odometer Km : ',
+                              style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white70,
+                              border: Border.all(color: Colors.grey.shade400),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  odometer,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.edit_note, size: 18, color: Colors.grey),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              SizedBox(width:6,),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TripStartScreen(
+                        tripData: {
+                          'pickup': pickup,
+                          'drop': drop,
+                          'type': type,
+                          'customer': customer,
+                          'phone': phone,
+                        },
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isCompleted ? const Color(0xFF32CD32) : const Color(0xFF2962FF),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.timer_outlined, color: Colors.white, size: 20),
+                    const SizedBox(width: 6),
+                    Text(
+                      isCompleted ? 'Complete Trip' : 'Start Trip',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionIcon(IconData icon, Color color, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: Colors.white, size: 18),
+      ),
+    );
+  }
+
+  void _showPendingCancelDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: const Color(0xFFE8E8E8),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined, 
+                      size: 24, 
+                      color: Colors.black54
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   const Text(
-                    'Karaikudi',
+                    'Cancel Trip ?',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Text(
-                    'One-way',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
+                      fontSize: 18, 
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Chennai',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 20),
+              const Text(
+                'You are about to cancel this trip. This action cannot be undone. Please confirm only if you are unable to continue the trip.',
+                style: TextStyle(
+                  fontSize: 13, 
+                  color: Colors.black87,
+                  height: 1.4,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               Row(
                 children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Fare: ₹1,450',
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text(
+                        'No, Go Back',
                         style: TextStyle(
+                          color: Colors.grey, 
+                          fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
                         ),
-                      ),
-                      Text(
-                        'Customer: Sham',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.play_arrow, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          'Start Trip',
-                          style: TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Trip cancelled successfully')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text(
+                        'Yes, Cancel Trip', 
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -814,107 +993,125 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
+      ),
+    );
+  }
+
+  void _showApprovedCancelDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: const Color(0xFFE8E8E8),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined, 
+                      size: 24, 
+                      color: Colors.black54
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'kanyakumari',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Text(
-                    'Round',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'sure you want to close this trip?',
+                      style: TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Chennai',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 20),
+              const Text(
+                'Once you close this trip, you will not be able to modify any trip details. Please review the final amount before confirming.',
+                style: TextStyle(
+                  fontSize: 13, 
+                  color: Colors.black87,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 16),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Final Amount: ₹800.00',
+                  style: TextStyle(
+                    fontSize: 15, 
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Reason for Cancelling Trip',
+                  hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
               Row(
                 children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Fare: ₹1,450',
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text(
+                        'No, Go Back',
                         style: TextStyle(
+                          color: Colors.grey, 
+                          fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
                         ),
-                      ),
-                      Text(
-                        'Customer: praveen kumar',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.play_arrow, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          'Start Trip',
-                          style: TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Trip closed successfully')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4CAF50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text(
+                        'Yes, Cancel Trip', 
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -922,7 +1119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -930,153 +1127,259 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'Completed Trips Here',
                 style: TextStyle(
                   fontSize: 16,
+                  fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
               ),
-              const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade700,
+                  color: const Color(0xFF424242),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+                child: Row(
+                  children: const [
                     Text(
                       'History Filter',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 14),
                     ),
-                    SizedBox(width: 4),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      color: Colors.white,
-                      size: 16,
-                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20),
                   ],
                 ),
               ),
             ],
           ),
         ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            children: [
-              Row(
+        Expanded(
+          child: Container(
+            color: const Color(0xFFBDBDBD),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: Table(
+                columnWidths: const {
+                  0: FlexColumnWidth(1),
+                  1: FlexColumnWidth(2),
+                  2: FlexColumnWidth(2),
+                  3: FlexColumnWidth(3),
+                },
+                border: TableBorder.all(color: Colors.white70),
                 children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Karaikudi',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Text(
-                    'One-way',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Chennai',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  TableRow(
+                    decoration: const BoxDecoration(color: Color(0xFF9E9E9E)),
                     children: [
-                      Text(
-                        'Fare: ₹1,450',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Text(
-                        'Customer: Sham',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
+                      _buildTableHeader('No'),
+                      _buildTableHeader('Trip ID'),
+                      _buildTableHeader('Trip Date'),
+                      _buildTableHeader('Pickup Point'),
                     ],
                   ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade800,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                  ...List.generate(15, (index) => TableRow(
+                    decoration: BoxDecoration(
+                      color: index % 2 == 0 ? const Color(0xFFC0C0C0) : const Color(0xFFBDBDBD),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.description, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          'View Summary',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
+                    children: [
+                      _buildTableCell('${index + 1}'),
+                      _buildTableCell('TRP-10245'),
+                      _buildTableCell('12 Feb 2025'),
+                      _buildTableCell('Koviloor'),
+                    ],
+                  )),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTableHeader(String text) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 13),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      backgroundColor: Colors.grey.shade300,
+      child: Column(
+        children: [
+          // Header with logo and profile
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
+            child: Column(
+              children: [
+                // CHOLA CABS Logo
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/images/chola_cabs_logo.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                // Profile Image
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.grey.shade400,
+                  child: const Icon(Icons.person, size: 40, color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Tom Holland',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Menu Items
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  _buildDrawerMenuItem(
+                    Icons.person_outline,
+                    'Profile',
+                    'View and edit your personal details',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDrawerMenuItem(
+                    Icons.settings_outlined,
+                    'Settings',
+                    'App preferences, notifications, and privacy',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDrawerMenuItem(
+                    Icons.help_outline,
+                    'Help',
+                    'Get help and contact the admin for support',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDrawerMenuItem(
+                    Icons.logout,
+                    'Sign out',
+                    'Log out of your account safely',
+                    isSignOut: true,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerMenuItem(
+    IconData icon,
+    String title,
+    String subtitle, {
+    bool isSignOut = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.pop(context);
+          if (title == 'Profile') {
+            Navigator.pushNamed(context, '/profile');
+          } else if (title == 'Sign out') {
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          } else if (title == 'Sign out') {
+            // Handle sign out
+          }
+        },
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSignOut ? Colors.red.shade50 : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: isSignOut ? Colors.red : Colors.grey.shade700,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isSignOut ? Colors.red : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

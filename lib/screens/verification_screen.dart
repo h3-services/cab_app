@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
 import '../widgets/widgets.dart';
+import '../services/auth_service.dart';
 
 class VerificationScreen extends StatefulWidget {
   const VerificationScreen({super.key});
@@ -12,6 +13,44 @@ class VerificationScreen extends StatefulWidget {
 class _VerificationScreenState extends State<VerificationScreen> {
   final List<TextEditingController> _controllers = List.generate(4, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
+  bool _isLoading = false;
+  String? phoneNumber;
+
+  void _showDeviceLockedDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock, color: Colors.red, size: 24),
+              SizedBox(width: 8),
+              Text('Device Locked'),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    phoneNumber = ModalRoute.of(context)!.settings.arguments as String?;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,12 +146,71 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 // Continue Button
                 GradientButton(
                   text: 'Continue',
-                  onPressed: () {
+                  onPressed: _isLoading ? null : () async {
                     String otp = _controllers.map((controller) => controller.text).join();
-                    if (otp.length == 4) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+                    if (otp.length == 4 && phoneNumber != null) {
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      
+                      try {
+                        // First check device compatibility
+                        Map<String, dynamic> deviceResult = await AuthService.checkDeviceCompatibility(phoneNumber!);
+                        
+                        if (!deviceResult['success']) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                          _showDeviceLockedDialog(context, deviceResult['message']);
+                          return;
+                        }
+                        
+                        // If device is compatible, proceed with OTP verification
+                        Map<String, dynamic> result = await AuthService.verifyOTPAndProceed(
+                          phoneNumber!,
+                          otp,
+                        );
+                        
+                        setState(() {
+                          _isLoading = false;
+                        });
+                        
+                        if (result['success']) {
+                          if (result['action'] == 'login') {
+                            Navigator.pushReplacementNamed(context, '/dashboard');
+                          } else if (result['action'] == 'register') {
+                            Navigator.pushNamed(
+                              context, 
+                              '/personal_details',
+                              arguments: phoneNumber,
+                            );
+                          }
+                        } else {
+                          if (result['action'] == 'blocked') {
+                            _showDeviceLockedDialog(context, result['message']);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(result['message']),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        setState(() {
+                          _isLoading = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please enter complete OTP')),
                       );
                     }
                   },

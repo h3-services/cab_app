@@ -1,32 +1,52 @@
 import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String title;
-  final VoidCallback? onBackPressed;
+  final bool showBackButton;
   
-  const CustomAppBar({
-    super.key,
-    required this.title,
-    this.onBackPressed,
-  });
+  const CustomAppBar({super.key, this.showBackButton = false});
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: const Color(0xFF424242),
-      title: Text(
-        title,
-        style: const TextStyle(
+      backgroundColor: const Color(0xFF212121),
+      elevation: 0,
+      centerTitle: true,
+      leading: showBackButton 
+        ? IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          )
+        : Padding(
+            padding: const EdgeInsets.only(left: 16.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/profile');
+              },
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.grey.shade300,
+                child: const Icon(Icons.person, color: Colors.grey),
+              ),
+            ),
+          ),
+      title: const Text(
+        'CHOLA CABS',
+        style: TextStyle(
           color: Colors.white,
-          fontSize: 18,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
+          letterSpacing: 1.5,
         ),
       ),
-      centerTitle: true,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: onBackPressed ?? () => Navigator.pop(context),
-      ),
+      actions: [
+        Builder(
+          builder: (context) => GestureDetector(
+            onTap: () => Scaffold.of(context).openEndDrawer(),
+            child: const Icon(Icons.menu, color: Colors.white, size: 28),
+          ),
+        ),
+        const SizedBox(width: 16),
+      ],
     );
   }
 
