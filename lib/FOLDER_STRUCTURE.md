@@ -10,7 +10,7 @@ lib/
 │   └── app_colors.dart
 ├── models/            # Data models and entities
 ├── screens/           # UI screens/pages
-│   ├── kyc_complete_screen.dart
+
 │   ├── kyc_upload_screen.dart
 │   ├── login_screen.dart
 │   ├── personal_details_screen.dart

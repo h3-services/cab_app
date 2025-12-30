@@ -12,6 +12,7 @@ import 'screens/wallet_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/trip_process_screen.dart';
+import 'screens/otp_verification_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,9 @@ class MyApp extends StatelessWidget {
         '/personal_details': (context) => const PersonalDetailsScreen(),
         '/kyc_upload': (context) => const KycUploadScreen(),
         '/approval-pending': (context) => const ApprovalPendingScreen(),
+        '/verification': (context) => const OTPVerificationScreen(),
+        '/personal-details': (context) => const PersonalDetailsScreen(),
+        '/kyc': (context) => const KycUploadScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/trip_process') {
@@ -56,7 +60,6 @@ class MyApp extends StatelessWidget {
         }
         return null;
       },
-      debugShowCheckedModeBanner: false,
     );
   }
 }

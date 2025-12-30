@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../services/database_service.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   const OTPVerificationScreen({Key? key}) : super(key: key);
@@ -9,219 +10,187 @@ class OTPVerificationScreen extends StatefulWidget {
 }
 
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
-  final TextEditingController _phoneController = TextEditingController();
+  final List<TextEditingController> _otpControllers = List.generate(4, (index) => TextEditingController());
+  final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.grey.shade800,
-        elevation: 0,
-        leading: const Icon(Icons.signal_cellular_4_bar, color: Colors.white, size: 16),
-        title: Row(
-          children: [
-            const Icon(Icons.wifi, color: Colors.white, size: 16),
-            const SizedBox(width: 4),
-            const Icon(Icons.battery_full, color: Colors.white, size: 16),
-            const Spacer(),
-            const Text(
-              '2:41',
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.access_time, color: Colors.white, size: 16),
-          ],
-        ),
-        automaticallyImplyLeading: false,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE0E0E0),
-              Color(0xFF9E9E9E),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // App title
-                const Text(
-                  'Driver app',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                  ),
+      resizeToAvoidBottomInset: true,
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFFE0E0E0),
+                    Color(0xFF9E9E9E),
+                  ],
                 ),
-                const SizedBox(height: 40),
-                
-                // Logo section
-                Center(
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                    const SizedBox(height: 20),
+                    
+                    // Logo section
+                    Center(
+                      child: Image.asset(
+                        'assets/images/chola_cabs_logo.png',
+                        width: 150,
+                        height: 150,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Verification Code section
+                    const Text(
+                      'Verification Code',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    const Text(
+                      'We have sent the verification\ncode to your email address',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    
+                    // OTP Input Fields
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(4, (index) {
+                        return Container(
+                          width: 62,
+                          height: 62,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Colors.black, Colors.white, Colors.black],
+                              stops: [0.0, 0.5, 1.0],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.all(1),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: TextField(
+                              controller: _otpControllers[index],
+                              focusNode: _focusNodes[index],
+                              textAlign: TextAlign.center,
+                              keyboardType: TextInputType.number,
+                              maxLength: 1,
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                counterText: '',
+                              ),
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              onChanged: (value) {
+                                if (value.isNotEmpty && index < 3) {
+                                  _focusNodes[index + 1].requestFocus();
+                                } else if (value.isEmpty && index > 0) {
+                                  _focusNodes[index - 1].requestFocus();
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Resend OTP
+                    Row(
                       children: [
-                        // Circular logo
-                        Container(
-                          width: 120,
-                          height: 120,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Mountain icon in center
-                              Container(
-                                width: 60,
-                                height: 40,
-                                child: CustomPaint(
-                                  painter: MountainPainter(),
-                                ),
-                              ),
-                              // Circular text
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: CircularTextPainter(),
-                                ),
-                              ),
-                            ],
+                        const Text(
+                          "Didn't receive OTP ? ",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
                           ),
                         ),
-                        const SizedBox(height: 15),
-                        // TAXI SERVICES text
-                        const Text(
-                          'TAXI SERVICES',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        // Travel with us text
-                        const Text(
-                          'Travel with us',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFB8860B),
-                            fontStyle: FontStyle.italic,
+                        GestureDetector(
+                          onTap: () {
+                            // Resend OTP logic
+                          },
+                          child: const Text(
+                            'Resend OTP',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.blue,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // OTP Verification section
-                const Text(
-                  'OTP Verification',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                const Text(
-                  'Enter email and phone number to\nsend one time Password',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                
-                // Phone number input
-                const Text(
-                  'Phone Number',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade400),
-                  ),
-                  child: TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      hintText: '+91',
-                      hintStyle: TextStyle(
-                        color: Colors.black54,
-                        fontSize: 16,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Description text
-                const Text(
-                  'Fast, secure verification for a smooth journey.\nEnter your number to receive an OTP.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
-                    height: 1.4,
-                  ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // Continue button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Handle continue action
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade800,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Continue button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final phoneNumber = ModalRoute.of(context)?.settings.arguments as String?;
+                          if (phoneNumber != null) {
+                            final dbService = DatabaseService();
+                            final driver = await dbService.getDriver(phoneNumber);
+                            
+                            if (driver != null) {
+                              Navigator.pushReplacementNamed(context, '/dashboard');
+                            } else {
+                              Navigator.pushReplacementNamed(context, '/personal-details', arguments: phoneNumber);
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade800,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
-                    child: const Text(
-                      'Continue',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
