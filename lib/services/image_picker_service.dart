@@ -6,7 +6,8 @@ class ImagePickerService {
   static final ImagePicker _picker = ImagePicker();
 
   static Future<File?> showImageSourceDialog(BuildContext context) async {
-    return showDialog<File?>(
+    // 1. Ask user for source
+    final ImageSource? source = await showDialog<ImageSource>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -17,29 +18,33 @@ class ImagePickerService {
               ListTile(
                 leading: const Icon(Icons.camera_alt),
                 title: const Text('Camera'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-                  if (image != null) {
-                    Navigator.pop(context, File(image.path));
-                  }
-                },
+                onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Gallery'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-                  if (image != null) {
-                    Navigator.pop(context, File(image.path));
-                  }
-                },
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
             ],
           ),
         );
       },
     );
+
+    // 2. If source selected, pick image
+    if (source != null) {
+      try {
+        final XFile? image = await _picker.pickImage(
+          source: source,
+          imageQuality: 50, // Optimize image size
+        );
+        if (image != null) {
+          return File(image.path);
+        }
+      } catch (e) {
+        debugPrint('Image Picker Error: $e');
+      }
+    }
+    return null;
   }
 }
