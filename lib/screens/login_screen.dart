@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/auth_service.dart';
+import '../constants/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,8 +21,8 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE8E8E8),
-              Color(0xFF808080),
+              AppColors.appGradientStart,
+              AppColors.appGradientEnd,
             ],
           ),
         ),
@@ -129,6 +129,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 1.4,
                   ),
                 ),
+                const SizedBox(height: 16),
+                // Developer Option Button
+                Container(
+                  width: double.infinity,
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/personal_details');
+                    },
+                    child: const Text(
+                      'Dev: Skip to Personal Details',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 // Continue Button
                 SizedBox(
@@ -140,8 +158,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Color(0xFF616161),
-                          Color(0xFF000000),
+                          AppColors.buttonGradientStart,
+                          AppColors.buttonGradientEnd,
                         ],
                       ),
                       borderRadius: BorderRadius.circular(8),
@@ -174,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                SizedBox(height:40),
+                const SizedBox(height:40),
               ],
             ),
             ),

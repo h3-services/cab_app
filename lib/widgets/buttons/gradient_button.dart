@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/app_colors.dart';
 
 class GradientButton extends StatelessWidget {
   final String text;
@@ -25,8 +26,8 @@ class GradientButton extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF616161),
-              Color(0xFF000000),
+              AppColors.buttonGradientStart,
+              AppColors.buttonGradientEnd,
             ],
           ),
           borderRadius: BorderRadius.circular(8),

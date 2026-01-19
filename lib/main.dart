@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'constants/app_colors.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
@@ -16,9 +15,6 @@ import 'screens/otp_verification_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
   runApp(const MyApp());
 }
 
@@ -30,7 +26,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Chola Cabs',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.grey),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryBlue),
         useMaterial3: true,
       ),
       initialRoute: '/',
@@ -60,6 +56,7 @@ class MyApp extends StatelessWidget {
         }
         return null;
       },
+      debugShowCheckedModeBanner: false,
     );
   }
 }

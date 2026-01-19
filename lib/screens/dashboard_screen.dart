@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'trip_start_screen.dart';
 import 'dart:math' as math;
 import '../widgets/common/custom_app_bar.dart';
+import '../widgets/common/app_drawer.dart';
 import '../widgets/bottom_navigation.dart';
 import '../constants/app_colors.dart';
+import '../services/trip_state_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -13,15 +15,20 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  bool isReadyForTrip = false;
+  final TripStateService _tripStateService = TripStateService();
   int selectedTab = 0; // 0: Available, 1: Pending, 2: Approved, 3: History
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
-      endDrawer: _buildDrawer(),
+      endDrawer: const AppDrawer(),
       body: Column(
         children: [
           // Ready for Trip Toggle Section
@@ -61,16 +68,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           width: 10,
                           height: 10,
                           decoration: BoxDecoration(
-                            color: isReadyForTrip ? Colors.green : Colors.red,
+                            color: _tripStateService.isReadyForTrip ? Colors.green : Colors.red,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          isReadyForTrip ? 'Active' : 'Inactive',
+                          _tripStateService.isReadyForTrip ? 'Active' : 'Inactive',
                           style: TextStyle(
                             fontSize: 15,
-                            color: isReadyForTrip ? Colors.green : Colors.red,
+                            color: _tripStateService.isReadyForTrip ? Colors.green : Colors.red,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -81,14 +88,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Transform.scale(
                   scale: 1.2,
                   child: Switch(
-                    value: isReadyForTrip,
+                    value: _tripStateService.isReadyForTrip,
                     onChanged: (value) {
                       setState(() {
-                        isReadyForTrip = value;
+                        _tripStateService.setReadyForTrip(value);
                       });
                     },
                     activeColor: Colors.white,
-                    activeTrackColor: Colors.grey.shade400,
+                    activeTrackColor: Colors.green,
                     inactiveThumbColor: Colors.grey.shade600,
                     inactiveTrackColor: Colors.grey.shade400,
                   ),
@@ -196,7 +203,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildAvailableContent() {
-    if (isReadyForTrip) {
+    if (_tripStateService.isReadyForTrip) {
       return SingleChildScrollView(
         child: Column(
           children: [
@@ -845,7 +852,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               SizedBox(width:6,),
               ElevatedButton(
-                onPressed: () {
+                onPressed: isCompleted ? null : () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -862,7 +869,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isCompleted ? const Color(0xFF32CD32) : const Color(0xFF2962FF),
+                  backgroundColor: isCompleted ? AppColors.greenLight : const Color(0xFF2962FF),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
@@ -1225,162 +1232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildDrawer() {
-    return Drawer(
-      backgroundColor: Colors.grey.shade300,
-      child: Column(
-        children: [
-          // Header with logo and profile
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
-            child: Column(
-              children: [
-                // CHOLA CABS Logo
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      'assets/images/chola_cabs_logo.png',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                // Profile Image
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.grey.shade400,
-                  child: const Icon(Icons.person, size: 40, color: Colors.grey),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Tom Holland',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Menu Items
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  _buildDrawerMenuItem(
-                    Icons.person_outline,
-                    'Profile',
-                    'View and edit your personal details',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDrawerMenuItem(
-                    Icons.settings_outlined,
-                    'Settings',
-                    'App preferences, notifications, and privacy',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDrawerMenuItem(
-                    Icons.help_outline,
-                    'Help',
-                    'Get help and contact the admin for support',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDrawerMenuItem(
-                    Icons.logout,
-                    'Sign out',
-                    'Log out of your account safely',
-                    isSignOut: true,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerMenuItem(
-    IconData icon,
-    String title,
-    String subtitle, {
-    bool isSignOut = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.pop(context);
-          if (title == 'Profile') {
-            Navigator.pushNamed(context, '/profile');
-          } else if (title == 'Sign out') {
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-          } else if (title == 'Sign out') {
-            // Handle sign out
-          }
-        },
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSignOut ? Colors.red.shade50 : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: isSignOut ? Colors.red : Colors.grey.shade700,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isSignOut ? Colors.red : Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return const AppDrawer();
   }
 }
 

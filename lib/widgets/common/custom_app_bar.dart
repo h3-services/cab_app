@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
+  final bool showMenuIcon;
   
-  const CustomAppBar({super.key, this.showBackButton = false});
+  const CustomAppBar({super.key, this.showBackButton = false, this.showMenuIcon = true});
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +39,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           letterSpacing: 1.5,
         ),
       ),
-      actions: [
+      actions: showMenuIcon ? [
         Builder(
           builder: (context) => GestureDetector(
             onTap: () => Scaffold.of(context).openEndDrawer(),
@@ -46,7 +47,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         const SizedBox(width: 16),
-      ],
+      ] : null,
     );
   }
 

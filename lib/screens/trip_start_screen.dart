@@ -18,17 +18,33 @@ class _TripStartScreenState extends State<TripStartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.appGradientEnd,
+      backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
       endDrawer: _buildDrawer(context),
       body: Column(
         children: [
-          const SizedBox(height: 40),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: AppColors.appGradientStart),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Text(
+                  'Starting KM',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.appGradientStart),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.appGradientStart,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -50,10 +66,10 @@ class _TripStartScreenState extends State<TripStartScreen> {
                   child: TextField(
                     controller: _startingKmController,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      suffixIcon: Icon(Icons.edit, color: AppColors.primaryBlue, size: 20),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      suffixIcon: Icon(Icons.edit, color: Colors.blue, size: 20),
                     ),
                   ),
                 ),
@@ -91,10 +107,9 @@ class _TripStartScreenState extends State<TripStartScreen> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
+                      backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      elevation: 2,
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -262,17 +277,33 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.appGradientEnd,
+      backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
       endDrawer: _buildDrawer(context),
       body: Column(
         children: [
-          const SizedBox(height: 40),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Text(
+                  'Completed Trip',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.black),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.appGradientStart,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -294,10 +325,10 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                   child: TextField(
                     controller: _endingKmController,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      suffixIcon: Icon(Icons.edit, color: AppColors.primaryBlue, size: 20),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      suffixIcon: Icon(Icons.edit, color: Colors.blue, size: 20),
                     ),
                   ),
                 ),
@@ -336,10 +367,9 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
+                      backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      elevation: 2,
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -511,17 +541,33 @@ class TripSummaryScreen extends StatelessWidget {
     final totalCost = distance * ratePerKm + walletFee;
 
     return Scaffold(
-      backgroundColor: AppColors.appGradientEnd,
+      backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
       endDrawer: _buildDrawer(context),
       body: Column(
         children: [
-          const SizedBox(height: 40),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: AppColors.appGradientStart),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Text(
+                  'Completed Trip',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.appGradientStart),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.appGradientStart,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -580,10 +626,9 @@ class TripSummaryScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () => _showCloseTripDialog(context, totalCost),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.greenLight,
+                      backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      elevation: 2,
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -752,7 +797,7 @@ class TripSummaryScreen extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-        backgroundColor: AppColors.appGradientStart,
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -796,7 +841,7 @@ class TripSummaryScreen extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.greenLight,
+                        backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),

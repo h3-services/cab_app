@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/widgets.dart';
+import '../constants/app_colors.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
@@ -15,6 +16,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   final _licenseController = TextEditingController();
   final _aadharController = TextEditingController();
   final _drivingLicenseExpiryController = TextEditingController();
+  final _primaryLocationController = TextEditingController();
   final _fcExpiryController = TextEditingController();
   final _vehicleNumberController = TextEditingController();
   final _vehicleMakeController = TextEditingController();
@@ -34,15 +36,15 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(showBackButton: true),
+      appBar: const CustomAppBar(showBackButton: false, showMenuIcon: false),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE8E8E8),
-              Color(0xFF808080),
+              AppColors.appGradientStart,
+              AppColors.appGradientEnd,
             ],
           ),
         ),
@@ -91,7 +93,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           const SizedBox(height: 16),
                           _buildTextField('License Number*', _licenseController),
                           const SizedBox(height: 16),
-                          _buildTextField('Aashaar Number*', _aadharController),
+                          _buildTextField('Aadhaar Number*', _aadharController),
+                          const SizedBox(height: 16),
+                          _buildTextField('Primary Location*', _primaryLocationController),
                         ],
                       ),
                     ),
@@ -119,7 +123,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           const SizedBox(height: 16),
                           _buildDateField('FC Expiry Date*', _fcExpiryController, true),
                           const SizedBox(height: 16),
-                          _buildDropdownField('Vehicle Type*', _selectedVehicleType, ['Car', 'Auto', 'Bike'], (value) {
+                          _buildDropdownField('Vehicle Type*', _selectedVehicleType, ['SUV', 'Innova', 'Sedan'], (value) {
                             setState(() {
                               _selectedVehicleType = value;
                             });
@@ -151,7 +155,8 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           if (_formKey.currentState!.validate() && 
                               _selectedVehicleType != null &&
                               _drivingLicenseExpiryController.text.isNotEmpty &&
-                              _fcExpiryController.text.isNotEmpty) {
+                              _fcExpiryController.text.isNotEmpty &&
+                              _primaryLocationController.text.isNotEmpty) {
                             
                             Map<String, dynamic> userData = {
                               'phoneNumber': phoneNumber,
@@ -159,6 +164,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                               'email': _emailController.text,
                               'licenseNumber': _licenseController.text,
                               'aadhaarNumber': _aadharController.text,
+                              'primaryLocation': _primaryLocationController.text,
                               'vehicleType': _selectedVehicleType,
                               'vehicleNumber': _vehicleNumberController.text,
                               'vehicleBrand': _vehicleMakeController.text,
@@ -179,7 +185,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4CAF50),
+                          backgroundColor: AppColors.greenLight,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -244,8 +250,8 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                 return 'Enter a valid email';
               }
             }
-            if (label.contains('Aashaar') && value.length != 12) {
-              return 'Aadhar number must be 12 digits';
+            if (label.contains('Aadhaar') && value.length != 12) {
+              return 'Aadhaar number must be 12 digits';
             }
             return null;
           } : null,
@@ -407,6 +413,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     _vehicleMakeController.dispose();
     _vehicleModelController.dispose();
     _vehicleColorController.dispose();
+    _primaryLocationController.dispose();
     super.dispose();
   }
 }

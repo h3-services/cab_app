@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import '../services/database_service.dart';
+import '../constants/app_colors.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   const OTPVerificationScreen({Key? key}) : super(key: key);
@@ -27,8 +27,8 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFFE0E0E0),
-                    Color(0xFF9E9E9E),
+                    AppColors.appGradientStart,
+                    AppColors.appGradientEnd,
                   ],
                 ),
               ),
@@ -154,21 +154,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () async {
-                          final phoneNumber = ModalRoute.of(context)?.settings.arguments as String?;
-                          if (phoneNumber != null) {
-                            final dbService = DatabaseService();
-                            final driver = await dbService.getDriver(phoneNumber);
-                            
-                            if (driver != null) {
-                              Navigator.pushReplacementNamed(context, '/dashboard');
-                            } else {
-                              Navigator.pushReplacementNamed(context, '/personal-details', arguments: phoneNumber);
-                            }
-                          }
+                        onPressed: () {
+                          // Navigate to dashboard for demo
+                          Navigator.pushReplacementNamed(context, '/dashboard');
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade800,
+                          backgroundColor: AppColors.buttonGradientEnd,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),

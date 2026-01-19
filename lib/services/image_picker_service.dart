@@ -1,12 +1,12 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class ImagePickerService {
   static final ImagePicker _picker = ImagePicker();
 
-  static Future<File?> showImageSourceDialog(context) async {
-    final result = await showDialog<String>(
+  static Future<File?> showImageSourceDialog(BuildContext context) async {
+    return showDialog<File?>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -17,31 +17,29 @@ class ImagePickerService {
               ListTile(
                 leading: const Icon(Icons.camera_alt),
                 title: const Text('Camera'),
-                onTap: () => Navigator.pop(context, 'camera'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+                  if (image != null) {
+                    Navigator.pop(context, File(image.path));
+                  }
+                },
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Gallery'),
-                onTap: () => Navigator.pop(context, 'gallery'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+                  if (image != null) {
+                    Navigator.pop(context, File(image.path));
+                  }
+                },
               ),
             ],
           ),
         );
       },
     );
-    
-    if (result != null) {
-      final XFile? image;
-      if (result == 'camera') {
-        image = await _picker.pickImage(source: ImageSource.camera);
-      } else {
-        image = await _picker.pickImage(source: ImageSource.gallery);
-      }
-      
-      if (image != null) {
-        return File(image.path);
-      }
-    }
-    return null;
   }
 }

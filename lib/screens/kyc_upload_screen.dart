@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/image_picker_service.dart';
-import '../services/firebase_storage_service.dart';
-import '../services/user_service.dart';
 import '../constants/app_colors.dart';
 import '../widgets/widgets.dart';
 import 'dart:io';
@@ -27,7 +25,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   };
   
   final Map<String, File?> _uploadedImages = {};
-  final Map<String, String> _imageUrls = {};
   Map<String, dynamic>? userData;
   bool _isSubmitting = false;
 
@@ -42,15 +39,15 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(showBackButton: true),
+      appBar: const CustomAppBar(showBackButton: false, showMenuIcon: false),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE8E8E8),
-              Color(0xFF808080),
+              AppColors.appGradientStart,
+              AppColors.appGradientEnd,
             ],
           ),
         ),
@@ -155,63 +152,10 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : () async {
-                    if (_allDocumentsUploaded && userData != null) {
-                      setState(() {
-                        _isSubmitting = true;
-                      });
-                      
-                      try {
-                        for (String docType in _uploadedImages.keys) {
-                          if (_uploadedImages[docType] != null) {
-                            String imageUrl = await FirebaseStorageService.uploadImage(
-                              _uploadedImages[docType]!,
-                              '${userData!['phoneNumber']}/$docType',
-                            );
-                            _imageUrls[docType] = imageUrl;
-                          }
-                        }
-                        
-                        bool success = await UserService.createUser(
-                          phoneNumber: userData!['phoneNumber'],
-                          name: userData!['name'],
-                          email: userData!['email'],
-                          licenseNumber: userData!['licenseNumber'],
-                          aadhaarNumber: userData!['aadhaarNumber'],
-                          vehicleType: userData!['vehicleType'],
-                          vehicleNumber: userData!['vehicleNumber'],
-                          vehicleBrand: userData!['vehicleBrand'],
-                          vehicleModel: userData!['vehicleModel'],
-                          vehicleColor: userData!['vehicleColor'],
-                          numberOfSeats: userData!['numberOfSeats'],
-                          imageUrls: _imageUrls,
-                        );
-                        
-                        setState(() {
-                          _isSubmitting = false;
-                        });
-                        
-                        if (success) {
-                          Navigator.pushReplacementNamed(context, '/approval-pending');
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Failed to submit documents. Please try again.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        setState(() {
-                          _isSubmitting = false;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: ${e.toString()}'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
+                  onPressed: _isSubmitting ? null : () {
+                    if (_allDocumentsUploaded) {
+                      // Navigate to approval pending for demo
+                      Navigator.pushReplacementNamed(context, '/approval-pending');
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
