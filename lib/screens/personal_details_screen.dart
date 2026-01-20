@@ -35,7 +35,37 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    phoneNumber = ModalRoute.of(context)!.settings.arguments as String?;
+    final args = ModalRoute.of(context)!.settings.arguments;
+    if (args is Map && args['isEditing'] == true) {
+      _loadSavedData();
+    } else if (args is String) {
+      phoneNumber = args;
+    }
+  }
+
+  Future<void> _loadSavedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      phoneNumber = prefs.getString('phoneNumber');
+      _nameController.text = prefs.getString('name') ?? '';
+      _emailController.text = prefs.getString('email') ?? '';
+      _primaryLocationController.text =
+          prefs.getString('primaryLocation') ?? '';
+      _licenseController.text = prefs.getString('licenseNumber') ?? '';
+      _aadharController.text = prefs.getString('aadhaarNumber') ?? '';
+
+      _vehicleMakeController.text = prefs.getString('vehicleBrand') ?? '';
+      _vehicleModelController.text = prefs.getString('vehicleModel') ?? '';
+      _vehicleNumberController.text = prefs.getString('vehicleNumber') ?? '';
+      _vehicleColorController.text = prefs.getString('vehicleColor') ?? '';
+
+      _selectedVehicleType = prefs.getString('vehicleType');
+      _selectedSeatingCapacity = prefs.getString('seatingCapacity');
+
+      // Note: We can't easily restore dates into controllers unless we saved the raw text
+      // We assume user re-enters or we try to reconstruct?
+      // For now, let's leave dates empty or try to parse if needed.
+    });
   }
 
   @override
@@ -205,120 +235,60 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                               try {
                                 String licenseDate = _formatDateForApi(
                                     _drivingLicenseExpiryController.text);
+                                String rcDate =
+                                    _formatDateForApi(_rcExpiryController.text);
+                                String fcDate =
+                                    _formatDateForApi(_fcExpiryController.text);
 
                                 // Get Device ID
                                 String deviceId = _testDeviceId ??
                                     await DeviceService.getDeviceId();
 
-                                // 1. Register Driver
-                                final driverResponse =
-                                    await ApiService.registerDriver(
-                                  name: _nameController.text,
-                                  phoneNumber: phoneNumber ?? '',
-                                  email: _emailController.text,
-                                  primaryLocation:
-                                      _primaryLocationController.text,
-                                  licenceNumber: _licenseController.text,
-                                  aadharNumber: _aadharController.text,
-                                  licenceExpiry: licenseDate,
-                                  deviceId: deviceId,
-                                );
-
-                                // Extract driver_id from response
-                                // Assuming response structure has 'id' or 'driver_id'
-                                final String driverId = driverResponse['id']
-                                        ?.toString() ??
-                                    driverResponse['driver_id']?.toString() ??
-                                    '';
-
-                                if (driverId.isEmpty) {
-                                  throw Exception(
-                                      'Driver ID not found in response');
-                                }
-
-                                // 2. Register Vehicle
-                                final vehicleResponse =
-                                    await ApiService.registerVehicle(
-                                  vehicleType: _selectedVehicleType!,
-                                  vehicleBrand: _vehicleMakeController.text,
-                                  vehicleModel: _vehicleModelController.text,
-                                  vehicleNumber: _vehicleNumberController.text,
-                                  vehicleColor: _vehicleColorController.text,
-                                  seatingCapacity: int.tryParse(
-                                          _selectedSeatingCapacity ?? '4') ??
-                                      4,
-                                  driverId: driverId,
-                                  rcExpiryDate: _formatDateForApi(
-                                      _rcExpiryController.text),
-                                  fcExpiryDate: _formatDateForApi(
-                                      _fcExpiryController.text),
-                                );
-
-                                final String vehicleId = vehicleResponse['id']
-                                        ?.toString() ??
-                                    vehicleResponse['vehicle_id']?.toString() ??
-                                    '';
-
-                                // Save IDs and Details to SharedPreferences
+                                // Prepare data for next screen (Defer API calls or Update)
                                 final prefs =
                                     await SharedPreferences.getInstance();
-                                await prefs.setString('driverId', driverId);
-                                await prefs.setString('vehicleId', vehicleId);
+                                String? existingDriverId =
+                                    prefs.getString('driverId');
+                                String? existingVehicleId =
+                                    prefs.getString('vehicleId');
+                                final args =
+                                    ModalRoute.of(context)!.settings.arguments;
+                                bool isEditing =
+                                    (args is Map && args['isEditing'] == true);
 
-                                // Save Personal Details
-                                await prefs.setString(
-                                    'name', _nameController.text);
-                                await prefs.setString(
-                                    'phoneNumber', phoneNumber ?? '');
-                                await prefs.setString(
-                                    'email', _emailController.text);
-                                await prefs.setString('primaryLocation',
-                                    _primaryLocationController.text);
-                                await prefs.setString(
-                                    'licenseNumber', _licenseController.text);
-                                await prefs.setString(
-                                    'aadhaarNumber', _aadharController.text);
-
-                                // Save Vehicle Details
-                                await prefs.setString(
-                                    'vehicleType', _selectedVehicleType!);
-                                await prefs.setString('vehicleBrand',
-                                    _vehicleMakeController.text);
-                                await prefs.setString('vehicleModel',
-                                    _vehicleModelController.text);
-                                await prefs.setString('vehicleNumber',
-                                    _vehicleNumberController.text);
-                                await prefs.setString('vehicleColor',
-                                    _vehicleColorController.text);
-                                await prefs.setString('seatingCapacity',
-                                    _selectedSeatingCapacity ?? '4');
-
-                                // Hide loading
-                                if (context.mounted) Navigator.pop(context);
-
-                                if (!context.mounted) return;
-
-                                // Proceed to next screen
                                 Map<String, dynamic> userData = {
-                                  'phoneNumber': phoneNumber,
+                                  // Personal
                                   'name': _nameController.text,
+                                  'phoneNumber': phoneNumber ?? '',
                                   'email': _emailController.text,
-                                  'licenseNumber': _licenseController.text,
-                                  'aadhaarNumber': _aadharController.text,
                                   'primaryLocation':
                                       _primaryLocationController.text,
+                                  'licenceNumber': _licenseController.text,
+                                  'aadharNumber': _aadharController.text,
+                                  'licenceExpiry': licenseDate,
+                                  'deviceId': deviceId,
+
+                                  // Vehicle
                                   'vehicleType': _selectedVehicleType,
-                                  'vehicleNumber':
-                                      _vehicleNumberController.text,
                                   'vehicleBrand': _vehicleMakeController.text,
                                   'vehicleModel': _vehicleModelController.text,
+                                  'vehicleNumber':
+                                      _vehicleNumberController.text,
                                   'vehicleColor': _vehicleColorController.text,
-                                  'numberOfSeats': int.tryParse(
+                                  'seatingCapacity': int.tryParse(
                                           _selectedSeatingCapacity ?? '4') ??
                                       4,
-                                  'driverId': driverId,
-                                  'vehicleId': vehicleId, // Added vehicleId
+                                  'rcExpiryDate': rcDate,
+                                  'fcExpiryDate': fcDate,
+
+                                  // Update flags
+                                  'driverId': existingDriverId,
+                                  'vehicleId': existingVehicleId,
+                                  'isEditing': isEditing,
                                 };
+
+                                // Hide loading before navigating
+                                if (context.mounted) Navigator.pop(context);
 
                                 Navigator.pushNamed(
                                   context,

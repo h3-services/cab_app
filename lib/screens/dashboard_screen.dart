@@ -20,6 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final TripStateService _tripStateService = TripStateService();
   int selectedTab = 0; // 0: Available, 1: Pending, 2: Approved, 3: History
   String? _driverId;
+  bool _isCheckingStatus = true; // Block UI until verified
 
   @override
   void initState() {
@@ -32,10 +33,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _driverId = prefs.getString('driverId');
     });
+
+    // Check approval status again to prevent unauthorized access
+    if (_driverId != null) {
+      _checkApprovalStatus(_driverId!);
+    } else {
+      // If no driverId locally, we technically shouldn't be here (Splash handles it).
+      // But if we are, maybe just stop loading to let them see empty state (or login redirect).
+      // For safety, let's stop loading so we don't hang forever.
+      setState(() => _isCheckingStatus = false);
+    }
+  }
+
+  Future<void> _checkApprovalStatus(String driverId) async {
+    try {
+      final driverData = await ApiService.getDriverDetails(driverId);
+      final bool isApproved = driverData['is_approved'] ?? false;
+      final String kycVerified = driverData['kyc_verified'] ?? 'pending';
+
+      if (!isApproved || kycVerified != 'verified') {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/approval-pending');
+        }
+      } else {
+        // Approved! Unlock UI
+        if (mounted) {
+          setState(() => _isCheckingStatus = false);
+        }
+      }
+    } catch (e) {
+      // If verification fails (e.g. offline), what to do?
+      // Strict Mode: Redirect to Pending.
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/approval-pending');
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingStatus) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text("Verifying Account Status..."),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),

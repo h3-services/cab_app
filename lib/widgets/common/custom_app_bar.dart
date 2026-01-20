@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final bool showMenuIcon;
+  final bool showProfileIcon;
   final List<Widget>? actions;
 
   const CustomAppBar(
       {super.key,
       this.showBackButton = false,
       this.showMenuIcon = true,
+      this.showProfileIcon = true,
       this.actions});
 
   @override
@@ -22,19 +24,21 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context),
             )
-          : Padding(
-              padding: const EdgeInsets.only(left: 16.0),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/profile');
-                },
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.grey.shade300,
-                  child: const Icon(Icons.person, color: Colors.grey),
-                ),
-              ),
-            ),
+          : (showProfileIcon
+              ? Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.grey.shade300,
+                      child: const Icon(Icons.person, color: Colors.grey),
+                    ),
+                  ),
+                )
+              : null),
       title: const Text(
         'CHOLA CABS',
         style: TextStyle(

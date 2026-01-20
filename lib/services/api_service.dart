@@ -154,6 +154,26 @@ class ApiService {
         filename: filename);
   }
 
+  static Future<Map<String, dynamic>> getDriverDetails(String driverId) async {
+    final url = Uri.parse('$baseUrl/drivers/$driverId');
+    try {
+      debugPrint('GET Request: $url');
+      final response = await http.get(url);
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to get driver details: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<void> updateDriverAvailability(
       String driverId, bool isAvailable) async {
     final url = Uri.parse(
@@ -178,11 +198,152 @@ class ApiService {
     }
   }
 
-  static Future<void> _uploadFile(String url, String fieldName, File file,
-      {String? filename}) async {
+  static Future<Map<String, dynamic>> updateDriver({
+    required String driverId,
+    required String name,
+    required String email,
+    required String primaryLocation,
+    required String licenceNumber,
+    required String aadharNumber,
+    required String licenceExpiry,
+  }) async {
+    final url = Uri.parse('$baseUrl/drivers/$driverId');
+
+    final body = {
+      "name": name,
+      "email": email,
+      "primary_location": primaryLocation,
+      "licence_number": licenceNumber,
+      "aadhar_number": aadharNumber,
+      "licence_expiry": licenceExpiry,
+    };
+
     try {
-      debugPrint('UPLOAD Request: $url');
-      var request = http.MultipartRequest('POST', Uri.parse(url));
+      debugPrint('PUT Request: $url');
+      debugPrint('Body: ${jsonEncode(body)}');
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+            'Failed to update driver: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateVehicle({
+    required String vehicleId,
+    required String vehicleType,
+    required String vehicleBrand,
+    required String vehicleModel,
+    required String vehicleColor,
+    required int seatingCapacity,
+    required String rcExpiryDate,
+    required String fcExpiryDate,
+  }) async {
+    final url = Uri.parse('$baseUrl/vehicles/$vehicleId');
+
+    final body = {
+      "vehicle_type": vehicleType,
+      "vehicle_brand": vehicleBrand,
+      "vehicle_model": vehicleModel,
+      "vehicle_color": vehicleColor,
+      "seating_capacity": seatingCapacity,
+      "rc_expiry_date": rcExpiryDate,
+      "fc_expiry_date": fcExpiryDate,
+    };
+
+    try {
+      debugPrint('PUT Request: $url');
+      debugPrint('Body: ${jsonEncode(body)}');
+
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+            'Failed to update vehicle: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  // Re-upload methods (using PUT)
+  static Future<void> reuploadDriverPhoto(String driverId, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'driver_${driverId}_photo.$ext';
+    await _uploadFile('$baseUrl/uploads/driver/$driverId/photo', 'file', file,
+        filename: filename, method: 'PUT');
+  }
+
+  static Future<void> reuploadAadhar(String driverId, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'driver_${driverId}_aadhar.$ext';
+    await _uploadFile('$baseUrl/uploads/driver/$driverId/aadhar', 'file', file,
+        filename: filename, method: 'PUT');
+  }
+
+  static Future<void> reuploadLicence(String driverId, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'driver_${driverId}_licence.$ext';
+    await _uploadFile('$baseUrl/uploads/driver/$driverId/licence', 'file', file,
+        filename: filename, method: 'PUT');
+  }
+
+  static Future<void> reuploadVehicleRC(String vehicleId, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'vehicle_${vehicleId}_rc.$ext';
+    await _uploadFile('$baseUrl/uploads/vehicle/$vehicleId/rc', 'file', file,
+        filename: filename, method: 'PUT');
+  }
+
+  static Future<void> reuploadVehicleFC(String vehicleId, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'vehicle_${vehicleId}_fc.$ext';
+    await _uploadFile('$baseUrl/uploads/vehicle/$vehicleId/fc', 'file', file,
+        filename: filename, method: 'PUT');
+  }
+
+  static Future<void> reuploadVehiclePhoto(
+      String vehicleId, String position, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'vehicle_${vehicleId}_$position.$ext';
+    await _uploadFile(
+        '$baseUrl/uploads/vehicle/$vehicleId/photo/$position', 'file', file,
+        filename: filename, method: 'PUT');
+  }
+
+  static Future<void> _uploadFile(String url, String fieldName, File file,
+      {String? filename, String method = 'POST'}) async {
+    try {
+      debugPrint('$method Upload Request: $url');
+      var request = http.MultipartRequest(method, Uri.parse(url));
       request.files.add(await http.MultipartFile.fromPath(
         fieldName,
         file.path,

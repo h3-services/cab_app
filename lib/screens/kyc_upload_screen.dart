@@ -30,6 +30,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       {}; // Track uploading state per doc
   final Map<String, File?> _uploadedImages = {};
   Map<String, dynamic>? userData;
+  bool _isEditing = false;
   bool _isSubmitting = false;
 
   bool get _allDocumentsUploaded =>
@@ -40,6 +41,14 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     super.didChangeDependencies();
     userData =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+
+    _isEditing = userData?['isEditing'] == true;
+    if (_isEditing) {
+      // Pre-fill as valid since we are updating existing application
+      setState(() {
+        _uploadedDocuments.updateAll((key, value) => true);
+      });
+    }
   }
 
   @override
@@ -216,9 +225,11 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                   ),
                   child: _isSubmitting
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Submit Documents',
-                          style: TextStyle(
+                      : Text(
+                          _isEditing
+                              ? 'Update Application'
+                              : 'Submit Documents',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -234,6 +245,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
   Widget _buildUploadItem(String title, String subtitle, IconData icon) {
     bool isSelected = _uploadedImages.containsKey(title);
+    File? selectedFile = _uploadedImages[title];
 
     return GestureDetector(
       onTap: () async {
@@ -241,8 +253,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         if (image != null) {
           setState(() {
             _uploadedImages[title] = image;
-            // Mark as "uploaded" for UI consistency (green check),
-            // though actual upload happens on submit now.
             _uploadedDocuments[title] = true;
           });
         }
@@ -261,11 +271,23 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.greenLight : Colors.grey,
-              size: 24,
-            ),
+            // Icon or Preview
+            if (isSelected && selectedFile != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.file(
+                  selectedFile,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Icon(
+                icon,
+                color: Colors.grey,
+                size: 24,
+              ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -281,10 +303,10 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    subtitle,
-                    style: const TextStyle(
+                    isSelected ? 'Tap to change' : subtitle,
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey,
+                      color: isSelected ? AppColors.greenLight : Colors.grey,
                     ),
                   ),
                 ],
@@ -292,7 +314,8 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             ),
             if (isSelected)
               Icon(
-                Icons.check_circle,
+                Icons
+                    .edit, // changed from check_circle to edit to imply 'Change' capability
                 color: AppColors.greenLight,
                 size: 20,
               )
@@ -314,8 +337,106 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     });
 
     try {
-      final String driverId = userData?['driverId']?.toString() ?? '';
-      final String vehicleId = userData?['vehicleId']?.toString() ?? '';
+      String driverId = userData?['driverId']?.toString() ?? '';
+      String vehicleId = userData?['vehicleId']?.toString() ?? '';
+
+      if (_isEditing) {
+        if (driverId.isEmpty || vehicleId.isEmpty)
+          throw Exception("Cannot update: Missing IDs");
+
+        await ApiService.updateDriver(
+          driverId: driverId,
+          name: userData?['name'] ?? '',
+          email: userData?['email'] ?? '',
+          primaryLocation: userData?['primaryLocation'] ?? '',
+          licenceNumber: userData?['licenceNumber'] ?? '',
+          aadharNumber: userData?['aadharNumber'] ?? '',
+          licenceExpiry: userData?['licenceExpiry'] ?? '',
+        );
+
+        await ApiService.updateVehicle(
+          vehicleId: vehicleId,
+          vehicleType: userData?['vehicleType'] ?? '',
+          vehicleBrand: userData?['vehicleBrand'] ?? '',
+          vehicleModel: userData?['vehicleModel'] ?? '',
+          vehicleColor: userData?['vehicleColor'] ?? '',
+          seatingCapacity:
+              int.parse((userData?['seatingCapacity'] ?? 4).toString()),
+          rcExpiryDate: userData?['rcExpiryDate'] ?? '',
+          fcExpiryDate: userData?['fcExpiryDate'] ?? '',
+        );
+
+        // Update Local Storage
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('name', userData?['name'] ?? '');
+        await prefs.setString('email', userData?['email'] ?? '');
+        await prefs.setString(
+            'primaryLocation', userData?['primaryLocation'] ?? '');
+      } else if (driverId.isEmpty) {
+        debugPrint("Performing deferred registration...");
+
+        // 1. Register Driver
+        final driverResponse = await ApiService.registerDriver(
+          name: userData?['name'] ?? '',
+          phoneNumber: userData?['phoneNumber'] ?? '',
+          email: userData?['email'] ?? '',
+          primaryLocation: userData?['primaryLocation'] ?? '',
+          licenceNumber: userData?['licenceNumber'] ?? '',
+          aadharNumber: userData?['aadharNumber'] ?? '',
+          licenceExpiry: userData?['licenceExpiry'] ?? '',
+          deviceId: userData?['deviceId'] ?? '',
+        );
+
+        driverId = driverResponse['id']?.toString() ??
+            driverResponse['driver_id']?.toString() ??
+            '';
+        if (driverId.isEmpty)
+          throw Exception('Driver Registration Failed: No ID returned');
+
+        // 2. Register Vehicle
+        final vehicleResponse = await ApiService.registerVehicle(
+          vehicleType: userData?['vehicleType'] ?? '',
+          vehicleBrand: userData?['vehicleBrand'] ?? '',
+          vehicleModel: userData?['vehicleModel'] ?? '',
+          vehicleNumber: userData?['vehicleNumber'] ?? '',
+          vehicleColor: userData?['vehicleColor'] ?? '',
+          seatingCapacity: userData?['seatingCapacity'] ?? 4,
+          driverId: driverId,
+          rcExpiryDate: userData?['rcExpiryDate'] ?? '',
+          fcExpiryDate: userData?['fcExpiryDate'] ?? '',
+        );
+
+        vehicleId = vehicleResponse['id']?.toString() ??
+            vehicleResponse['vehicle_id']?.toString() ??
+            '';
+        if (vehicleId.isEmpty)
+          throw Exception('Vehicle Registration Failed: No ID returned');
+
+        // 3. Save IDs and Details to SharedPreferences (Moved from PersonalDetails)
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('driverId', driverId);
+        await prefs.setString('vehicleId', vehicleId);
+
+        // Save Personal Details
+        await prefs.setString('name', userData?['name'] ?? '');
+        await prefs.setString('phoneNumber', userData?['phoneNumber'] ?? '');
+        await prefs.setString('email', userData?['email'] ?? '');
+        await prefs.setString(
+            'primaryLocation', userData?['primaryLocation'] ?? '');
+        await prefs.setString(
+            'licenseNumber', userData?['licenceNumber'] ?? '');
+        await prefs.setString('aadhaarNumber', userData?['aadharNumber'] ?? '');
+
+        // Save Vehicle Details
+        await prefs.setString('vehicleType', userData?['vehicleType'] ?? '');
+        await prefs.setString('vehicleBrand', userData?['vehicleBrand'] ?? '');
+        await prefs.setString('vehicleModel', userData?['vehicleModel'] ?? '');
+        await prefs.setString(
+            'vehicleNumber', userData?['vehicleNumber'] ?? '');
+        await prefs.setString('vehicleColor', userData?['vehicleColor'] ?? '');
+        await prefs.setString(
+            'seatingCapacity', (userData?['seatingCapacity'] ?? 4).toString());
+      }
 
       if (driverId.isEmpty) throw Exception('Driver ID missing. Restart flow.');
 
@@ -329,40 +450,73 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
         switch (title) {
           case 'Driving License':
-            await ApiService.uploadLicence(driverId, file);
+            if (_isEditing)
+              await ApiService.reuploadLicence(driverId, file);
+            else
+              await ApiService.uploadLicence(driverId, file);
             break;
           case 'Aadhaar Card':
-            await ApiService.uploadAadhar(driverId, file);
+            if (_isEditing)
+              await ApiService.reuploadAadhar(driverId, file);
+            else
+              await ApiService.uploadAadhar(driverId, file);
             break;
           case 'Profile Picture':
-            await ApiService.uploadDriverPhoto(driverId, file);
+            if (_isEditing)
+              await ApiService.reuploadDriverPhoto(driverId, file);
+            else
+              await ApiService.uploadDriverPhoto(driverId, file);
             // Save Profile Photo Path locally
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('profile_photo_path', file.path);
             break;
           case 'RC Book':
-            if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
-            await ApiService.uploadVehicleRC(vehicleId, file);
+            if (_isEditing)
+              await ApiService.reuploadVehicleRC(vehicleId, file);
+            else {
+              if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
+              await ApiService.uploadVehicleRC(vehicleId, file);
+            }
             break;
           case 'FC Certificate':
-            if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
-            await ApiService.uploadVehicleFC(vehicleId, file);
+            if (_isEditing)
+              await ApiService.reuploadVehicleFC(vehicleId, file);
+            else {
+              if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
+              await ApiService.uploadVehicleFC(vehicleId, file);
+            }
             break;
           case 'Front View':
-            if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
-            await ApiService.uploadVehiclePhoto(vehicleId, 'front', file);
+            if (_isEditing)
+              await ApiService.reuploadVehiclePhoto(vehicleId, 'front', file);
+            else {
+              if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
+              await ApiService.uploadVehiclePhoto(vehicleId, 'front', file);
+            }
             break;
           case 'Back View':
-            if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
-            await ApiService.uploadVehiclePhoto(vehicleId, 'back', file);
+            if (_isEditing)
+              await ApiService.reuploadVehiclePhoto(vehicleId, 'back', file);
+            else {
+              if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
+              await ApiService.uploadVehiclePhoto(vehicleId, 'back', file);
+            }
             break;
           case 'Left Side View':
-            if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
-            await ApiService.uploadVehiclePhoto(vehicleId, 'left', file);
+            if (_isEditing)
+              await ApiService.reuploadVehiclePhoto(vehicleId, 'left', file);
+            else {
+              if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
+              await ApiService.uploadVehiclePhoto(vehicleId, 'left', file);
+            }
             break;
           case 'Right Side View':
-            if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
-            await ApiService.uploadVehiclePhoto(vehicleId, 'right', file);
+            if (_isEditing)
+              await ApiService.reuploadVehiclePhoto(vehicleId, 'right', file);
+            else {
+              if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
+              await ApiService.uploadVehiclePhoto(vehicleId, 'right', file);
+            }
             break;
         }
       }

@@ -5,6 +5,7 @@ import '../widgets/bottom_navigation.dart';
 import '../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
+import '../services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -31,10 +32,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _vehicleColor = '';
   String _seatingCapacity = '';
 
+  bool _isApprovedDriver = true; // Default to true, but checked in initState
+
   @override
   void initState() {
     super.initState();
     _loadProfileData();
+    _checkApprovalStatus();
+  }
+
+  Future<void> _checkApprovalStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? driverId = prefs.getString('driverId');
+      if (driverId != null) {
+        final driverData = await ApiService.getDriverDetails(driverId);
+        final bool isApproved = driverData['is_approved'] ?? false;
+        final String kycVerified = driverData['kyc_verified'] ?? 'pending';
+
+        if (mounted) {
+          setState(() {
+            _isApprovedDriver = (isApproved && kycVerified == 'verified');
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isApprovedDriver = false);
+    }
   }
 
   Future<void> _loadProfileData() async {
@@ -342,7 +366,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavigation(currentRoute: '/profile'),
+      bottomNavigationBar: _isApprovedDriver
+          ? const BottomNavigation(currentRoute: '/profile')
+          : null,
     );
   }
 
