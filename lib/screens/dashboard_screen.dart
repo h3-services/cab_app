@@ -1048,40 +1048,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildApprovedContent() {
+    final approvedRequests = _driverRequests.where((r) {
+      final status = (r['status'] ?? '').toString().toUpperCase();
+      return status == 'APPROVED' || status == 'STARTED';
+    }).toList();
+
+    if (approvedRequests.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline, size: 48, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No approved trips yet',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       child: Column(
         children: [
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
-              'The trip has been approved and is ready to start',
+              'Your approved trips are ready to start',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 color: Colors.black54,
               ),
             ),
           ),
-          _buildApprovedCard(
-            pickup: 'Karaikudi',
-            drop: 'Chennai',
-            type: 'One-way',
-            isCompleted: true,
-            customer: 'Sham',
-            phone: '+91 9876543210',
-            odometer: '1200',
-          ),
-          const SizedBox(height: 16),
-          _buildApprovedCard(
-            pickup: 'kanyakumari',
-            drop: 'Chennai',
-            type: 'Round',
-            isCompleted: false,
-            customer: 'Sham',
-            phone: '+91 9876543210',
-            odometer: '',
-          ),
-          const SizedBox(height: 16),
+          ...approvedRequests.map((request) {
+            return Column(
+              children: [
+                _buildApprovedCard(
+                  pickup: request['pickup_address'] ?? 'Unknown Pickup',
+                  drop: request['drop_address'] ?? 'Unknown Drop',
+                  type: request['trip_type'] ??
+                      'One-way', // Assuming trip_type exists or defaulting
+                  isCompleted:
+                      (request['status'] ?? '').toString().toUpperCase() ==
+                          'STARTED',
+                  customer: request['customer_name'] ?? 'Unknown Customer',
+                  phone: request['customer_phone'] ??
+                      'No Phone', // Assuming field name
+                  odometer: request['starting_km']?.toString() ?? '',
+                  requestId: request['request_id']?.toString() ?? '',
+                ),
+                const SizedBox(height: 16),
+              ],
+            );
+          }),
         ],
       ),
     );
@@ -1095,6 +1117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String customer,
     required String phone,
     required String odometer,
+    String? requestId,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1253,24 +1276,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 6,
               ),
               ElevatedButton(
-                onPressed: isCompleted
-                    ? null
-                    : () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TripStartScreen(
-                              tripData: {
-                                'pickup': pickup,
-                                'drop': drop,
-                                'type': type,
-                                'customer': customer,
-                                'phone': phone,
-                              },
-                            ),
-                          ),
-                        );
-                      },
+                onPressed: () {
+                  if (isCompleted) {
+                    // Status is STARTED, so action is Complete Trip
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TripCompletedScreen(
+                          tripData: {
+                            'pickup': pickup,
+                            'drop': drop,
+                            'type': type,
+                            'customer': customer,
+                            'phone': phone,
+                            'request_id': requestId,
+                          },
+                          startingKm: odometer,
+                        ),
+                      ),
+                    ).then((_) => _fetchAvailableTrips());
+                  } else {
+                    // Status is APPROVED, so action is Start Trip
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TripStartScreen(
+                          tripData: {
+                            'pickup': pickup,
+                            'drop': drop,
+                            'type': type,
+                            'customer': customer,
+                            'phone': phone,
+                            'request_id': requestId,
+                          },
+                        ),
+                      ),
+                    ).then((_) => _fetchAvailableTrips());
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isCompleted
                       ? AppColors.greenLight
@@ -1283,8 +1326,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.timer_outlined,
-                        color: Colors.white, size: 20),
+                    Icon(
+                        isCompleted
+                            ? Icons.check_circle_outline
+                            : Icons.timer_outlined,
+                        color: Colors.white,
+                        size: 20),
                     const SizedBox(width: 6),
                     Text(
                       isCompleted ? 'Complete Trip' : 'Start Trip',
@@ -1541,6 +1588,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHistoryContent() {
+    // Filter for history: completed, cancelled, rejected
+    final historyRequests = _driverRequests.where((r) {
+      final status = (r['status'] ?? '').toString().toUpperCase();
+      return ['COMPLETED', 'CANCELLED', 'REJECTED'].contains(status);
+    }).toList();
+
+    if (historyRequests.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history, size: 48, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No detailed history yet',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         Padding(
@@ -1549,7 +1618,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Completed Trips Here',
+                'Trip History',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1566,7 +1635,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Row(
                   children: const [
                     Text(
-                      'History Filter',
+                      'Filter',
                       style: TextStyle(color: Colors.white, fontSize: 14),
                     ),
                     SizedBox(width: 8),
@@ -1585,10 +1654,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               scrollDirection: Axis.vertical,
               child: Table(
                 columnWidths: const {
-                  0: FlexColumnWidth(1),
+                  0: FlexColumnWidth(0.8),
                   1: FlexColumnWidth(2),
                   2: FlexColumnWidth(2),
-                  3: FlexColumnWidth(3),
+                  3: FlexColumnWidth(1.2), // Status column
                 },
                 border: TableBorder.all(color: Colors.white70),
                 children: [
@@ -1596,26 +1665,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     decoration: const BoxDecoration(color: Color(0xFF9E9E9E)),
                     children: [
                       _buildTableHeader('No'),
-                      _buildTableHeader('Trip ID'),
-                      _buildTableHeader('Trip Date'),
-                      _buildTableHeader('Pickup Point'),
+                      _buildTableHeader('Date'),
+                      _buildTableHeader('Pickup'),
+                      _buildTableHeader('Status'),
                     ],
                   ),
-                  ...List.generate(
-                      15,
-                      (index) => TableRow(
-                            decoration: BoxDecoration(
-                              color: index % 2 == 0
-                                  ? const Color(0xFFC0C0C0)
-                                  : const Color(0xFFBDBDBD),
-                            ),
-                            children: [
-                              _buildTableCell('${index + 1}'),
-                              _buildTableCell('TRP-10245'),
-                              _buildTableCell('12 Feb 2025'),
-                              _buildTableCell('Koviloor'),
-                            ],
-                          )),
+                  ...historyRequests.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final request = entry.value;
+                    final dateStr = request['created_at'] != null
+                        ? _formatTripTime(request['created_at'])
+                        : '-';
+                    final status = request['status'] ?? '-';
+
+                    return TableRow(
+                      decoration: BoxDecoration(
+                        color: index % 2 == 0
+                            ? const Color(0xFFC0C0C0)
+                            : const Color(0xFFBDBDBD),
+                      ),
+                      children: [
+                        _buildTableCell('${index + 1}'),
+                        _buildTableCell(dateStr),
+                        _buildTableCell(request['pickup_address'] ?? '-'),
+                        _buildTableCell(status),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),
