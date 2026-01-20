@@ -57,6 +57,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
+      if (e.toString().contains('404') && mounted) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        return;
+      }
       if (mounted) setState(() => _isApprovedDriver = false);
     }
   }

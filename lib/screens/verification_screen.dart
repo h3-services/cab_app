@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VerificationScreen extends StatefulWidget {
   const VerificationScreen({super.key});
@@ -9,7 +10,8 @@ class VerificationScreen extends StatefulWidget {
 }
 
 class _VerificationScreenState extends State<VerificationScreen> {
-  final List<TextEditingController> _controllers = List.generate(4, (index) => TextEditingController());
+  final List<TextEditingController> _controllers =
+      List.generate(4, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
   bool _isLoading = false;
   String? phoneNumber;
@@ -23,14 +25,14 @@ class _VerificationScreenState extends State<VerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40.0),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+        body: GradientBackground(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40.0),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 const SizedBox(height: 20),
                 // Back Arrow
                 GestureDetector(
@@ -114,26 +116,36 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 // Continue Button
                 GradientButton(
                   text: 'Continue',
-                  onPressed: _isLoading ? null : () {
-                    String otp = _controllers.map((controller) => controller.text).join();
-                    if (otp.length == 4 && phoneNumber != null) {
-                      // Navigate to dashboard for demo
-                      Navigator.pushReplacementNamed(context, '/dashboard');
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter complete OTP')),
-                      );
-                    }
-                  },
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          String otp = _controllers
+                              .map((controller) => controller.text)
+                              .join();
+                          if (otp.length == 4 && phoneNumber != null) {
+                            // Save phone number locally
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('phoneNumber', phoneNumber!);
+
+                            // Navigate to Personal Details Flow
+                            Navigator.pushReplacementNamed(
+                                context, '/personal-details',
+                                arguments: phoneNumber);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Please enter complete OTP')),
+                            );
+                          }
+                        },
                 ),
-                const SizedBox(height:90),
-                ],
-              ),
+                const SizedBox(height: 90),
+              ],
             ),
           ),
         ),
-      )
-    );
+      ),
+    ));
   }
 
   @override

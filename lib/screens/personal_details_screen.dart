@@ -31,15 +31,31 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   String? _selectedSeatingCapacity;
   String? phoneNumber;
   String? _testDeviceId;
+  bool _isDataLoaded = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)!.settings.arguments;
-    if (args is Map && args['isEditing'] == true) {
+    if (!_isDataLoaded && args is Map && args['isEditing'] == true) {
       _loadSavedData();
+      _isDataLoaded = true;
     } else if (args is String) {
       phoneNumber = args;
+    }
+
+    _ensurePhoneNumber();
+  }
+
+  Future<void> _ensurePhoneNumber() async {
+    if (phoneNumber == null || phoneNumber!.isEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('phoneNumber');
+      if (stored != null && mounted) {
+        setState(() {
+          phoneNumber = stored;
+        });
+      }
     }
   }
 
@@ -62,10 +78,24 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       _selectedVehicleType = prefs.getString('vehicleType');
       _selectedSeatingCapacity = prefs.getString('seatingCapacity');
 
-      // Note: We can't easily restore dates into controllers unless we saved the raw text
-      // We assume user re-enters or we try to reconstruct?
-      // For now, let's leave dates empty or try to parse if needed.
+      _drivingLicenseExpiryController.text =
+          _formatDateForDisplay(prefs.getString('licenceExpiry'));
+      _rcExpiryController.text =
+          _formatDateForDisplay(prefs.getString('rcExpiryDate'));
+      _fcExpiryController.text =
+          _formatDateForDisplay(prefs.getString('fcExpiryDate'));
     });
+  }
+
+  String _formatDateForDisplay(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length == 3) {
+        return '${parts[2]}/${parts[1]}/${parts[0]}';
+      }
+    } catch (_) {}
+    return dateStr; // Fallback
   }
 
   @override
@@ -352,8 +382,10 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     setState(() {
       _testDeviceId = "test_device_$randomSuffix";
 
-      // Set the phone number that is required for the API
-      phoneNumber = "9823$randomSuffix";
+      // Only set random phone if we don't have a verified one
+      if (phoneNumber == null || phoneNumber!.isEmpty) {
+        phoneNumber = "9823$randomSuffix";
+      }
 
       _nameController.text = "Driver $randomSuffix";
       _emailController.text = "driver$randomSuffix@test.com";
@@ -511,7 +543,8 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
               lastDate: DateTime(2030),
             );
             if (date != null) {
-              controller.text = '${date.day}/${date.month}/${date.year}';
+              controller.text =
+                  '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
             }
           },
         ),

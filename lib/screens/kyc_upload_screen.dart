@@ -372,6 +372,10 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         await prefs.setString('email', userData?['email'] ?? '');
         await prefs.setString(
             'primaryLocation', userData?['primaryLocation'] ?? '');
+        await prefs.setString(
+            'licenceExpiry', userData?['licenceExpiry'] ?? '');
+        await prefs.setString('rcExpiryDate', userData?['rcExpiryDate'] ?? '');
+        await prefs.setString('fcExpiryDate', userData?['fcExpiryDate'] ?? '');
       } else if (driverId.isEmpty) {
         debugPrint("Performing deferred registration...");
 
@@ -436,6 +440,10 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         await prefs.setString('vehicleColor', userData?['vehicleColor'] ?? '');
         await prefs.setString(
             'seatingCapacity', (userData?['seatingCapacity'] ?? 4).toString());
+        await prefs.setString(
+            'licenceExpiry', userData?['licenceExpiry'] ?? '');
+        await prefs.setString('rcExpiryDate', userData?['rcExpiryDate'] ?? '');
+        await prefs.setString('fcExpiryDate', userData?['fcExpiryDate'] ?? '');
       }
 
       if (driverId.isEmpty) throw Exception('Driver ID missing. Restart flow.');

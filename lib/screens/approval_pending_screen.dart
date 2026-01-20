@@ -46,6 +46,13 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       }
     } catch (e) {
       if (mounted) {
+        if (e.toString().contains('404')) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/login', (route) => false);
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error checking status: $e')),
         );

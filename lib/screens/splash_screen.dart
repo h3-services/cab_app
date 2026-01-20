@@ -45,13 +45,15 @@ class _SplashScreenState extends State<SplashScreen> {
           }
         } catch (e) {
           debugPrint('Status Check Failed: $e');
-          // Fallback: If network fails, what to do?
-          // If strict: Approval Pending.
-          // If relaxed: Dashboard (Offline Mode).
-          // User requested strict "don't show main screen if not approved".
-          // So pending is safer fallback for "unknown" status?
-          // But offline usage requires Dashboard.
-          // I will loop to ApprovalPending for now as it's safer for "not approved" logic.
+
+          if (e.toString().contains('404')) {
+            debugPrint(
+                'Driver not found (404). Clearing session and going to Login.');
+            await prefs.clear();
+            if (mounted) Navigator.pushReplacementNamed(context, '/login');
+            return;
+          }
+
           if (mounted)
             Navigator.pushReplacementNamed(context, '/approval-pending');
         }
