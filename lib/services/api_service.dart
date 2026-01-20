@@ -339,6 +339,29 @@ class ApiService {
         filename: filename, method: 'PUT');
   }
 
+  static Future<List<dynamic>> getAvailableTrips() async {
+    final url = Uri.parse('$baseUrl/trips/available');
+    debugPrint('GET Request: $url');
+    try {
+      final response = await http.get(url);
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var decoded = jsonDecode(response.body);
+        if (decoded is List) return decoded;
+        // Handle common wrapper cases if any, otherwise return empty or throw
+        return [];
+      } else {
+        throw Exception('Failed to load trips: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      // Return empty list on error to allow UI to show placeholder or empty state
+      return [];
+    }
+  }
+
   static Future<void> _uploadFile(String url, String fieldName, File file,
       {String? filename, String method = 'POST'}) async {
     try {

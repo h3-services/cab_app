@@ -48,10 +48,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _checkApprovalStatus(String driverId) async {
     try {
       final driverData = await ApiService.getDriverDetails(driverId);
-      final bool isApproved = driverData['is_approved'] ?? false;
-      final String kycVerified = driverData['kyc_verified'] ?? 'pending';
+      final bool isApproved = driverData['is_approved'] == true;
+      final String kycVerified =
+          (driverData['kyc_verified'] ?? '').toString().toLowerCase();
 
-      if (!isApproved || kycVerified != 'verified') {
+      if (!isApproved ||
+          (kycVerified != 'verified' && kycVerified != 'approved')) {
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/approval-pending');
         }

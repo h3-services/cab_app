@@ -34,10 +34,15 @@ class _SplashScreenState extends State<SplashScreen> {
         try {
           // Check Status from API
           final driverData = await ApiService.getDriverDetails(driverId);
-          final bool isApproved = driverData['is_approved'] ?? false;
-          final String kycVerified = driverData['kyc_verified'] ?? 'pending';
+          final bool isApproved = driverData['is_approved'] == true;
+          final String kycVerified =
+              (driverData['kyc_verified'] ?? '').toString().toLowerCase();
 
-          if (isApproved && kycVerified == 'verified') {
+          debugPrint(
+              "Status Check: isApproved=$isApproved, kycStatus=$kycVerified");
+
+          if (isApproved &&
+              (kycVerified == 'verified' || kycVerified == 'approved')) {
             if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
           } else {
             if (mounted)

@@ -47,12 +47,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final String? driverId = prefs.getString('driverId');
       if (driverId != null) {
         final driverData = await ApiService.getDriverDetails(driverId);
-        final bool isApproved = driverData['is_approved'] ?? false;
-        final String kycVerified = driverData['kyc_verified'] ?? 'pending';
+        final bool isApproved = driverData['is_approved'] == true;
+        final String kycVerified =
+            (driverData['kyc_verified'] ?? '').toString().toLowerCase();
 
         if (mounted) {
           setState(() {
-            _isApprovedDriver = (isApproved && kycVerified == 'verified');
+            _isApprovedDriver = (isApproved &&
+                (kycVerified == 'verified' || kycVerified == 'approved'));
           });
         }
       }
