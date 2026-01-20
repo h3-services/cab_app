@@ -111,30 +111,47 @@ class ApiService {
   }
 
   static Future<void> uploadDriverPhoto(String driverId, File file) async {
-    await _uploadFile('$baseUrl/uploads/driver/$driverId/photo', 'file', file);
+    final ext = file.path.split('.').last;
+    final filename = 'driver_${driverId}_photo.$ext';
+    await _uploadFile('$baseUrl/uploads/driver/$driverId/photo', 'file', file,
+        filename: filename);
   }
 
   static Future<void> uploadAadhar(String driverId, File file) async {
-    await _uploadFile('$baseUrl/uploads/driver/$driverId/aadhar', 'file', file);
+    final ext = file.path.split('.').last;
+    final filename = 'driver_${driverId}_aadhar.$ext';
+    await _uploadFile('$baseUrl/uploads/driver/$driverId/aadhar', 'file', file,
+        filename: filename);
   }
 
   static Future<void> uploadLicence(String driverId, File file) async {
-    await _uploadFile(
-        '$baseUrl/uploads/driver/$driverId/licence', 'file', file);
+    final ext = file.path.split('.').last;
+    final filename = 'driver_${driverId}_licence.$ext';
+    await _uploadFile('$baseUrl/uploads/driver/$driverId/licence', 'file', file,
+        filename: filename);
   }
 
   static Future<void> uploadVehicleRC(String vehicleId, File file) async {
-    await _uploadFile('$baseUrl/uploads/vehicle/$vehicleId/rc', 'file', file);
+    final ext = file.path.split('.').last;
+    final filename = 'vehicle_${vehicleId}_rc.$ext';
+    await _uploadFile('$baseUrl/uploads/vehicle/$vehicleId/rc', 'file', file,
+        filename: filename);
   }
 
   static Future<void> uploadVehicleFC(String vehicleId, File file) async {
-    await _uploadFile('$baseUrl/uploads/vehicle/$vehicleId/fc', 'file', file);
+    final ext = file.path.split('.').last;
+    final filename = 'vehicle_${vehicleId}_fc.$ext';
+    await _uploadFile('$baseUrl/uploads/vehicle/$vehicleId/fc', 'file', file,
+        filename: filename);
   }
 
   static Future<void> uploadVehiclePhoto(
       String vehicleId, String position, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'vehicle_${vehicleId}_$position.$ext';
     await _uploadFile(
-        '$baseUrl/uploads/vehicle/$vehicleId/photo/$position', 'file', file);
+        '$baseUrl/uploads/vehicle/$vehicleId/photo/$position', 'file', file,
+        filename: filename);
   }
 
   static Future<void> updateDriverAvailability(
@@ -161,13 +178,16 @@ class ApiService {
     }
   }
 
-  static Future<void> _uploadFile(
-      String url, String fieldName, File file) async {
+  static Future<void> _uploadFile(String url, String fieldName, File file,
+      {String? filename}) async {
     try {
       debugPrint('UPLOAD Request: $url');
       var request = http.MultipartRequest('POST', Uri.parse(url));
-      request.files
-          .add(await http.MultipartFile.fromPath(fieldName, file.path));
+      request.files.add(await http.MultipartFile.fromPath(
+        fieldName,
+        file.path,
+        filename: filename,
+      ));
 
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);

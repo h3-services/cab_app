@@ -205,10 +205,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                               try {
                                 String licenseDate = _formatDateForApi(
                                     _drivingLicenseExpiryController.text);
-                                String fcDate =
-                                    _formatDateForApi(_fcExpiryController.text);
-                                String rcDate =
-                                    _formatDateForApi(_rcExpiryController.text);
 
                                 // Get Device ID
                                 String deviceId = _testDeviceId ??
@@ -263,11 +259,39 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     vehicleResponse['vehicle_id']?.toString() ??
                                     '';
 
-                                // Save IDs to SharedPreferences for Dashboard use
+                                // Save IDs and Details to SharedPreferences
                                 final prefs =
                                     await SharedPreferences.getInstance();
                                 await prefs.setString('driverId', driverId);
                                 await prefs.setString('vehicleId', vehicleId);
+
+                                // Save Personal Details
+                                await prefs.setString(
+                                    'name', _nameController.text);
+                                await prefs.setString(
+                                    'phoneNumber', phoneNumber ?? '');
+                                await prefs.setString(
+                                    'email', _emailController.text);
+                                await prefs.setString('primaryLocation',
+                                    _primaryLocationController.text);
+                                await prefs.setString(
+                                    'licenseNumber', _licenseController.text);
+                                await prefs.setString(
+                                    'aadhaarNumber', _aadharController.text);
+
+                                // Save Vehicle Details
+                                await prefs.setString(
+                                    'vehicleType', _selectedVehicleType!);
+                                await prefs.setString('vehicleBrand',
+                                    _vehicleMakeController.text);
+                                await prefs.setString('vehicleModel',
+                                    _vehicleModelController.text);
+                                await prefs.setString('vehicleNumber',
+                                    _vehicleNumberController.text);
+                                await prefs.setString('vehicleColor',
+                                    _vehicleColorController.text);
+                                await prefs.setString('seatingCapacity',
+                                    _selectedSeatingCapacity ?? '4');
 
                                 // Hide loading
                                 if (context.mounted) Navigator.pop(context);

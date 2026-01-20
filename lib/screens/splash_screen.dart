@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -12,14 +14,25 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    });
+    _checkLoginStatus();
   }
 
+  Future<void> _checkLoginStatus() async {
+    // Wait for 3 seconds for branding
+    await Future.delayed(const Duration(seconds: 3));
 
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final String? driverId = prefs.getString('driverId');
+    final bool isKycSubmitted = prefs.getBool('isKycSubmitted') ?? false;
+
+    if (driverId != null && driverId.isNotEmpty && isKycSubmitted) {
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,4 +66,3 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
-

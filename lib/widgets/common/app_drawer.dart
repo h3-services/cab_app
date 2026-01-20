@@ -1,7 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
+
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  String _name = 'Driver';
+  String? _profilePhotoPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _name = prefs.getString('name') ?? 'Driver';
+      _profilePhotoPath = prefs.getString('profile_photo_path');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +59,17 @@ class AppDrawer extends StatelessWidget {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: Colors.grey.shade400,
-                  child: const Icon(Icons.person, size: 40, color: Colors.grey),
+                  backgroundImage: _profilePhotoPath != null
+                      ? FileImage(File(_profilePhotoPath!))
+                      : null,
+                  child: _profilePhotoPath == null
+                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                      : null,
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Shiva',
-                  style: TextStyle(
+                Text(
+                  _name,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -49,7 +78,7 @@ class AppDrawer extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Menu Items
           Expanded(
             child: Padding(
@@ -119,7 +148,8 @@ class AppDrawer extends StatelessWidget {
           if (title == 'Profile') {
             Navigator.pushNamed(context, '/profile');
           } else if (title == 'Sign out') {
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/login', (route) => false);
           }
         },
         child: Row(

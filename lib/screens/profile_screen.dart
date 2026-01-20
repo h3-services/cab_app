@@ -3,9 +3,61 @@ import '../widgets/common/custom_app_bar.dart';
 import '../widgets/common/app_drawer.dart';
 import '../widgets/bottom_navigation.dart';
 import '../constants/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // Personal Details
+  String _name = 'Loading...';
+  String _phoneNumber = '';
+  String _email = '';
+  String _primaryLocation = '';
+  String _licenseNumber = '';
+  String _aadhaarNumber = '';
+  String? _profilePhotoPath;
+
+  // Vehicle Details
+  String _vehicleType = '';
+  String _vehicleBrand = '';
+  String _vehicleModel = '';
+  String _vehicleNumber = '';
+  String _vehicleColor = '';
+  String _seatingCapacity = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      // Personal
+      _name = prefs.getString('name') ?? 'Driver';
+      _phoneNumber = prefs.getString('phoneNumber') ?? '';
+      _email = prefs.getString('email') ?? '';
+      _primaryLocation = prefs.getString('primaryLocation') ?? '';
+      _licenseNumber = prefs.getString('licenseNumber') ?? '';
+      _aadhaarNumber = prefs.getString('aadhaarNumber') ?? '';
+      _profilePhotoPath = prefs.getString('profile_photo_path');
+
+      // Vehicle
+      _vehicleType = prefs.getString('vehicleType') ?? '';
+      _vehicleBrand = prefs.getString('vehicleBrand') ?? '';
+      _vehicleModel = prefs.getString('vehicleModel') ?? '';
+      _vehicleNumber = prefs.getString('vehicleNumber') ?? '';
+      _vehicleColor = prefs.getString('vehicleColor') ?? '';
+      _seatingCapacity = prefs.getString('seatingCapacity') ?? '';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +68,8 @@ class ProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Profile Header with curved background
-            Container(
+            // Profile Header
+            SizedBox(
               height: 280,
               child: Stack(
                 children: [
@@ -39,13 +91,19 @@ class ProfileScreen extends StatelessWidget {
                     top: 100,
                     child: Column(
                       children: [
-                        // Profile image with edit icon
+                        // Profile image
                         Stack(
                           children: [
                             CircleAvatar(
                               radius: 40,
                               backgroundColor: Colors.grey.shade300,
-                              child: const Icon(Icons.person, size: 60, color: Colors.grey),
+                              backgroundImage: _profilePhotoPath != null
+                                  ? FileImage(File(_profilePhotoPath!))
+                                  : null,
+                              child: _profilePhotoPath == null
+                                  ? const Icon(Icons.person,
+                                      size: 60, color: Colors.grey)
+                                  : null,
                             ),
                             Positioned(
                               bottom: 0,
@@ -56,24 +114,27 @@ class ProfileScreen extends StatelessWidget {
                                   color: Colors.grey,
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                                child: const Icon(Icons.camera_alt,
+                                    size: 20, color: Colors.white),
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'Shiva',
-                          style: TextStyle(
+                        Text(
+                          _name,
+                          style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Chennai',
-                          style: TextStyle(
+                        Text(
+                          _primaryLocation.isNotEmpty
+                              ? _primaryLocation
+                              : 'No Location',
+                          style: const TextStyle(
                             fontSize: 16,
                             color: Colors.grey,
                           ),
@@ -84,7 +145,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Personal Details Section
             Container(
               margin: const EdgeInsets.all(16),
@@ -112,14 +173,14 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _buildDetailRow('Mobile Number', '+91 98765 43210'),
-                  _buildDetailRow('Email', 'driver@gmail.com', isLink: true),
-                  _buildDetailRow('Aadhaar Number', '************5049'),
-                  _buildDetailRow('Driving License Number', '************8921'),
+                  _buildDetailRow('Mobile Number', _phoneNumber),
+                  _buildDetailRow('Email', _email, isLink: true),
+                  _buildDetailRow('Aadhaar Number', _aadhaarNumber),
+                  _buildDetailRow('Driving License', _licenseNumber),
                 ],
               ),
             ),
-            
+
             // Vehicle Details and KYC Status Section
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -156,31 +217,37 @@ class ProfileScreen extends StatelessWidget {
                           const SizedBox(height: 20),
                           Row(
                             children: [
-                              const Text(
-                                'Sedan',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                              Text(
+                                _vehicleType.isNotEmpty ? _vehicleType : 'Type',
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w500),
                               ),
                               const Spacer(),
-                              const Text(
-                                '4 Seats',
-                                style: TextStyle(fontSize: 14, color: Colors.grey),
+                              Text(
+                                '$_seatingCapacity Seats',
+                                style: const TextStyle(
+                                    fontSize: 14, color: Colors.grey),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'TN 09 AB 4321',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          Text(
+                            _vehicleNumber.isNotEmpty
+                                ? _vehicleNumber
+                                : 'NO NUMBER',
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 16),
-                          _buildVehicleDetailRow('Make', 'Maruti Suzuki'),
-                          _buildVehicleDetailRow('Model', 'Swift Dzire'),
-                          _buildVehicleDetailRow('Color', 'White'),
+                          _buildVehicleDetailRow('Make', _vehicleBrand),
+                          _buildVehicleDetailRow('Model', _vehicleModel),
+                          _buildVehicleDetailRow('Color', _vehicleColor),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
+
                   // KYC Status
                   Expanded(
                     flex: 2,
@@ -209,11 +276,14 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          _buildKYCItem('License', 'Verified', Icons.credit_card),
+                          _buildKYCItem(
+                              'License', 'Verified', Icons.credit_card),
                           const SizedBox(height: 16),
-                          _buildKYCItem('Aadhaar Card', 'Verified', Icons.credit_card),
+                          _buildKYCItem(
+                              'Aadhaar Card', 'Verified', Icons.credit_card),
                           const SizedBox(height: 16),
-                          _buildKYCItem('Vehicle Photos', 'Verified', Icons.directions_car),
+                          _buildKYCItem('Vehicle Photos', 'Verified',
+                              Icons.directions_car),
                         ],
                       ),
                     ),
@@ -221,7 +291,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Action Buttons
             Container(
               margin: const EdgeInsets.all(16),
@@ -233,7 +303,8 @@ class ProfileScreen extends StatelessWidget {
                       icon: const Icon(Icons.edit, color: Colors.white),
                       label: const Text(
                         'Edit Profile',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey.shade600,
@@ -251,7 +322,8 @@ class ProfileScreen extends StatelessWidget {
                       icon: const Icon(Icons.refresh, color: Colors.white),
                       label: const Text(
                         'Update KYC',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey.shade600,
@@ -265,7 +337,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 20),
           ],
         ),
@@ -293,7 +365,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              value,
+              value.isNotEmpty ? value : '-',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -322,7 +394,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            value,
+            value.isNotEmpty ? value : '-',
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,

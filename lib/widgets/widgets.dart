@@ -14,3 +14,6 @@ export 'inputs/custom_dropdown_field.dart';
 
 // Card Widgets
 export 'cards/info_card.dart';
+
+// Dialog Widgets
+export 'dialogs/cancel_trip_dialog.dart';

@@ -4,6 +4,7 @@ import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../widgets/widgets.dart';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class KycUploadScreen extends StatefulWidget {
   const KycUploadScreen({super.key});
@@ -335,6 +336,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             break;
           case 'Profile Picture':
             await ApiService.uploadDriverPhoto(driverId, file);
+            // Save Profile Photo Path locally
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('profile_photo_path', file.path);
             break;
           case 'RC Book':
             if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
@@ -364,6 +368,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       }
 
       // Success!
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isKycSubmitted', true);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('All documents uploaded successfully!')),
