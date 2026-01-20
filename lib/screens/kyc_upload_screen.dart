@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../widgets/widgets.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 
 class KycUploadScreen extends StatefulWidget {
   const KycUploadScreen({super.key});
@@ -32,6 +33,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   Map<String, dynamic>? userData;
   bool _isEditing = false;
   bool _isSubmitting = false;
+  bool _isTestMode = false; // Test Mode Flag
 
   bool get _allDocumentsUploaded =>
       _uploadedDocuments.values.every((uploaded) => uploaded);
@@ -93,6 +95,25 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                 color: Colors.black54,
               ),
             ),
+            // Test Mode Toggle
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Test Mode (Auto-Fill): "),
+                  Switch(
+                    value: _isTestMode,
+                    onChanged: (val) {
+                      setState(() {
+                        _isTestMode = val;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             const SizedBox(height: 30),
             Expanded(
               child: SingleChildScrollView(
@@ -249,12 +270,39 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
     return GestureDetector(
       onTap: () async {
-        File? image = await ImagePickerService.showImageSourceDialog(context);
-        if (image != null) {
-          setState(() {
-            _uploadedImages[title] = image;
-            _uploadedDocuments[title] = true;
-          });
+        if (_isTestMode) {
+          final List<XFile> images = await ImagePicker().pickMultiImage();
+          if (images.isNotEmpty) {
+            int index = 0;
+            // 1. Assign first image to the clicked item
+            if (index < images.length) {
+              setState(() {
+                _uploadedImages[title] = File(images[index].path);
+                _uploadedDocuments[title] = true;
+              });
+              index++;
+            }
+
+            // 2. Auto-fill other empty items
+            for (var key in _uploadedDocuments.keys) {
+              if (index >= images.length) break;
+              if (key != title && _uploadedDocuments[key] == false) {
+                setState(() {
+                  _uploadedImages[key] = File(images[index].path);
+                  _uploadedDocuments[key] = true;
+                });
+                index++;
+              }
+            }
+          }
+        } else {
+          File? image = await ImagePickerService.showImageSourceDialog(context);
+          if (image != null) {
+            setState(() {
+              _uploadedImages[title] = image;
+              _uploadedDocuments[title] = true;
+            });
+          }
         }
       },
       child: Container(

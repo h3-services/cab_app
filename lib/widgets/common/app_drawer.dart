@@ -143,13 +143,17 @@ class _AppDrawerState extends State<AppDrawer> {
         ],
       ),
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           Navigator.pop(context);
           if (title == 'Profile') {
             Navigator.pushNamed(context, '/profile');
           } else if (title == 'Sign out') {
-            Navigator.pushNamedAndRemoveUntil(
-                context, '/login', (route) => false);
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.clear();
+            if (context.mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/login', (route) => false);
+            }
           }
         },
         child: Row(

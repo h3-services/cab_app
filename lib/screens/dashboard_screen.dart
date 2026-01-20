@@ -21,6 +21,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int selectedTab = 0; // 0: Available, 1: Pending, 2: Approved, 3: History
   String? _driverId;
   bool _isCheckingStatus = true; // Block UI until verified
+  List<dynamic> _availableTrips = [];
+  List<dynamic> _driverRequests = [];
+  bool _isLoadingTrips = false;
 
   @override
   void initState() {
@@ -51,6 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final bool isApproved = driverData['is_approved'] == true;
       final String kycVerified =
           (driverData['kyc_verified'] ?? '').toString().toLowerCase();
+      final bool isAvailable = driverData['is_available'] == true;
 
       if (!isApproved ||
           (kycVerified != 'verified' && kycVerified != 'approved')) {
@@ -60,7 +64,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       } else {
         // Approved! Unlock UI
         if (mounted) {
+          _tripStateService.setReadyForTrip(isAvailable);
           setState(() => _isCheckingStatus = false);
+          _fetchAvailableTrips();
         }
       }
     } catch (e) {
@@ -69,6 +75,156 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/approval-pending');
       }
+    }
+  }
+
+  Future<void> _fetchAvailableTrips() async {
+    if (!mounted) return;
+    setState(() => _isLoadingTrips = true);
+
+    try {
+      // 1. Fetch data in parallel
+      final tripsFuture = ApiService.getAvailableTrips();
+      final requestsFuture = _driverId != null
+          ? ApiService.getDriverRequests(_driverId!)
+          : Future.value([]);
+
+      final results = await Future.wait([tripsFuture, requestsFuture]);
+      final trips = results[0] as List<dynamic>;
+      final requests = results[1] as List<dynamic>;
+
+      // 2. Filter available trips (Exclude ones already requested)
+      final requestedTripIds = requests
+          .where((r) =>
+              (r['status'] ?? '').toString().toUpperCase() != 'CANCELLED')
+          .map((r) => r['trip_id'].toString())
+          .toSet();
+      final filteredTrips = trips
+          .where((t) => !requestedTripIds.contains(t['trip_id'].toString()))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _availableTrips = filteredTrips;
+          _driverRequests = requests;
+          _isLoadingTrips = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching trips: $e");
+      if (mounted) {
+        setState(() => _isLoadingTrips = false);
+      }
+    }
+  }
+
+  Future<void> _cancelRequest(String requestId) async {
+    setState(() {
+      final index = _driverRequests
+          .indexWhere((r) => r['request_id'].toString() == requestId);
+      if (index != -1) {
+        _driverRequests[index]['status'] = 'CANCELLED';
+      }
+    });
+
+    try {
+      await ApiService.updateRequestStatus(requestId, "CANCELLED");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Request Cancelled")));
+      _fetchAvailableTrips();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Failed to cancel: $e"), backgroundColor: Colors.red));
+      _fetchAvailableTrips();
+    }
+  }
+
+  Future<void> _showCancelConfirmation(String requestId) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cancel Request'),
+          content:
+              const Text('Are you sure you want to cancel this trip request?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('No'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text('Yes, Cancel',
+                  style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      _cancelRequest(requestId);
+    }
+  }
+
+  Future<void> _requestTrip(String tripId) async {
+    if (_driverId == null) return;
+
+    try {
+      await ApiService.createTripRequest(tripId, _driverId!);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Request Sent Successfully!"),
+            backgroundColor: Colors.green),
+      );
+
+      _fetchAvailableTrips();
+    } catch (e) {
+      if (e.toString().contains("Request already exists")) {
+        final existingRequest = _driverRequests.firstWhere(
+          (r) => r['trip_id'].toString() == tripId,
+          orElse: () => null,
+        );
+
+        if (existingRequest != null) {
+          try {
+            await ApiService.updateRequestStatus(
+                existingRequest['request_id'].toString(), "PENDING");
+
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text("Request Resubmitted Successfully!"),
+                  backgroundColor: Colors.green),
+            );
+            _fetchAvailableTrips();
+            return;
+          } catch (updateError) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text("Failed to resubmit: $updateError"),
+                  backgroundColor: Colors.red),
+            );
+            return;
+          }
+        }
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text("Failed to send request: $e"),
+            backgroundColor: Colors.red),
+      );
     }
   }
 
@@ -214,9 +370,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             color: const Color(0xFFC0C0C0),
             child: Row(
               children: [
-                _buildTabButton('Available (2)', 0, const Color(0xFF757575)),
+                _buildTabButton('Available (${_availableTrips.length})', 0,
+                    const Color(0xFF757575)),
                 const SizedBox(width: 8),
-                _buildTabButton('Pending (1)', 1, const Color(0xFFDAA520)),
+                _buildTabButton(
+                    'Pending (${_driverRequests.where((r) => (r['status'] ?? '').toString().toUpperCase() == 'PENDING').length})',
+                    1,
+                    const Color(0xFFDAA520)),
                 const SizedBox(width: 8),
                 _buildTabButton('Approved (2)', 2, const Color(0xFF1E88E5)),
                 const SizedBox(width: 8),
@@ -308,238 +468,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildAvailableContent() {
     if (_tripStateService.isReadyForTrip) {
-      return SingleChildScrollView(
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'New trip requests are available for you to accept',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Airport Terminal 1',
+      if (_isLoadingTrips) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return RefreshIndicator(
+        onRefresh: _fetchAvailableTrips,
+        child: _availableTrips.isEmpty
+            ? SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: const Center(
+                        child: Text("No trips available right now."))),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.only(bottom: 80),
+                itemCount: _availableTrips.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'New trip requests are available for you to accept',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           color: Colors.black87,
                         ),
                       ),
-                      const Spacer(),
-                      const Text(
-                        'One-way',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'City Center Mall',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Fare: ₹250',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          Text(
-                            'customer: Nagaraj',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check, color: Colors.white, size: 16),
-                            SizedBox(width: 4),
-                            Text(
-                              'Accept Ride',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    );
+                  }
+                  return _buildTripCard(_availableTrips[index - 1]);
+                },
               ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Karaikudi',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Text(
-                        'Round',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Thanjavur',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Fare: ₹1,450',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          Text(
-                            'customer: Aarif',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check, color: Colors.white, size: 16),
-                            SizedBox(width: 4),
-                            Text(
-                              'Accept Ride',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
       );
     }
 
@@ -605,35 +566,329 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildPendingContent() {
-    return SingleChildScrollView(
+  Widget _buildTripCard(Map<String, dynamic> trip) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Under admin review, please wait for approval',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                trip['pickup_address'] ?? 'Unknown Pickup',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                trip['trip_type'] ?? 'ONE WAY',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                trip['drop_address'] ?? 'Unknown Drop',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pickup Date : ${_formatTripTime(trip['planned_start_at'])}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'customer : ${trip['customer_name'] ?? 'Unknown'}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {
+                  if (trip['trip_id'] != null) {
+                    _requestTrip(trip['trip_id']);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Error: Trip ID missing")),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'Request Ride',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTripTime(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final dt = DateTime.parse(dateStr);
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
+      return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  Widget _buildPendingContent() {
+    final pendingRequests = _driverRequests
+        .where((r) => (r['status'] ?? '').toString().toUpperCase() == 'PENDING')
+        .toList();
+
+    if (pendingRequests.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _fetchAvailableTrips,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: const Center(
+              child: Text(
+                'No pending requests found.',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
             ),
           ),
-          _buildPendingCard(
-            headerText: 'Waiting for Admin Approval',
-            headerColor: const Color(0xFFFF8C00),
-            customerName: 'Nagaraj',
-            isDelete: false,
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _fetchAvailableTrips,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
+        itemCount: pendingRequests.length,
+        itemBuilder: (context, index) {
+          return _buildRequestCard(pendingRequests[index]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildRequestCard(Map<String, dynamic> request) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Request ID: ...${(request['request_id'] ?? '').toString().substring(0, math.min((request['request_id'] ?? '').toString().length, 6))}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  request['status'] ?? 'PENDING',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  request['pickup_address'] ?? 'Unknown Pickup',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  request['drop_address'] ?? 'Unknown Drop',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          _buildPendingCard(
-            headerText: 'The admin has assigned another driver',
-            headerColor: Colors.black,
-            customerName: 'Nagaraj',
-            isDelete: true,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Customer: ${request['customer_name'] ?? 'Unknown'}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (request['created_at'] != null)
+                    Text(
+                      'Requested: ${_formatTripTime(request['created_at'])}',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                ],
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (request['request_id'] != null) {
+                    _cancelRequest(request['request_id'].toString());
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD32F2F),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.close, size: 16),
+                label: const Text('Cancel',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );

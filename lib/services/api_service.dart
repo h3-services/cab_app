@@ -362,6 +362,67 @@ class ApiService {
     }
   }
 
+  static Future<List<dynamic>> getDriverRequests(String driverId) async {
+    final url = Uri.parse('$baseUrl/trip-requests/driver/$driverId');
+    try {
+      debugPrint('GET Request: $url');
+      final response = await http.get(url);
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var decoded = jsonDecode(response.body);
+        if (decoded is List) return decoded;
+        return [];
+      } else {
+        throw Exception(
+            'Failed to get driver requests: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      return [];
+    }
+  }
+
+  static Future<void> updateRequestStatus(
+      String requestId, String status) async {
+    final url = Uri.parse(
+        '$baseUrl/trip-requests/$requestId/status?new_status=$status');
+    debugPrint('PATCH Request: $url');
+    try {
+      final response = await http.patch(url);
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update status: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<void> createTripRequest(String tripId, String driverId) async {
+    final url = Uri.parse(
+        '$baseUrl/trip-requests/?trip_id=$tripId&driver_id=$driverId');
+    debugPrint('POST Request: $url');
+    try {
+      final response = await http.post(url);
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(
+            'Failed to create trip request: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<void> _uploadFile(String url, String fieldName, File file,
       {String? filename, String method = 'POST'}) async {
     try {
