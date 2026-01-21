@@ -31,6 +31,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   String? phoneNumber;
   String? _testDeviceId;
   bool _isDataLoaded = false;
+  List<String> _errorFields = [];
 
   @override
   void didChangeDependencies() {
@@ -38,6 +39,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     final args = ModalRoute.of(context)!.settings.arguments;
     if (!_isDataLoaded && args is Map && args['isEditing'] == true) {
       _loadSavedData();
+      if (args['errorFields'] != null) {
+        _errorFields = List<String>.from(args['errorFields']);
+      }
       _isDataLoaded = true;
     } else if (args is String) {
       phoneNumber = args;
@@ -104,6 +108,17 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
         showBackButton: false,
         showMenuIcon: false,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              _loadSavedData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Reloaded saved data'),
+                    duration: Duration(seconds: 1)),
+              );
+            },
+          ),
           TextButton(
             onPressed: _fillSampleData,
             child: const Text(
@@ -311,19 +326,25 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                   'fcExpiryDate': fcDate,
 
                                   // Update flags
+                                  // Update flags
                                   'driverId': existingDriverId,
                                   'vehicleId': existingVehicleId,
                                   'isEditing': isEditing,
+                                  'errorFields': (args is Map)
+                                      ? args['errorFields']
+                                      : null, // Pass back errors
                                 };
 
                                 // Hide loading before navigating
-                                if (context.mounted) Navigator.pop(context);
+                                if (context.mounted) {
+                                  Navigator.pop(context);
 
-                                Navigator.pushNamed(
-                                  context,
-                                  '/kyc_upload',
-                                  arguments: userData,
-                                );
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/kyc_upload',
+                                    arguments: userData,
+                                  );
+                                }
                               } catch (e) {
                                 // Hide loading
                                 if (context.mounted) Navigator.pop(context);
@@ -412,68 +433,99 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   Widget _buildTextField(String label, TextEditingController controller) {
     bool isRequired = label.contains('*');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: label.replaceAll('*', ''),
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-              ),
-              if (isRequired)
-                const TextSpan(
-                  text: ' *',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.red,
+    String cleanLabel = label.replaceAll('*', '').trim();
+    bool hasError = _errorFields.contains(cleanLabel);
+
+    return ValueListenableBuilder(
+      valueListenable: controller,
+      builder: (context, value, child) {
+        bool isFilled = controller.text.isNotEmpty;
+        Color borderColor = hasError
+            ? Colors.red
+            : (isFilled ? AppColors.greenLight : Colors.grey);
+        Color labelColor = hasError
+            ? Colors.red
+            : (isFilled ? AppColors.greenLight : Colors.black87);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: cleanLabel,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: labelColor,
+                      fontWeight: (isFilled || hasError)
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
                   ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          validator: isRequired
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'This field is required';
-                  }
-                  if (label.contains('Email') && value.isNotEmpty) {
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                        .hasMatch(value)) {
-                      return 'Enter a valid email';
+                  if (isRequired)
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: hasError ? Colors.red : Colors.red,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: controller,
+              validator: isRequired
+                  ? (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'This field is required';
+                      }
+                      if (label.contains('Email') && value.isNotEmpty) {
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
+                          return 'Enter a valid email';
+                        }
+                      }
+                      if (label.contains('Aadhaar') && value.length != 12) {
+                        return 'Aadhaar number must be 12 digits';
+                      }
+                      return null;
                     }
-                  }
-                  if (label.contains('Aadhaar') && value.length != 12) {
-                    return 'Aadhaar number must be 12 digits';
-                  }
-                  return null;
-                }
-              : null,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.grey),
+                  : null,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                      color: hasError ? Colors.red : AppColors.greenLight),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.red),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.red),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                suffixIcon: hasError
+                    ? const Icon(Icons.error, color: Colors.red)
+                    : null,
+              ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.grey),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.black),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -481,79 +533,92 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       [bool isRequired = false]) {
     bool hasAsterisk = label.contains('*');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: label.replaceAll('*', ''),
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-              ),
-              if (hasAsterisk)
-                const TextSpan(
-                  text: ' *',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.red,
+    return ValueListenableBuilder(
+      valueListenable: controller,
+      builder: (context, value, child) {
+        bool isFilled = controller.text.isNotEmpty;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: label.replaceAll('*', ''),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isFilled ? AppColors.greenLight : Colors.black87,
+                      fontWeight:
+                          isFilled ? FontWeight.bold : FontWeight.normal,
+                    ),
                   ),
+                  if (hasAsterisk)
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: controller,
+              readOnly: true,
+              validator: isRequired
+                  ? (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'This field is required';
+                      }
+                      return null;
+                    }
+                  : null,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                      color: isFilled ? AppColors.greenLight : Colors.grey),
                 ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          readOnly: true,
-          validator: isRequired
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'This field is required';
-                  }
-                  return null;
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                      color: isFilled ? AppColors.greenLight : Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.greenLight),
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                suffixIcon: Icon(Icons.calendar_today,
+                    size: 20,
+                    color: isFilled ? AppColors.greenLight : Colors.grey),
+              ),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime(2030),
+                );
+                if (date != null) {
+                  controller.text =
+                      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
                 }
-              : null,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.grey),
+              },
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.grey),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.black),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            suffixIcon: const Icon(Icons.calendar_today, size: 20),
-          ),
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime.now(),
-              lastDate: DateTime(2030),
-            );
-            if (date != null) {
-              controller.text =
-                  '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-            }
-          },
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
   Widget _buildDropdownField(String label, String? value, List<String> items,
       Function(String?) onChanged) {
     bool isRequired = label.contains('*');
+    bool isFilled = value != null && value.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,9 +628,10 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
             children: [
               TextSpan(
                 text: label.replaceAll('*', ''),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.black87,
+                  color: isFilled ? AppColors.greenLight : Colors.black87,
+                  fontWeight: isFilled ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
               if (isRequired)
@@ -585,15 +651,17 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.grey),
+              borderSide: BorderSide(
+                  color: isFilled ? AppColors.greenLight : Colors.grey),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.grey),
+              borderSide: BorderSide(
+                  color: isFilled ? AppColors.greenLight : Colors.grey),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.black),
+              borderSide: BorderSide(color: AppColors.greenLight),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

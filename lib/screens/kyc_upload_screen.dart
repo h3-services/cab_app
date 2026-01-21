@@ -32,21 +32,40 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   bool _isEditing = false;
   bool _isSubmitting = false;
   bool _isTestMode = false; // Test Mode Flag
+  List<String> _errorFields = [];
 
   bool get _allDocumentsUploaded =>
       _uploadedDocuments.values.every((uploaded) => uploaded);
 
   @override
+  bool _isInitialized = false;
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_isInitialized) return;
+    _isInitialized = true;
+
     userData =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
 
     _isEditing = userData?['isEditing'] == true;
+
+    if (userData?['errorFields'] != null) {
+      _errorFields = List<String>.from(userData!['errorFields']);
+    }
+
     if (_isEditing) {
       // Pre-fill as valid since we are updating existing application
       setState(() {
         _uploadedDocuments.updateAll((key, value) => true);
+
+        // If there are error fields, mark them as NOT uploaded so user must re-upload
+        for (var field in _errorFields) {
+          if (_uploadedDocuments.containsKey(field)) {
+            _uploadedDocuments[field] = false;
+          }
+        }
       });
     }
   }
@@ -54,7 +73,40 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(showBackButton: false, showMenuIcon: false),
+      appBar: CustomAppBar(
+        showBackButton: true,
+        showMenuIcon: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              setState(() {});
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Refreshed'), duration: Duration(seconds: 1)),
+              );
+            },
+          ),
+        ],
+        onBack: () {
+          // If editing (from rejection), we might want to go to personal details or just pop
+          // But user requested "if that click person and detail section go"
+          // We can navigate to personal details screen
+          if (_isEditing) {
+            // Pass arguments back if needed, or just pop if it was pushed
+            // However, usually going "back" from KYC implies checking Personal Details
+            Map<String, dynamic> args =
+                Map<String, dynamic>.from(userData ?? {});
+            args['isEditing'] = true;
+            args['errorFields'] =
+                _errorFields; // Explicitly pass the local list
+            Navigator.pushReplacementNamed(context, '/personal-details',
+                arguments: args);
+          } else {
+            Navigator.pop(context);
+          }
+        },
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -263,8 +315,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   }
 
   Widget _buildUploadItem(String title, String subtitle, IconData icon) {
-    bool isSelected = _uploadedImages.containsKey(title);
+    bool isSelected = _uploadedDocuments[title] ?? false;
     File? selectedFile = _uploadedImages[title];
+    bool hasError = _errorFields.contains(title) && !isSelected;
 
     return GestureDetector(
       onTap: () async {
@@ -306,13 +359,17 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       child: Container(
         padding: const EdgeInsets.all(12.0),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.greenLight.withOpacity(0.1)
-              : Colors.grey.shade100,
+          color: hasError
+              ? Colors.red.withValues(alpha: 0.05)
+              : (isSelected
+                  ? AppColors.greenLight.withValues(alpha: 0.1)
+                  : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? AppColors.greenLight : Colors.grey.shade300,
-            width: 1,
+            color: hasError
+                ? Colors.red
+                : (isSelected ? AppColors.greenLight : Colors.grey.shade300),
+            width: hasError ? 2 : 1,
           ),
         ),
         child: Row(
@@ -349,19 +406,26 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    isSelected ? 'Tap to change' : subtitle,
+                    hasError
+                        ? 'Resubmission Required'
+                        : (isSelected ? 'Tap to change' : subtitle),
                     style: TextStyle(
                       fontSize: 12,
-                      color: isSelected ? AppColors.greenLight : Colors.grey,
+                      color: hasError
+                          ? Colors.red
+                          : (isSelected ? AppColors.greenLight : Colors.grey),
+                      fontWeight:
+                          hasError ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 ],
               ),
             ),
-            if (isSelected)
+            if (hasError && !isSelected)
+              const Icon(Icons.priority_high, color: Colors.red, size: 24)
+            else if (isSelected)
               Icon(
-                Icons
-                    .edit, // changed from check_circle to edit to imply 'Change' capability
+                Icons.edit,
                 color: AppColors.greenLight,
                 size: 20,
               )
@@ -573,6 +637,14 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             }
             break;
         }
+      }
+
+      // Update Status back to 'pending' if this was a correction/resubmission
+      if (_isEditing) {
+        debugPrint('Clearing previous errors...');
+        await ApiService.clearDriverErrors(driverId);
+        debugPrint('Updating KYC status to pending for re-review...');
+        await ApiService.updateKycStatus(driverId, 'pending');
       }
 
       // Success!

@@ -5,13 +5,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showMenuIcon;
   final bool showProfileIcon;
   final List<Widget>? actions;
+  final VoidCallback? onBack;
 
   const CustomAppBar(
       {super.key,
       this.showBackButton = false,
       this.showMenuIcon = true,
       this.showProfileIcon = true,
-      this.actions});
+      this.actions,
+      this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
+              onPressed: onBack ?? () => Navigator.pop(context),
             )
           : (showProfileIcon
               ? Padding(

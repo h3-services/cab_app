@@ -198,6 +198,50 @@ class ApiService {
     }
   }
 
+  static Future<void> updateKycStatus(String driverId, String status) async {
+    final url =
+        Uri.parse('$baseUrl/drivers/$driverId/kyc-status?kyc_status=$status');
+    try {
+      debugPrint('PATCH Request: $url');
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update KYC status: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<void> clearDriverErrors(String driverId) async {
+    final url = Uri.parse('$baseUrl/drivers/$driverId/clear-errors');
+    try {
+      debugPrint('PATCH Request: $url');
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Failed to clear driver errors: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<Map<String, dynamic>> updateDriver({
     required String driverId,
     required String name,
@@ -340,7 +384,7 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getAvailableTrips() async {
-    final url = Uri.parse('$baseUrl/trips/available');
+    final url = Uri.parse('$baseUrl/trips/');
     debugPrint('GET Request: $url');
     try {
       final response = await http.get(url);
