@@ -115,10 +115,20 @@ class _TripStartScreenState extends State<TripStartScreen> {
                                 child: CircularProgressIndicator()),
                           );
 
+                          final tripId = widget.tripData['trip_id'];
                           final requestId = widget.tripData['request_id'];
-                          if (requestId != null) {
+
+                          if (tripId != null) {
+                            final odoStart = num.tryParse(_startingKmController.text);
+                            if (odoStart == null) throw Exception("Invalid Odometer Reading");
+                            
+                            await ApiService.updateOdometerStart(
+                                tripId.toString(), odoStart);
+                          } else if (requestId != null) {
                             await ApiService.startTrip(requestId.toString(),
                                 _startingKmController.text);
+                          } else {
+                            throw Exception("Missing Trip Information");
                           }
 
                           if (context.mounted) {

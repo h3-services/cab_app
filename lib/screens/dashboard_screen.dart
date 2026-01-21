@@ -1008,6 +1008,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       'No Phone', // Assuming field name
                   odometer: request['starting_km']?.toString() ?? '',
                   requestId: request['request_id']?.toString() ?? '',
+                  tripId: request['trip_id']?.toString(),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -1027,6 +1028,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String phone,
     required String odometer,
     String? requestId,
+    String? tripId,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1220,6 +1222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         'customer': customer,
                                         'phone': phone,
                                         'request_id': requestId,
+                                        'trip_id': tripId,
                                       },
                                     ),
                                   ),

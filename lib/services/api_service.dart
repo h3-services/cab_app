@@ -512,6 +512,28 @@ class ApiService {
     }
   }
 
+  static Future<void> updateOdometerStart(String tripId, num odoStart) async {
+    final url = Uri.parse('$baseUrl/trips/$tripId/odometer-start');
+    debugPrint('PATCH Request: $url');
+    try {
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'odo_start': odoStart}),
+      );
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Failed to update odometer start: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<void> _uploadFile(String url, String fieldName, File file,
       {String? filename, String method = 'POST'}) async {
     try {
