@@ -39,20 +39,11 @@ class _AppDrawerState extends State<AppDrawer> {
             child: Column(
               children: [
                 // CHOLA CABS Logo
-                Container(
+                Image.asset(
+                  'assets/images/chola_cabs_logo.png',
                   width: 80,
                   height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      'assets/images/chola_cabs_logo.png',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+                  fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 30),
                 // Profile Image

@@ -209,31 +209,11 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Logo
-                Container(
+                Image.asset(
+                  'assets/images/chola_cabs_logo.png',
                   width: 120,
                   height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(60),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'CHOLA CABS\nTAXI SERVICES',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF424242),
-                      ),
-                    ),
-                  ),
+                  fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 40),
 
@@ -246,12 +226,12 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                     color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
 
                 // Approval Icon
                 Container(
                   width: 200,
-                  height: 200,
+                  height: 150,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(100),
                   ),
@@ -262,7 +242,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                     fit: BoxFit.contain,
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
                 // Message
                 // Message

@@ -513,13 +513,12 @@ class ApiService {
   }
 
   static Future<void> updateOdometerStart(String tripId, num odoStart) async {
-    final url = Uri.parse('$baseUrl/trips/$tripId/odometer-start');
+    final url = Uri.parse('$baseUrl/trips/$tripId/odometer-start?odo_start=$odoStart');
     debugPrint('PATCH Request: $url');
     try {
       final response = await http.patch(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'odo_start': odoStart}),
       );
       debugPrint('Response Status: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');
@@ -536,13 +535,12 @@ class ApiService {
 
   static Future<Map<String, dynamic>> updateOdometerEnd(
       String tripId, num odoEnd) async {
-    final url = Uri.parse('$baseUrl/trips/$tripId/odometer-end');
+    final url = Uri.parse('$baseUrl/trips/$tripId/odometer-end?odo_end=$odoEnd');
     debugPrint('PATCH Request: $url');
     try {
       final response = await http.patch(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'odo_end': odoEnd}),
       );
       debugPrint('Response Status: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');

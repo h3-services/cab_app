@@ -1059,10 +1059,9 @@ class TripSummaryScreen extends StatelessWidget {
                           if (context.mounted) Navigator.pop(context);
 
                           // Close screens
+                          // Return to Dashboard and refresh
                           if (context.mounted) {
-                            Navigator.pop(context); // Close TripSummaryScreen
-                            Navigator.pop(context); // Close TripCompletedScreen
-                            Navigator.pop(context); // Close TripStartScreen
+                            Navigator.popUntil(context, ModalRoute.withName('/dashboard'));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('Trip closed successfully!')),

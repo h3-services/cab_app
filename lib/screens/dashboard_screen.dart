@@ -1000,13 +1000,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   drop: request['drop_address'] ?? 'Unknown Drop',
                   type: request['trip_type'] ??
                       'One-way', // Assuming trip_type exists or defaulting
-                  isCompleted:
-                      (request['status'] ?? '').toString().toUpperCase() ==
+                  isCompleted: (request['status'] ?? '').toString().toUpperCase() ==
+                              'STARTED' ||
+                          (request['trip_status'] ?? '').toString().toUpperCase() ==
                               'STARTED' ||
                           (request['starting_km'] != null) ||
                           (request['odo_start'] != null) ||
                           (request['trip'] != null &&
-                              request['trip']['odo_start'] != null),
+                              (request['trip']['odo_start'] != null ||
+                                  request['trip']['starting_km'] != null)),
                   customer: request['customer_name'] ?? 'Unknown Customer',
                   phone: request['customer_phone'] ??
                       'No Phone', // Assuming field name
@@ -1258,7 +1260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  isCompleted ? 'Complete' : 'Start Trip',
+                                  isCompleted ? 'Complete Trip' : 'Start Trip',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
