@@ -1002,11 +1002,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       'One-way', // Assuming trip_type exists or defaulting
                   isCompleted:
                       (request['status'] ?? '').toString().toUpperCase() ==
-                          'STARTED',
+                              'STARTED' ||
+                          (request['starting_km'] != null) ||
+                          (request['odo_start'] != null) ||
+                          (request['trip'] != null &&
+                              request['trip']['odo_start'] != null),
                   customer: request['customer_name'] ?? 'Unknown Customer',
                   phone: request['customer_phone'] ??
                       'No Phone', // Assuming field name
-                  odometer: request['starting_km']?.toString() ?? '',
+                  odometer: (request['starting_km'] ??
+                          request['odo_start'] ??
+                          request['trip']?['odo_start'] ??
+                          '')
+                      .toString(),
                   requestId: request['request_id']?.toString() ?? '',
                   tripId: request['trip_id']?.toString(),
                 ),
@@ -1205,6 +1213,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         'customer': customer,
                                         'phone': phone,
                                         'request_id': requestId,
+                                        'trip_id': tripId,
                                       },
                                       startingKm: odometer,
                                     ),

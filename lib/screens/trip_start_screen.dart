@@ -422,18 +422,76 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (_endingKmController.text.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TripSummaryScreen(
-                              tripData: widget.tripData,
-                              startingKm: widget.startingKm,
-                              endingKm: _endingKmController.text,
-                            ),
-                          ),
-                        );
+                        try {
+                          final endingKm = num.tryParse(_endingKmController.text);
+                          if (endingKm == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Invalid ending KM')),
+                            );
+                            return;
+                          }
+
+                          // Show loading
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (c) => const Center(
+                                child: CircularProgressIndicator()),
+                          );
+
+                          final tripId = widget.tripData['trip_id'];
+                          if (tripId != null) {
+                            // Call API
+                            final result = await ApiService.updateOdometerEnd(
+                                tripId.toString(), endingKm);
+                            
+                            if (!context.mounted) return;
+                            Navigator.pop(context); // Pop loading
+
+                            // Navigate to Summary with API results
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TripSummaryScreen(
+                                  tripData: widget.tripData,
+                                  startingKm: widget.startingKm,
+                                  endingKm: _endingKmController.text,
+                                  distance: result['distance_km'] ?? 0,
+                                  fare: result['fare'] ?? 0,
+                                ),
+                              ),
+                            );
+                          } else {
+                            // Fallback (Offline/Missing ID)
+                            if (!context.mounted) return;
+                            Navigator.pop(context); // Pop loading
+                            
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => TripSummaryScreen(
+                                  tripData: widget.tripData,
+                                  startingKm: widget.startingKm,
+                                  endingKm: _endingKmController.text,
+                                  // Local calc as fallback
+                                  distance: null, 
+                                  fare: null,
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.pop(context); // Pop loading
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text('Error: $e')),
+                            );
+                          }
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -611,20 +669,27 @@ class TripSummaryScreen extends StatelessWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
   final String endingKm;
+  final num? distance;
+  final num? fare;
 
   const TripSummaryScreen({
     super.key,
     required this.tripData,
     required this.startingKm,
     required this.endingKm,
+    this.distance,
+    this.fare,
   });
 
   @override
   Widget build(BuildContext context) {
-    final distance = int.parse(endingKm) - int.parse(startingKm);
+    final dist = distance ?? (int.parse(endingKm) - int.parse(startingKm));
     final ratePerKm = 12.0;
-    final walletFee = distance * ratePerKm * 0.02;
-    final totalCost = distance * ratePerKm + walletFee;
+    // If fare comes from API, assume it includes wallet fee or whatever logic backend uses.
+    // But user prompt showed "fare" in response. 
+    // If we have API fare, use it. Else calc.
+    final totalCost = fare?.toDouble() ?? (dist * ratePerKm * 1.02); // 1.02 = +2%
+    final walletFee = fare != null ? 0 : (dist * ratePerKm * 0.02); // Placeholder if API used
 
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
@@ -671,12 +736,14 @@ class TripSummaryScreen extends StatelessWidget {
                       color: Colors.black),
                 ),
                 const SizedBox(height: 20),
-                _buildSummaryRow('Distance Traveled', '$distance km'),
+                _buildSummaryRow('Distance Traveled', '$dist km'),
                 _buildSummaryRow('Vehicle Type', 'Sedan'),
-                _buildSummaryRow(
-                    'Rate per KM', '₹ ${ratePerKm.toStringAsFixed(2)}'),
-                _buildSummaryRow('Wallet fee ( 2% of KM cost )',
-                    '₹ ${walletFee.toStringAsFixed(2)}'),
+                if (fare == null)
+                  _buildSummaryRow(
+                      'Rate per KM', '₹ ${ratePerKm.toStringAsFixed(2)}'),
+                if (fare == null)
+                  _buildSummaryRow('Wallet fee ( 2% of KM cost )',
+                      '₹ ${walletFee.toStringAsFixed(2)}'),
                 const SizedBox(height: 20),
                 Container(
                   width: double.infinity,

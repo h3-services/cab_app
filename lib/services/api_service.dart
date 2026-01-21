@@ -534,6 +534,31 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> updateOdometerEnd(
+      String tripId, num odoEnd) async {
+    final url = Uri.parse('$baseUrl/trips/$tripId/odometer-end');
+    debugPrint('PATCH Request: $url');
+    try {
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'odo_end': odoEnd}),
+      );
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+            'Failed to update odometer end: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<void> _uploadFile(String url, String fieldName, File file,
       {String? filename, String method = 'POST'}) async {
     try {
