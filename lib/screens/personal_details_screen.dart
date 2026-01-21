@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/widgets.dart';
 import '../constants/app_colors.dart';
-import '../services/api_service.dart';
 import '../services/device_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

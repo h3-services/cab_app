@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-
-import 'dart:async';
 import '../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

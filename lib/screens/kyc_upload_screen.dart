@@ -27,8 +27,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     'Right Side View': false,
   };
 
-  final Map<String, bool> _uploadingStatus =
-      {}; // Track uploading state per doc
   final Map<String, File?> _uploadedImages = {};
   Map<String, dynamic>? userData;
   bool _isEditing = false;

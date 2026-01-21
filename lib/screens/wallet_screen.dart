@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/widgets.dart';
 import '../widgets/bottom_navigation.dart';
-import '../constants/app_colors.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -127,7 +126,8 @@ class _WalletScreenState extends State<WalletScreen> {
                         Expanded(
                           child: Row(
                             children: [
-                              const Icon(Icons.local_taxi, color: Colors.orange, size: 28),
+                              const Icon(Icons.local_taxi,
+                                  color: Colors.orange, size: 28),
                               const SizedBox(width: 12),
                               Text(
                                 'Trips Completed',
@@ -150,7 +150,8 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade400,
                             borderRadius: BorderRadius.circular(12),
@@ -192,15 +193,15 @@ class _WalletScreenState extends State<WalletScreen> {
                     const SizedBox(height: 16),
                     // Transaction List
                     ...transactions.map((transaction) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildTransactionItem(
-                        transaction['title'],
-                        transaction['date'],
-                        transaction['tripId'],
-                        transaction['amount'],
-                        transaction['type'],
-                      ),
-                    )),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildTransactionItem(
+                            transaction['title'],
+                            transaction['date'],
+                            transaction['tripId'],
+                            transaction['amount'],
+                            transaction['type'],
+                          ),
+                        )),
                   ],
                 ),
               ),
@@ -213,7 +214,8 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildTransactionItem(String title, String date, String tripId, String amount, String type) {
+  Widget _buildTransactionItem(
+      String title, String date, String tripId, String amount, String type) {
     bool isEarning = type == 'earning';
     return Container(
       padding: const EdgeInsets.all(16),
@@ -226,7 +228,8 @@ class _WalletScreenState extends State<WalletScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isEarning ? const Color(0xFF66BB6A) : const Color(0xFFEF5350),
+              color:
+                  isEarning ? const Color(0xFF66BB6A) : const Color(0xFFEF5350),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -273,7 +276,8 @@ class _WalletScreenState extends State<WalletScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isEarning ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
+              color:
+                  isEarning ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
             ),
           ),
         ],
@@ -328,13 +332,21 @@ class _WalletScreenState extends State<WalletScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildDrawerMenuItem(context, Icons.person_outline, 'Profile', 'View and edit your personal details'),
+                  _buildDrawerMenuItem(context, Icons.person_outline, 'Profile',
+                      'View and edit your personal details'),
                   const SizedBox(height: 16),
-                  _buildDrawerMenuItem(context, Icons.settings_outlined, 'Settings', 'App preferences, notifications, and privacy'),
+                  _buildDrawerMenuItem(
+                      context,
+                      Icons.settings_outlined,
+                      'Settings',
+                      'App preferences, notifications, and privacy'),
                   const SizedBox(height: 16),
-                  _buildDrawerMenuItem(context, Icons.help_outline, 'Help', 'Get help and contact the admin for support'),
+                  _buildDrawerMenuItem(context, Icons.help_outline, 'Help',
+                      'Get help and contact the admin for support'),
                   const SizedBox(height: 16),
-                  _buildDrawerMenuItem(context, Icons.logout, 'Sign out', 'Log out of your account safely', isSignOut: true),
+                  _buildDrawerMenuItem(context, Icons.logout, 'Sign out',
+                      'Log out of your account safely',
+                      isSignOut: true),
                 ],
               ),
             ),
@@ -344,7 +356,9 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildDrawerMenuItem(BuildContext context, IconData icon, String title, String subtitle, {bool isSignOut = false}) {
+  Widget _buildDrawerMenuItem(
+      BuildContext context, IconData icon, String title, String subtitle,
+      {bool isSignOut = false}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -364,7 +378,8 @@ class _WalletScreenState extends State<WalletScreen> {
           if (title == 'Profile') {
             Navigator.pushNamed(context, '/profile');
           } else if (title == 'Sign out') {
-            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/login', (route) => false);
           }
         },
         child: Row(
