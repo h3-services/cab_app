@@ -35,28 +35,22 @@ class _WalletScreenState extends State<WalletScreen> {
     setState(() => isLoading = true);
 
     try {
-      debugPrint('Starting Razorpay payment process...');
-      final order = await RazorpayService.createOrder();
-      debugPrint('Order created: $order');
-
-      debugPrint('Opening Razorpay checkout with key: rzp_test_1DP5mmOlF5G5ag');
+      debugPrint('Starting Razorpay payment...');
+      
       razorpayService.openCheckout(
-        orderId: order['id'],
-        amount: order['amount'],
-        key: "rzp_test_1DP5mmOlF5G5ag",
+        amount: 500.0, // ₹500
         name: "Chola Cabs",
         description: "Add Money to Wallet",
         contact: "9999999999",
         email: "driver@cholacabs.com",
       );
       
-      // Don't set loading to false here - let the callbacks handle it
     } catch (e) {
-      debugPrint('Payment initiation error: $e');
+      debugPrint('Payment error: $e');
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to start payment: $e'),
+          content: Text('Payment failed: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -64,25 +58,31 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    try {
-      await RazorpayService.verifyPayment(
-        paymentId: response.paymentId!,
-        orderId: response.orderId!,
-        signature: response.signature!,
-      );
-
-      setState(() => isLoading = false);
-      
+    setState(() => isLoading = false);
+    
+    debugPrint('Payment Success: ${response.paymentId}');
+    
+    // Save payment details to backend
+    final saved = await RazorpayService.savePaymentDetails(
+      amount: 500.0,
+      razorpayPaymentId: response.paymentId ?? '',
+      razorpayOrderId: response.orderId ?? '',
+      razorpaySignature: response.signature ?? '',
+    );
+    
+    if (saved) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Payment successful! ₹500 added to wallet'),
           backgroundColor: Colors.green,
         ),
       );
-    } catch (e) {
-      setState(() => isLoading = false);
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Payment verification failed: $e')),
+        const SnackBar(
+          content: Text('Payment completed but failed to update wallet'),
+          backgroundColor: Colors.orange,
+        ),
       );
     }
   }
