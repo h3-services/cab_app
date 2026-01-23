@@ -106,6 +106,9 @@ class _TripStartScreenState extends State<TripStartScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       if (_startingKmController.text.isNotEmpty) {
+                        final tripId = widget.tripData['trip_id'];
+                        final requestId = widget.tripData['request_id'];
+
                         try {
                           // Show loading indicator
                           showDialog(
@@ -115,25 +118,29 @@ class _TripStartScreenState extends State<TripStartScreen> {
                                 child: CircularProgressIndicator()),
                           );
 
-                          final tripId = widget.tripData['trip_id'];
-                          final requestId = widget.tripData['request_id'];
-
                           if (tripId != null) {
-                            final odoStart = num.tryParse(_startingKmController.text);
-                            if (odoStart == null) throw Exception("Invalid Odometer Reading");
-                            
+                            // 1. Mark trip as started and save odometer
                             await ApiService.updateOdometerStart(
-                                tripId.toString(), odoStart);
-                          } else if (requestId != null) {
-                            await ApiService.startTrip(requestId.toString(),
-                                _startingKmController.text);
+                                tripId.toString(), int.parse(_startingKmController.text));
+
+                            // 2. Try to sync request status (important for Dashboard UI)
+                            if (requestId != null) {
+                              try {
+                                await ApiService.updateRequestStatus(
+                                    requestId.toString(), "STARTED");
+                              } catch (e) {
+                                debugPrint("Syncing request status failed: $e");
+                                // We don't throw here because odometer is already saved
+                              }
+                            }
                           } else {
-                            throw Exception("Missing Trip Information");
+                            throw Exception(
+                                "Missing Trip Information: trip_id is required");
                           }
 
                           if (context.mounted) {
                             Navigator.pop(context); // Pop loading
-                            Navigator.pop(context); // Return to Dashboard
+                            Navigator.pop(context, tripId?.toString()); // Return trip ID as string
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('Trip started successfully!')),
@@ -142,6 +149,27 @@ class _TripStartScreenState extends State<TripStartScreen> {
                         } catch (e) {
                           if (context.mounted) {
                             Navigator.pop(context); // Pop loading
+
+                            // Check if the trip is already started
+                            if (e.toString().contains(
+                                "Cannot start trip with status STARTED")) {
+                              // If already started, try to sync status once more to be sure Dashboard sees it
+                              if (requestId != null) {
+                                try {
+                                  await ApiService.updateRequestStatus(
+                                      requestId.toString(), "STARTED");
+                                } catch (_) {}
+                              }
+                              Navigator.pop(context,
+                                  true); // Return to Dashboard as success
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('Trip is already in progress')),
+                              );
+                              return;
+                            }
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                   content: Text('Failed to start trip: $e')),
@@ -425,7 +453,8 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                     onPressed: () async {
                       if (_endingKmController.text.isNotEmpty) {
                         try {
-                          final endingKm = num.tryParse(_endingKmController.text);
+                          final endingKm =
+                              num.tryParse(_endingKmController.text);
                           if (endingKm == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -447,7 +476,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                             // Call API
                             final result = await ApiService.updateOdometerEnd(
                                 tripId.toString(), endingKm);
-                            
+
                             if (!context.mounted) return;
                             Navigator.pop(context); // Pop loading
 
@@ -468,7 +497,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                             // Fallback (Offline/Missing ID)
                             if (!context.mounted) return;
                             Navigator.pop(context); // Pop loading
-                            
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -477,7 +506,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                                   startingKm: widget.startingKm,
                                   endingKm: _endingKmController.text,
                                   // Local calc as fallback
-                                  distance: null, 
+                                  distance: null,
                                   fare: null,
                                 ),
                               ),
@@ -487,8 +516,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                           if (context.mounted) {
                             Navigator.pop(context); // Pop loading
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Error: $e')),
+                              SnackBar(content: Text('Error: $e')),
                             );
                           }
                         }
@@ -686,10 +714,12 @@ class TripSummaryScreen extends StatelessWidget {
     final dist = distance ?? (int.parse(endingKm) - int.parse(startingKm));
     final ratePerKm = 12.0;
     // If fare comes from API, assume it includes wallet fee or whatever logic backend uses.
-    // But user prompt showed "fare" in response. 
+    // But user prompt showed "fare" in response.
     // If we have API fare, use it. Else calc.
-    final totalCost = fare?.toDouble() ?? (dist * ratePerKm * 1.02); // 1.02 = +2%
-    final walletFee = fare != null ? 0 : (dist * ratePerKm * 0.02); // Placeholder if API used
+    final totalCost =
+        fare?.toDouble() ?? (dist * ratePerKm * 1.02); // 1.02 = +2%
+    final walletFee =
+        fare != null ? 0 : (dist * ratePerKm * 0.02); // Placeholder if API used
 
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
@@ -1061,7 +1091,8 @@ class TripSummaryScreen extends StatelessWidget {
                           // Close screens
                           // Return to Dashboard and refresh
                           if (context.mounted) {
-                            Navigator.popUntil(context, ModalRoute.withName('/dashboard'));
+                            Navigator.popUntil(
+                                context, ModalRoute.withName('/dashboard'));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('Trip closed successfully!')),

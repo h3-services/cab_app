@@ -6,6 +6,7 @@ import '../widgets/common/app_drawer.dart';
 import '../widgets/bottom_navigation.dart';
 import '../services/trip_state_service.dart';
 import '../services/api_service.dart';
+import '../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -22,7 +23,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isCheckingStatus = true; // Block UI until verified
   List<dynamic> _availableTrips = [];
   List<dynamic> _driverRequests = [];
+  List<dynamic> _allTrips = [];
   bool _isLoadingTrips = false;
+  Set<String> _startedTripIds = {}; // Track started trips
 
   @override
   void initState() {
@@ -77,6 +80,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  bool _isTripStarted(Map<String, dynamic> request) {
+    // Check if trip has odometer start value or is in started/progress status
+    final odoStart = num.tryParse(
+        (request['odo_start'] ?? request['trip']?['odo_start'] ?? '0').toString()) ?? 0;
+    final startedAt = request['started_at'] ?? request['trip']?['started_at'];
+    final status = (request['status'] ?? '').toString().toUpperCase();
+    final tripStatus = (request['trip_status'] ?? request['trip']?['trip_status'] ?? '').toString().toUpperCase();
+    
+    // Trip is started if it has odometer reading, started timestamp, or is in progress status
+    return odoStart > 0 || 
+           startedAt != null || 
+           status.contains('STARTED') || 
+           status.contains('PROGRESS') || 
+           tripStatus.contains('STARTED') || 
+           tripStatus.contains('PROGRESS');
+  }
+
   Future<void> _fetchAvailableTrips() async {
     if (!mounted) return;
     setState(() => _isLoadingTrips = true);
@@ -98,15 +118,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
               (r['status'] ?? '').toString().toUpperCase() != 'CANCELLED')
           .map((r) => r['trip_id'].toString())
           .toSet();
-      final filteredTrips = trips
-          .where((t) => !requestedTripIds.contains(t['trip_id'].toString()))
-          .where((t) {
+
+      final openTrips = trips.where((t) {
         final status = (t['trip_status'] ?? t['status'] ?? '').toString();
         return status.trim().toUpperCase() == 'OPEN';
       }).toList();
 
+      final filteredTrips = openTrips
+          .where((t) => !requestedTripIds.contains(t['trip_id'].toString()))
+          .toList();
+
       if (mounted) {
         setState(() {
+          _allTrips = openTrips;
           _availableTrips = filteredTrips;
           _driverRequests = requests;
           _isLoadingTrips = false;
@@ -352,7 +376,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     1,
                     const Color(0xFFDAA520)),
                 const SizedBox(width: 8),
-                _buildTabButton('Approved (2)', 2, const Color(0xFF1E88E5)),
+                _buildTabButton(
+                    'Approved (${_driverRequests.where((r) {
+                      final status =
+                          (r['status'] ?? '').toString().toUpperCase();
+                      final tripStatus = (r['trip_status'] ??
+                              r['trip']?['trip_status'] ??
+                              r['trip']?['status'] ??
+                              '')
+                          .toString()
+                          .toUpperCase();
+                      final startedAt =
+                          r['started_at'] ?? r['trip']?['started_at'];
+                      final odoStart = num.tryParse(
+                              (r['odo_start'] ?? r['trip']?['odo_start'] ?? '0')
+                                  .toString()) ??
+                          0;
+
+                      return status == 'APPROVED' ||
+                          status == 'ACCEPTED' ||
+                          status == 'STARTED' ||
+                          status.contains('TRIP') ||
+                          status.contains('PROGRESS') ||
+                          tripStatus == 'STARTED' ||
+                          tripStatus.contains('TRIP') ||
+                          tripStatus.contains('PROGRESS') ||
+                          startedAt != null ||
+                          odoStart > 0;
+                    }).length})',
+                    2,
+                    const Color(0xFF1E88E5)),
                 const SizedBox(width: 8),
                 _buildHistoryButton(),
               ],
@@ -667,7 +720,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Check if this trip is still in the available (OPEN) trips list
           // If not, it means the trip has been assigned to another driver
           final tripStillOpen =
-              _availableTrips.any((t) => t['trip_id']?.toString() == tripId);
+              _allTrips.any((t) => t['trip_id']?.toString() == tripId);
 
           // Also check explicit status fields if available
           final tripStatus =
@@ -957,74 +1010,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildApprovedContent() {
     final approvedRequests = _driverRequests.where((r) {
       final status = (r['status'] ?? '').toString().toUpperCase();
+      final tripStatus = (r['trip_status'] ??
+              r['trip']?['trip_status'] ??
+              r['trip']?['status'] ??
+              '')
+          .toString()
+          .toUpperCase();
+
       return status == 'APPROVED' ||
           status == 'ACCEPTED' ||
-          status == 'STARTED';
+          status == 'STARTED' ||
+          status == 'ON_TRIP' ||
+          status == 'ON-TRIP' ||
+          status == 'IN_PROGRESS' ||
+          status == 'IN-PROGRESS' ||
+          status == 'ONWAY' ||
+          tripStatus == 'STARTED' ||
+          tripStatus == 'ON_TRIP' ||
+          tripStatus == 'ON-TRIP' ||
+          tripStatus == 'IN_PROGRESS' ||
+          tripStatus == 'IN-PROGRESS' ||
+          tripStatus == 'ONWAY';
     }).toList();
 
     if (approvedRequests.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No approved trips yet',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+      return RefreshIndicator(
+        onRefresh: _fetchAvailableTrips,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle_outline,
+                      size: 48, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No approved trips yet',
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Swipe down to refresh',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       );
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Your approved trips are ready to start',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
+    return RefreshIndicator(
+      onRefresh: _fetchAvailableTrips,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 80),
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Your approved trips are ready to start',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                ),
               ),
             ),
-          ),
-          ...approvedRequests.map((request) {
-            return Column(
-              children: [
-                _buildApprovedCard(
-                  pickup: request['pickup_address'] ?? 'Unknown Pickup',
-                  drop: request['drop_address'] ?? 'Unknown Drop',
-                  type: request['trip_type'] ??
-                      'One-way', // Assuming trip_type exists or defaulting
-                  isCompleted: (request['status'] ?? '').toString().toUpperCase() ==
-                              'STARTED' ||
-                          (request['trip_status'] ?? '').toString().toUpperCase() ==
-                              'STARTED' ||
-                          (request['starting_km'] != null) ||
-                          (request['odo_start'] != null) ||
-                          (request['trip'] != null &&
-                              (request['trip']['odo_start'] != null ||
-                                  request['trip']['starting_km'] != null)),
-                  customer: request['customer_name'] ?? 'Unknown Customer',
-                  phone: request['customer_phone'] ??
-                      'No Phone', // Assuming field name
-                  odometer: (request['starting_km'] ??
-                          request['odo_start'] ??
-                          request['trip']?['odo_start'] ??
-                          '')
-                      .toString(),
-                  requestId: request['request_id']?.toString() ?? '',
-                  tripId: request['trip_id']?.toString(),
-                ),
-                const SizedBox(height: 16),
-              ],
-            );
-          }),
-        ],
+            ...approvedRequests.map((request) {
+              return Column(
+                children: [
+                  _buildApprovedCard(
+                    pickup: request['pickup_address'] ?? 'Unknown Pickup',
+                    drop: request['drop_address'] ?? 'Unknown Drop',
+                    type: request['trip_type'] ??
+                        'One-way', // Assuming trip_type exists or defaulting
+                    isCompleted: _isTripStarted(request),
+                    customer: request['customer_name'] ?? 'Unknown Customer',
+                    phone: request['customer_phone'] ??
+                        'No Phone', // Assuming field name
+                    odometer: (request['starting_km'] ??
+                            request['odo_start'] ??
+                            request['trip']?['odo_start'] ??
+                            request['trip']?['starting_km'] ??
+                            '')
+                        .toString(),
+                    requestId: request['request_id']?.toString() ?? '',
+                    tripId: request['trip_id']?.toString(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -1056,6 +1140,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Stack(
         children: [
+          // Trip Status (Top Left - Debug)
+          Positioned(
+            left: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color:
+                    isCompleted ? Colors.green.shade100 : Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                isCompleted ? 'IN PROGRESS' : 'READY',
+                style: TextStyle(
+                  color: isCompleted
+                      ? Colors.green.shade800
+                      : Colors.blue.shade800,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
           // Trip Type (Top Right)
           Positioned(
             right: 0,
@@ -1201,73 +1308,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         // Start/Complete Trip Button
                         SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (isCompleted) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => TripCompletedScreen(
-                                      tripData: {
-                                        'pickup': pickup,
-                                        'drop': drop,
-                                        'type': type,
-                                        'customer': customer,
-                                        'phone': phone,
-                                        'request_id': requestId,
-                                        'trip_id': tripId,
-                                      },
-                                      startingKm: odometer,
+                          child: Container(
+                            decoration: isCompleted ? BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppColors.greenLight, AppColors.greenDark],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ) : null,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                if (isCompleted) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => TripCompletedScreen(
+                                        tripData: {
+                                          'pickup': pickup,
+                                          'drop': drop,
+                                          'type': type,
+                                          'customer': customer,
+                                          'phone': phone,
+                                          'request_id': requestId,
+                                          'trip_id': tripId,
+                                        },
+                                        startingKm: odometer,
+                                      ),
                                     ),
-                                  ),
-                                ).then((_) => _fetchAvailableTrips());
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => TripStartScreen(
-                                      tripData: {
-                                        'pickup': pickup,
-                                        'drop': drop,
-                                        'type': type,
-                                        'customer': customer,
-                                        'phone': phone,
-                                        'request_id': requestId,
-                                        'trip_id': tripId,
-                                      },
+                                  ).then((_) => _fetchAvailableTrips());
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => TripStartScreen(
+                                        tripData: {
+                                          'pickup': pickup,
+                                          'drop': drop,
+                                          'type': type,
+                                          'customer': customer,
+                                          'phone': phone,
+                                          'request_id': requestId,
+                                          'trip_id': tripId,
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                ).then((_) => _fetchAvailableTrips());
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  const Color(0xFF1565C0), // Dark Blue
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              elevation: 4,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  isCompleted
-                                      ? Icons.check_circle_outline
-                                      : Icons.timer_outlined,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  isCompleted ? 'Complete Trip' : 'Start Trip',
-                                  style: const TextStyle(
+                                  ).then((result) {
+                                    debugPrint('Returned from trip start: $result');
+                                    debugPrint('Trip ID: $tripId');
+                                    if (result != null && tripId != null) {
+                                      _startedTripIds.add(tripId);
+                                      debugPrint('Added trip ID to started trips: $_startedTripIds');
+                                      setState(() {}); // Force rebuild
+                                    }
+                                  });
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isCompleted ? Colors.transparent : const Color(0xFF1565C0),
+                                shadowColor: isCompleted ? Colors.transparent : null,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                elevation: isCompleted ? 0 : 4,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    isCompleted
+                                        ? Icons.check_circle_outline
+                                        : Icons.timer_outlined,
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    size: 20,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    isCompleted ? 'Complete Trip' : 'Start Trip',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -1426,116 +1551,124 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHistoryContent() {
-    // Filter for history: completed, cancelled, rejected
-    final historyRequests = _driverRequests.where((r) {
-      final status = (r['status'] ?? '').toString().toUpperCase();
-      return ['COMPLETED', 'CANCELLED', 'REJECTED'].contains(status);
-    }).toList();
+    return FutureBuilder<List<dynamic>>(
+      future: ApiService.getAllTrips(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    if (historyRequests.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No detailed history yet',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+        if (snapshot.hasError) {
+          return const Center(
+            child: Text('Error loading trip history', style: TextStyle(color: Colors.red)),
+          );
+        }
+
+        final allTrips = snapshot.data ?? [];
+        
+        // Filter for completed trips assigned to this driver
+        final completedTrips = allTrips.where((trip) {
+          final status = (trip['trip_status'] ?? trip['status'] ?? '').toString().toUpperCase();
+          final assignedDriverId = trip['assigned_driver_id']?.toString();
+          return status == 'COMPLETED' && assignedDriverId == _driverId;
+        }).toList();
+
+        if (completedTrips.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.history, size: 48, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No completed trips yet',
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    }
+          );
+        }
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Trip History',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF424242),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: const [
-                    Text(
-                      'Filter',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.keyboard_arrow_down,
-                        color: Colors.white, size: 20),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Container(
-            color: const Color(0xFFBDBDBD),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Table(
-                columnWidths: const {
-                  0: FlexColumnWidth(0.8),
-                  1: FlexColumnWidth(2),
-                  2: FlexColumnWidth(2),
-                  3: FlexColumnWidth(1.2), // Status column
-                },
-                border: TableBorder.all(color: Colors.white70),
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TableRow(
-                    decoration: const BoxDecoration(color: Color(0xFF9E9E9E)),
-                    children: [
-                      _buildTableHeader('No'),
-                      _buildTableHeader('Date'),
-                      _buildTableHeader('Pickup'),
-                      _buildTableHeader('Status'),
-                    ],
+                  const Text(
+                    'Completed Trips',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                  ...historyRequests.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final request = entry.value;
-                    final dateStr = request['created_at'] != null
-                        ? _formatTripTime(request['created_at'])
-                        : '-';
-                    final status = request['status'] ?? '-';
-
-                    return TableRow(
-                      decoration: BoxDecoration(
-                        color: index % 2 == 0
-                            ? const Color(0xFFC0C0C0)
-                            : const Color(0xFFBDBDBD),
-                      ),
-                      children: [
-                        _buildTableCell('${index + 1}'),
-                        _buildTableCell(dateStr),
-                        _buildTableCell(request['pickup_address'] ?? '-'),
-                        _buildTableCell(status),
-                      ],
-                    );
-                  }),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF424242),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${completedTrips.length} trips',
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-        ),
-      ],
+            Expanded(
+              child: Container(
+                color: const Color(0xFFBDBDBD),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: Table(
+                    columnWidths: const {
+                      0: FlexColumnWidth(0.8),
+                      1: FlexColumnWidth(2),
+                      2: FlexColumnWidth(2),
+                      3: FlexColumnWidth(1.2),
+                    },
+                    border: TableBorder.all(color: Colors.white70),
+                    children: [
+                      TableRow(
+                        decoration: const BoxDecoration(color: Color(0xFF9E9E9E)),
+                        children: [
+                          _buildTableHeader('No'),
+                          _buildTableHeader('Date'),
+                          _buildTableHeader('Pickup'),
+                          _buildTableHeader('Status'),
+                        ],
+                      ),
+                      ...completedTrips.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final trip = entry.value;
+                        final dateStr = trip['completed_at'] ?? trip['created_at'];
+                        final formattedDate = dateStr != null ? _formatTripTime(dateStr) : '-';
+
+                        return TableRow(
+                          decoration: BoxDecoration(
+                            color: index % 2 == 0
+                                ? const Color(0xFFC0C0C0)
+                                : const Color(0xFFBDBDBD),
+                          ),
+                          children: [
+                            _buildTableCell('${index + 1}'),
+                            _buildTableCell(formattedDate),
+                            _buildTableCell(trip['pickup_address'] ?? '-'),
+                            _buildTableCell('COMPLETED'),
+                          ],
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

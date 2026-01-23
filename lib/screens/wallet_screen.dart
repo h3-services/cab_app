@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/widgets.dart';
 import '../widgets/bottom_navigation.dart';
+import '../services/razorpay_service.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -10,6 +12,85 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  late RazorpayService razorpayService;
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    razorpayService = RazorpayService(
+      onSuccess: _handlePaymentSuccess,
+      onError: _handlePaymentError,
+      onWallet: _handleExternalWallet,
+    );
+  }
+
+  @override
+  void dispose() {
+    razorpayService.dispose();
+    super.dispose();
+  }
+
+  void _startPayment() async {
+    setState(() => isLoading = true);
+
+    try {
+      final order = await RazorpayService.createOrder();
+
+      razorpayService.openCheckout(
+        orderId: order['id'],
+        amount: order['amount'],
+        key: "rzp_test_1DP5mmOlF5G5ag", // Test key
+        name: "Chola Cabs",
+        description: "Add Money to Wallet",
+        contact: "9999999999",
+        email: "driver@cholacabs.com",
+      );
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create order: $e')),
+      );
+    }
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    try {
+      await RazorpayService.verifyPayment(
+        paymentId: response.paymentId!,
+        orderId: response.orderId!,
+        signature: response.signature!,
+      );
+
+      setState(() => isLoading = false);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Payment successful! ₹500 added to wallet'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment verification failed: $e')),
+      );
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    setState(() => isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Payment failed: ${response.message}')),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    setState(() => isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('External wallet: ${response.walletName}')),
+    );
+  }
   final List<Map<String, dynamic>> transactions = [
     {
       'title': 'Trip Earning',
@@ -149,33 +230,46 @@ class _WalletScreenState extends State<WalletScreen> {
                             ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade400,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.add, color: Colors.black, size: 24),
-                              SizedBox(width: 8),
-                              Text(
-                                'Add Money',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                        GestureDetector(
+                          onTap: isLoading ? null : _startPayment,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isLoading ? Colors.grey.shade300 : Colors.grey.shade400,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                if (isLoading)
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                    ),
+                                  )
+                                else
+                                  const Icon(Icons.add, color: Colors.black, size: 24),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isLoading ? 'Processing...' : 'Add Money',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],

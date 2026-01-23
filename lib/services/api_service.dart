@@ -383,6 +383,28 @@ class ApiService {
         filename: filename, method: 'PUT');
   }
 
+  static Future<List<dynamic>> getAllTrips() async {
+    final url = Uri.parse('$baseUrl/trips/');
+    try {
+      debugPrint('GET Request: $url');
+      final response = await http.get(url);
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var decoded = jsonDecode(response.body);
+        if (decoded is List) return decoded;
+        return [];
+      } else {
+        throw Exception('Failed to get all trips: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      return [];
+    }
+  }
+
   static Future<List<dynamic>> getAvailableTrips() async {
     final url = Uri.parse('$baseUrl/trips/');
     debugPrint('GET Request: $url');
@@ -505,6 +527,32 @@ class ApiService {
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception(
             'Failed to start trip: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<void> startTripV2(String tripId, String startingKm) async {
+    final url = Uri.parse('$baseUrl/trips/$tripId/start');
+    debugPrint('PATCH Request: $url');
+    debugPrint('Request Body: ${jsonEncode({'odo_start': int.parse(startingKm)})}');
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'odo_start': int.parse(startingKm)}),
+      );
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(
+            'Failed to start trip (PATCH): ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       debugPrint('API Error: $e');
