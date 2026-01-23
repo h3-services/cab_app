@@ -35,21 +35,30 @@ class _WalletScreenState extends State<WalletScreen> {
     setState(() => isLoading = true);
 
     try {
+      debugPrint('Starting Razorpay payment process...');
       final order = await RazorpayService.createOrder();
+      debugPrint('Order created: $order');
 
+      debugPrint('Opening Razorpay checkout with key: rzp_test_1DP5mmOlF5G5ag');
       razorpayService.openCheckout(
         orderId: order['id'],
         amount: order['amount'],
-        key: "rzp_test_1DP5mmOlF5G5ag", // Test key
+        key: "rzp_test_1DP5mmOlF5G5ag",
         name: "Chola Cabs",
         description: "Add Money to Wallet",
         contact: "9999999999",
         email: "driver@cholacabs.com",
       );
+      
+      // Don't set loading to false here - let the callbacks handle it
     } catch (e) {
+      debugPrint('Payment initiation error: $e');
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to create order: $e')),
+        SnackBar(
+          content: Text('Failed to start payment: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -79,9 +88,13 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
+    debugPrint('Payment error: ${response.code} - ${response.message}');
     setState(() => isLoading = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Payment failed: ${response.message}')),
+      SnackBar(
+        content: Text('Payment failed: ${response.message ?? 'Unknown error'}'),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 

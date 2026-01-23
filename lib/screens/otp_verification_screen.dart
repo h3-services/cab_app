@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../constants/app_colors.dart';
+import '../services/auth_service.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   const OTPVerificationScreen({Key? key}) : super(key: key);
@@ -12,6 +13,7 @@ class OTPVerificationScreen extends StatefulWidget {
 class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final List<TextEditingController> _otpControllers = List.generate(4, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -154,10 +156,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // Navigate to dashboard for demo
-                          Navigator.pushReplacementNamed(context, '/dashboard');
-                        },
+                        onPressed: _isLoading ? null : _handleContinue,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.buttonGradientEnd,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -165,14 +164,16 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                'Continue',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                     ],
@@ -184,6 +185,41 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleContinue() async {
+    final phoneNumber = ModalRoute.of(context)?.settings.arguments as String?;
+    
+    if (phoneNumber == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Phone number not found')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await AuthService.verifyDeviceAndLogin(phoneNumber);
+      
+      if (result['success']) {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'])),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }
 

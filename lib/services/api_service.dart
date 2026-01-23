@@ -560,6 +560,68 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> getTripDetails(String tripId) async {
+    final url = Uri.parse('$baseUrl/trips/$tripId');
+    try {
+      debugPrint('GET Request: $url');
+      final response = await http.get(url);
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to get trip details: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<void> startTripAPI(String tripId) async {
+    final url = Uri.parse('$baseUrl/trips/$tripId/start');
+    debugPrint('POST Request: $url');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(
+            'Failed to start trip: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<void> completeTripStatus(String tripId) async {
+    final url = Uri.parse('$baseUrl/trips/$tripId/complete');
+    debugPrint('PATCH Request: $url');
+    try {
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception(
+            'Failed to complete trip: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<void> updateOdometerStart(String tripId, num odoStart) async {
     final url = Uri.parse('$baseUrl/trips/$tripId/odometer-start?odo_start=$odoStart');
     debugPrint('PATCH Request: $url');

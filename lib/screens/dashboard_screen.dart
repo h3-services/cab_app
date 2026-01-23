@@ -72,29 +72,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     } catch (e) {
-      // If verification fails (e.g. offline), what to do?
-      // Strict Mode: Redirect to Pending.
+      debugPrint('Approval check error: $e');
+      // On network error, allow user to continue but show offline state
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/approval-pending');
+        setState(() => _isCheckingStatus = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Network error. Working in offline mode.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
     }
   }
 
   bool _isTripStarted(Map<String, dynamic> request) {
-    // Check if trip has odometer start value or is in started/progress status
-    final odoStart = num.tryParse(
-        (request['odo_start'] ?? request['trip']?['odo_start'] ?? '0').toString()) ?? 0;
-    final startedAt = request['started_at'] ?? request['trip']?['started_at'];
-    final status = (request['status'] ?? '').toString().toUpperCase();
-    final tripStatus = (request['trip_status'] ?? request['trip']?['trip_status'] ?? '').toString().toUpperCase();
+    // Check trip status from multiple possible fields
+    final tripStatus = (request['trip_status'] ?? 
+                       request['trip']?['trip_status'] ?? 
+                       request['status'] ?? '').toString().toUpperCase();
     
-    // Trip is started if it has odometer reading, started timestamp, or is in progress status
-    return odoStart > 0 || 
-           startedAt != null || 
-           status.contains('STARTED') || 
-           status.contains('PROGRESS') || 
-           tripStatus.contains('STARTED') || 
-           tripStatus.contains('PROGRESS');
+    debugPrint('Checking trip status for trip ${request['trip_id']}: $tripStatus');
+    
+    // Check if trip is in started state
+    final isStarted = tripStatus == 'STARTED' || 
+                     tripStatus == 'IN_PROGRESS' || 
+                     tripStatus == 'ON_TRIP' || 
+                     tripStatus.contains('STARTED') || 
+                     tripStatus.contains('PROGRESS');
+    
+    debugPrint('Trip ${request['trip_id']} is started: $isStarted');
+    return isStarted;
+  }
+
+  bool _isTripCompleted(Map<String, dynamic> request) {
+    final tripStatus = (request['trip_status'] ?? 
+                       request['trip']?['trip_status'] ?? 
+                       request['status'] ?? '').toString().toUpperCase();
+    final requestStatus = (request['status'] ?? '').toString().toUpperCase();
+    
+    debugPrint('Checking completion for trip ${request['trip_id']}: tripStatus=$tripStatus, requestStatus=$requestStatus');
+    
+    final isCompleted = tripStatus == 'COMPLETED' || requestStatus == 'COMPLETED';
+    debugPrint('Trip ${request['trip_id']} is completed: $isCompleted');
+    
+    return isCompleted;
+  }
+
+  Future<bool> _checkTripStatus(String tripId) async {
+    try {
+      final tripDetails = await ApiService.getTripDetails(tripId);
+      final status = (tripDetails['trip_status'] ?? tripDetails['status'] ?? '').toString().toUpperCase();
+      debugPrint('Fresh trip status for $tripId: $status');
+      return status == 'STARTED' || status.contains('STARTED') || status.contains('PROGRESS');
+    } catch (e) {
+      debugPrint('Error fetching trip status: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _checkTripCompleted(String tripId) async {
+    try {
+      final tripDetails = await ApiService.getTripDetails(tripId);
+      final status = (tripDetails['trip_status'] ?? tripDetails['status'] ?? '').toString().toUpperCase();
+      return status == 'COMPLETED';
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<void> _fetchAvailableTrips() async {
@@ -434,6 +478,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           setState(() {
             selectedTab = index;
           });
+          // Refresh data when switching to approved tab
+          if (index == 2) {
+            _fetchAvailableTrips();
+          }
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1007,6 +1055,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  String _getDefinitiveTripStatus(Map<String, dynamic> request) {
+    // Check ALL possible status fields including nested ones
+    final statusChecks = [
+      request['trip_status']?.toString()?.toUpperCase(),
+      request['status']?.toString()?.toUpperCase(),
+      request['trip']?['trip_status']?.toString()?.toUpperCase(),
+      request['trip']?['status']?.toString()?.toUpperCase(),
+      request['request_status']?.toString()?.toUpperCase(),
+      request['trip_request_status']?.toString()?.toUpperCase(),
+    ];
+    
+    // Check for COMPLETED first
+    for (String? status in statusChecks) {
+      if (status == 'COMPLETED') {
+        return 'COMPLETED';
+      }
+    }
+    
+    // Check for STARTED variations
+    for (String? status in statusChecks) {
+      if (status != null && (
+          status == 'STARTED' ||
+          status == 'IN_PROGRESS' ||
+          status == 'ON_TRIP' ||
+          status == 'ONWAY' ||
+          status.contains('PROGRESS') ||
+          status.contains('STARTED')
+      )) {
+        return 'STARTED';
+      }
+    }
+    
+    return 'ASSIGNED';
+  }
+
   Widget _buildApprovedContent() {
     final approvedRequests = _driverRequests.where((r) {
       final status = (r['status'] ?? '').toString().toUpperCase();
@@ -1030,7 +1113,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           tripStatus == 'ON-TRIP' ||
           tripStatus == 'IN_PROGRESS' ||
           tripStatus == 'IN-PROGRESS' ||
-          tripStatus == 'ONWAY';
+          tripStatus == 'ONWAY' ||
+          tripStatus == 'COMPLETED' ||
+          status == 'COMPLETED';
     }).toList();
 
     if (approvedRequests.isEmpty) {
@@ -1083,17 +1168,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             ...approvedRequests.map((request) {
+              // Direct status check from trip_status field
+              String tripStatus = request['trip_status']?.toString().toUpperCase() ?? 'ASSIGNED';
+              
               return Column(
                 children: [
                   _buildApprovedCard(
                     pickup: request['pickup_address'] ?? 'Unknown Pickup',
                     drop: request['drop_address'] ?? 'Unknown Drop',
-                    type: request['trip_type'] ??
-                        'One-way', // Assuming trip_type exists or defaulting
-                    isCompleted: _isTripStarted(request),
+                    type: request['trip_type'] ?? 'One-way',
+                    tripStatus: tripStatus,
                     customer: request['customer_name'] ?? 'Unknown Customer',
-                    phone: request['customer_phone'] ??
-                        'No Phone', // Assuming field name
+                    phone: request['customer_phone'] ?? 'No Phone',
                     odometer: (request['starting_km'] ??
                             request['odo_start'] ??
                             request['trip']?['odo_start'] ??
@@ -1113,22 +1199,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+
+
   Widget _buildApprovedCard({
     required String pickup,
     required String drop,
     required String type,
-    required bool isCompleted,
+    required String tripStatus,
     required String customer,
     required String phone,
     required String odometer,
     String? requestId,
     String? tripId,
   }) {
+    // Simple status-based logic
+    String buttonText;
+    Color buttonColor;
+    bool isEnabled;
+    
+    // Check if trip_status is COMPLETED directly
+    if (tripStatus == 'COMPLETED') {
+      buttonText = 'Trip Completed';
+      buttonColor = Colors.green;
+      isEnabled = false;
+    } else if (tripStatus == 'STARTED') {
+      buttonText = 'Complete Trip';
+      buttonColor = Colors.transparent;
+      isEnabled = true;
+    } else {
+      buttonText = 'Start Trip';
+      buttonColor = const Color(0xFF1565C0);
+      isEnabled = true;
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFC4C4C4), // Grey background from image
+        color: const Color(0xFFC4C4C4),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1140,30 +1248,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Stack(
         children: [
-          // Trip Status (Top Left - Debug)
           Positioned(
             left: 0,
             top: 0,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color:
-                    isCompleted ? Colors.green.shade100 : Colors.blue.shade100,
+                color: tripStatus == 'COMPLETED' ? Colors.grey.shade100 :
+                       tripStatus == 'STARTED' ? Colors.green.shade100 : Colors.blue.shade100,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                isCompleted ? 'IN PROGRESS' : 'READY',
+                tripStatus,
                 style: TextStyle(
-                  color: isCompleted
-                      ? Colors.green.shade800
-                      : Colors.blue.shade800,
+                  color: tripStatus == 'COMPLETED' ? Colors.grey.shade800 :
+                         tripStatus == 'STARTED' ? Colors.green.shade800 : Colors.blue.shade800,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-          // Trip Type (Top Right)
           Positioned(
             right: 0,
             top: 0,
@@ -1179,137 +1284,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Locations
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Column(
                     children: [
-                      const Icon(Icons.location_on,
-                          color: Colors.green, size: 24),
-                      Container(
-                        width: 2,
-                        height: 12,
-                        color: Colors.transparent, // flexible spacer
-                      ),
-                      const Icon(Icons.location_on,
-                          color: Color(0xFF8B0000), size: 24), // Dark red
+                      const Icon(Icons.location_on, color: Colors.green, size: 24),
+                      Container(width: 2, height: 12, color: Colors.transparent),
+                      const Icon(Icons.location_on, color: Color(0xFF8B0000), size: 24),
                     ],
                   ),
                   const SizedBox(width: 12),
-                  // Addresses
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.only(
-                          right: 60.0), // Space for "Round"
+                      padding: const EdgeInsets.only(right: 60.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            pickup,
-                            style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.bold),
-                          ),
+                          Text(pickup, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 16),
-                          Text(
-                            drop,
-                            style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.bold),
-                          ),
+                          Text(drop, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 16),
-
-              // Bottom Section: Details + Actions
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // Left Side: Trip Details
                   Expanded(
                     flex: 5,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Pickup at 6:30 PM ( 12 Mar )', // Placeholder - should use real data if available
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        const Text('Pickup at 6:30 PM ( 12 Mar )', style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        Text(
-                          'customer : $customer',
-                          style: const TextStyle(
-                            color: Colors.black54,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text('customer : $customer', style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        Text(
-                          phone,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text(phone, style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
-
-                  // Right Side: Actions
                   Expanded(
                     flex: 4,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // Small Action Buttons Row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            _buildSquareActionButton(
-                              Icons.close,
-                              Colors.red,
-                              onTap: () => _showApprovedCancelDialog(context),
-                            ),
+                            _buildSquareActionButton(Icons.close, Colors.red, onTap: () => _showApprovedCancelDialog(context)),
                             const SizedBox(width: 8),
-                            _buildSquareActionButton(
-                              Icons.navigation,
-                              Colors.blue,
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Opening navigation...')),
-                                );
-                              },
-                            ),
+                            _buildSquareActionButton(Icons.navigation, Colors.blue, onTap: () {}),
                             const SizedBox(width: 8),
-                            _buildSquareActionButton(
-                              Icons.call,
-                              Colors.green,
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text('Calling $customer...')),
-                                );
-                              },
-                            ),
+                            _buildSquareActionButton(Icons.call, Colors.green, onTap: () {}),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        // Start/Complete Trip Button
                         SizedBox(
                           width: double.infinity,
                           child: Container(
-                            decoration: isCompleted ? BoxDecoration(
+                            decoration: tripStatus == 'STARTED' ? BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [AppColors.greenLight, AppColors.greenDark],
                                 begin: Alignment.topCenter,
@@ -1318,8 +1355,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ) : null,
                             child: ElevatedButton(
-                              onPressed: () {
-                                if (isCompleted) {
+                              onPressed: isEnabled ? () async {
+                                if (tripStatus == 'STARTED') {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -1337,59 +1374,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ),
                                   ).then((_) => _fetchAvailableTrips());
-                                } else {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => TripStartScreen(
-                                        tripData: {
-                                          'pickup': pickup,
-                                          'drop': drop,
-                                          'type': type,
-                                          'customer': customer,
-                                          'phone': phone,
-                                          'request_id': requestId,
-                                          'trip_id': tripId,
-                                        },
-                                      ),
-                                    ),
-                                  ).then((result) {
-                                    debugPrint('Returned from trip start: $result');
-                                    debugPrint('Trip ID: $tripId');
-                                    if (result != null && tripId != null) {
-                                      _startedTripIds.add(tripId);
-                                      debugPrint('Added trip ID to started trips: $_startedTripIds');
-                                      setState(() {}); // Force rebuild
+                                } else if (tripStatus == 'ASSIGNED') {
+                                  if (tripId != null) {
+                                    try {
+                                      await ApiService.startTripAPI(tripId);
+                                      await _fetchAvailableTrips();
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => TripStartScreen(
+                                            tripData: {
+                                              'pickup': pickup,
+                                              'drop': drop,
+                                              'type': type,
+                                              'customer': customer,
+                                              'phone': phone,
+                                              'request_id': requestId,
+                                              'trip_id': tripId,
+                                            },
+                                          ),
+                                        ),
+                                      ).then((result) {
+                                        if (result != null) _fetchAvailableTrips();
+                                      });
+                                    } catch (e) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Failed to start trip: $e'), backgroundColor: Colors.red),
+                                      );
                                     }
-                                  });
+                                  }
                                 }
-                              },
+                              } : null,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isCompleted ? Colors.transparent : const Color(0xFF1565C0),
-                                shadowColor: isCompleted ? Colors.transparent : null,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
+                                backgroundColor: buttonColor,
+                                shadowColor: tripStatus == 'STARTED' ? Colors.transparent : null,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
-                                elevation: isCompleted ? 0 : 4,
+                                elevation: tripStatus == 'STARTED' ? 0 : 4,
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    isCompleted
-                                        ? Icons.check_circle_outline
-                                        : Icons.timer_outlined,
+                                    tripStatus == 'COMPLETED' ? Icons.check_circle :
+                                    tripStatus == 'STARTED' ? Icons.check_circle_outline : Icons.timer_outlined,
                                     color: Colors.white,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    isCompleted ? 'Complete Trip' : 'Start Trip',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                    buttonText,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                                   ),
                                 ],
                               ),
@@ -1572,6 +1607,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final assignedDriverId = trip['assigned_driver_id']?.toString();
           return status == 'COMPLETED' && assignedDriverId == _driverId;
         }).toList();
+
+        // Sort by completion date (most recent first)
+        completedTrips.sort((a, b) {
+          final dateA = a['completed_at'] ?? a['updated_at'] ?? a['created_at'] ?? '';
+          final dateB = b['completed_at'] ?? b['updated_at'] ?? b['created_at'] ?? '';
+          return dateB.toString().compareTo(dateA.toString());
+        });
 
         if (completedTrips.isEmpty) {
           return const Center(

@@ -488,8 +488,8 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                                   tripData: widget.tripData,
                                   startingKm: widget.startingKm,
                                   endingKm: _endingKmController.text,
-                                  distance: result['distance_km'] ?? 0,
-                                  fare: result['fare'] ?? 0,
+                                  distance: result['distance_km'] ?? result['distance'] ?? 0,
+                                  fare: result['fare'] ?? result['total_fare'] ?? result['total_cost'] ?? result['amount'] ?? 500,
                                 ),
                               ),
                             );
@@ -693,7 +693,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
   }
 }
 
-class TripSummaryScreen extends StatelessWidget {
+class TripSummaryScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
   final String endingKm;
@@ -710,16 +710,68 @@ class TripSummaryScreen extends StatelessWidget {
   });
 
   @override
+  State<TripSummaryScreen> createState() => _TripSummaryScreenState();
+}
+
+class _TripSummaryScreenState extends State<TripSummaryScreen> {
+  num? actualFare;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTripFare();
+  }
+
+  Future<void> _fetchTripFare() async {
+    final tripId = widget.tripData['trip_id'];
+    if (tripId == null) {
+      setState(() {
+        actualFare = widget.fare ?? 500;
+        isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final tripDetails = await ApiService.getTripDetails(tripId.toString());
+      setState(() {
+        actualFare = tripDetails['fare'] ?? 
+                    tripDetails['total_fare'] ?? 
+                    tripDetails['total_cost'] ?? 
+                    tripDetails['amount'] ?? 
+                    widget.fare ?? 
+                    500;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        actualFare = widget.fare ?? 500;
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final dist = distance ?? (int.parse(endingKm) - int.parse(startingKm));
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFB0B0B0),
+        appBar: const CustomAppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final startKm = num.tryParse(widget.startingKm) ?? 0;
+    final endKm = num.tryParse(widget.endingKm) ?? 0;
+    final dist = widget.distance ?? (endKm - startKm).abs();
     final ratePerKm = 12.0;
-    // If fare comes from API, assume it includes wallet fee or whatever logic backend uses.
-    // But user prompt showed "fare" in response.
-    // If we have API fare, use it. Else calc.
-    final totalCost =
-        fare?.toDouble() ?? (dist * ratePerKm * 1.02); // 1.02 = +2%
-    final walletFee =
-        fare != null ? 0 : (dist * ratePerKm * 0.02); // Placeholder if API used
+    
+    // Use actualFare from API, fallback to calculation
+    final totalCost = (actualFare != null && actualFare! > 0) 
+        ? actualFare!.toDouble() 
+        : (dist * ratePerKm * 1.02);
+    final walletFee = (actualFare != null && actualFare! > 0) ? 0 : (dist * ratePerKm * 0.02);
 
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
@@ -768,10 +820,10 @@ class TripSummaryScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildSummaryRow('Distance Traveled', '$dist km'),
                 _buildSummaryRow('Vehicle Type', 'Sedan'),
-                if (fare == null)
+                if (actualFare == null || actualFare == 0)
                   _buildSummaryRow(
                       'Rate per KM', '₹ ${ratePerKm.toStringAsFixed(2)}'),
-                if (fare == null)
+                if (actualFare == null || actualFare == 0)
                   _buildSummaryRow('Wallet fee ( 2% of KM cost )',
                       '₹ ${walletFee.toStringAsFixed(2)}'),
                 const SizedBox(height: 20),
@@ -1058,69 +1110,27 @@ class TripSummaryScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () async {
-                        try {
-                          Navigator.pop(
-                              dialogContext); // Close dialog first to show loading if needed, or keep it open.
-                          // Better: show loading dialog or snackbar.
-                          // For simplicity, we just call API and assume it's fast or user waits.
-                          // But we popped the dialog, so we are back to Summary Screen.
-
-                          // Show loading indicator
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (c) => const Center(
-                                child: CircularProgressIndicator()),
-                          );
-
-                          final requestId = tripData['request_id'];
-                          if (requestId != null) {
-                            await ApiService.completeTrip(
-                                requestId.toString(), {
-                              'total_cost': totalCost,
-                              'starting_km': startingKm,
-                              'ending_km': endingKm,
-                              'distance':
-                                  int.parse(endingKm) - int.parse(startingKm),
-                            });
-                          }
-
-                          // Pop loading
-                          if (context.mounted) Navigator.pop(context);
-
-                          // Close screens
-                          // Return to Dashboard and refresh
-                          if (context.mounted) {
-                            Navigator.popUntil(
-                                context, ModalRoute.withName('/dashboard'));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Trip closed successfully!')),
-                            );
-                          }
-                        } catch (e) {
-                          // Pop loading if open
-                          // Note: context logic is tricky with async pops.
-                          // Assuming the loading dialog is top.
-                          // Getting context right: the 'context' variable is from _showCloseTripDialog call (likely SummaryScreen context).
-
-                          // If error, we should probably show it.
-                          debugPrint("Error completing trip: $e");
-                          // We might have already popped the loading dialog, or not if it failed before.
-                          // Safe way: enclose in try/finally or use a flag.
-                          // For now, let's just show error snackbar on the Summary screen.
-                          if (context.mounted) {
-                            // Trying to pop loading if it's there?
-                            // It's hard to know if the loading dialog is the top route without tracking.
-                            // But we called showDialog(context: context...)
-                            // We should probably use a key or simple logic.
-                            // Let's assume successful pop of loading if we reached here? No.
-                            // Rethrow or handle.
-
-                            // Simplification: Don't pop dialog first. Keep it open and disable button?
-                            // Or convert dialog to StatefullWidget.
+                        // Close dialog immediately
+                        Navigator.pop(dialogContext);
+                        
+                        // Mark trip as completed
+                        final tripId = widget.tripData['trip_id'];
+                        if (tripId != null) {
+                          try {
+                            await ApiService.completeTripStatus(tripId.toString());
+                          } catch (e) {
+                            debugPrint('Failed to mark trip as completed: $e');
                           }
                         }
+                        
+                        // Close screens and return to dashboard
+                        Navigator.popUntil(
+                            context, ModalRoute.withName('/dashboard'));
+                        
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Trip closed successfully!')),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,

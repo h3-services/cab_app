@@ -26,19 +26,28 @@ class RazorpayService {
     required String contact,
     required String email,
   }) {
-    final options = {
-      'key': key,
-      'order_id': orderId,
-      'amount': amount,
-      'name': name,
-      'description': description,
-      'prefill': {
-        'contact': contact,
-        'email': email,
-      }
-    };
+    try {
+      final options = {
+        'key': key,
+        'order_id': orderId,
+        'amount': amount,
+        'name': name,
+        'description': description,
+        'prefill': {
+          'contact': contact,
+          'email': email,
+        },
+        'theme': {
+          'color': '#3399cc'
+        }
+      };
 
-    _razorpay.open(options);
+      debugPrint('Razorpay options: $options');
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint('Razorpay open error: $e');
+      rethrow;
+    }
   }
 
   void dispose() {

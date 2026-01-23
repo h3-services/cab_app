@@ -9,14 +9,23 @@ class DeviceService {
     try {
       if (Platform.isAndroid) {
         final androidInfo = await _deviceInfo.androidInfo;
-        return androidInfo.id; // Android ID
+        // Use androidId as primary, fallback to other identifiers
+        String deviceId = androidInfo.id;
+        if (deviceId.isEmpty || deviceId == 'unknown') {
+          deviceId = '${androidInfo.brand}_${androidInfo.model}_${androidInfo.device}';
+        }
+        print('Android Device ID: $deviceId');
+        return deviceId;
       } else if (Platform.isIOS) {
         final iosInfo = await _deviceInfo.iosInfo;
-        return iosInfo.identifierForVendor ?? 'unknown_ios';
+        String deviceId = iosInfo.identifierForVendor ?? 'unknown_ios';
+        print('iOS Device ID: $deviceId');
+        return deviceId;
       } else {
         return 'unsupported_platform';
       }
     } catch (e) {
+      print('Error getting device ID: $e');
       return 'error_getting_device_id';
     }
   }
@@ -24,6 +33,8 @@ class DeviceService {
   /// Generates a unique device identifier combining phone number and device ID
   static Future<String> generateDeviceIdentifier(String phoneNumber) async {
     final deviceId = await getDeviceId();
-    return '${phoneNumber}_$deviceId';
+    final identifier = '${phoneNumber}_$deviceId';
+    print('Generated device identifier: $identifier');
+    return identifier;
   }
 }
