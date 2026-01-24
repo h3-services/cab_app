@@ -88,43 +88,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   bool _isTripStarted(Map<String, dynamic> request) {
     // Check trip status from multiple possible fields
-    final tripStatus = (request['trip_status'] ?? 
-                       request['trip']?['trip_status'] ?? 
-                       request['status'] ?? '').toString().toUpperCase();
-    
-    debugPrint('Checking trip status for trip ${request['trip_id']}: $tripStatus');
-    
+    final tripStatus = (request['trip_status'] ??
+            request['trip']?['trip_status'] ??
+            request['status'] ??
+            '')
+        .toString()
+        .toUpperCase();
+
+    debugPrint(
+        'Checking trip status for trip ${request['trip_id']}: $tripStatus');
+
     // Check if trip is in started state
-    final isStarted = tripStatus == 'STARTED' || 
-                     tripStatus == 'IN_PROGRESS' || 
-                     tripStatus == 'ON_TRIP' || 
-                     tripStatus.contains('STARTED') || 
-                     tripStatus.contains('PROGRESS');
-    
+    final isStarted = tripStatus == 'STARTED' ||
+        tripStatus == 'IN_PROGRESS' ||
+        tripStatus == 'ON_TRIP' ||
+        tripStatus.contains('STARTED') ||
+        tripStatus.contains('PROGRESS');
+
     debugPrint('Trip ${request['trip_id']} is started: $isStarted');
     return isStarted;
   }
 
   bool _isTripCompleted(Map<String, dynamic> request) {
-    final tripStatus = (request['trip_status'] ?? 
-                       request['trip']?['trip_status'] ?? 
-                       request['status'] ?? '').toString().toUpperCase();
+    final tripStatus = (request['trip_status'] ??
+            request['trip']?['trip_status'] ??
+            request['status'] ??
+            '')
+        .toString()
+        .toUpperCase();
     final requestStatus = (request['status'] ?? '').toString().toUpperCase();
-    
-    debugPrint('Checking completion for trip ${request['trip_id']}: tripStatus=$tripStatus, requestStatus=$requestStatus');
-    
-    final isCompleted = tripStatus == 'COMPLETED' || requestStatus == 'COMPLETED';
+
+    debugPrint(
+        'Checking completion for trip ${request['trip_id']}: tripStatus=$tripStatus, requestStatus=$requestStatus');
+
+    final isCompleted =
+        tripStatus == 'COMPLETED' || requestStatus == 'COMPLETED';
     debugPrint('Trip ${request['trip_id']} is completed: $isCompleted');
-    
+
     return isCompleted;
   }
 
   Future<bool> _checkTripStatus(String tripId) async {
     try {
       final tripDetails = await ApiService.getTripDetails(tripId);
-      final status = (tripDetails['trip_status'] ?? tripDetails['status'] ?? '').toString().toUpperCase();
+      final status = (tripDetails['trip_status'] ?? tripDetails['status'] ?? '')
+          .toString()
+          .toUpperCase();
       debugPrint('Fresh trip status for $tripId: $status');
-      return status == 'STARTED' || status.contains('STARTED') || status.contains('PROGRESS');
+      return status == 'STARTED' ||
+          status.contains('STARTED') ||
+          status.contains('PROGRESS');
     } catch (e) {
       debugPrint('Error fetching trip status: $e');
       return false;
@@ -134,7 +147,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<bool> _checkTripCompleted(String tripId) async {
     try {
       final tripDetails = await ApiService.getTripDetails(tripId);
-      final status = (tripDetails['trip_status'] ?? tripDetails['status'] ?? '').toString().toUpperCase();
+      final status = (tripDetails['trip_status'] ?? tripDetails['status'] ?? '')
+          .toString()
+          .toUpperCase();
       return status == 'COMPLETED';
     } catch (e) {
       return false;
@@ -1065,28 +1080,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       request['request_status']?.toString()?.toUpperCase(),
       request['trip_request_status']?.toString()?.toUpperCase(),
     ];
-    
+
     // Check for COMPLETED first
     for (String? status in statusChecks) {
       if (status == 'COMPLETED') {
         return 'COMPLETED';
       }
     }
-    
+
     // Check for STARTED variations
     for (String? status in statusChecks) {
-      if (status != null && (
-          status == 'STARTED' ||
-          status == 'IN_PROGRESS' ||
-          status == 'ON_TRIP' ||
-          status == 'ONWAY' ||
-          status.contains('PROGRESS') ||
-          status.contains('STARTED')
-      )) {
+      if (status != null &&
+          (status == 'STARTED' ||
+              status == 'IN_PROGRESS' ||
+              status == 'ON_TRIP' ||
+              status == 'ONWAY' ||
+              status.contains('PROGRESS') ||
+              status.contains('STARTED'))) {
         return 'STARTED';
       }
     }
-    
+
     return 'ASSIGNED';
   }
 
@@ -1169,8 +1183,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ...approvedRequests.map((request) {
               // Direct status check from trip_status field
-              String tripStatus = request['trip_status']?.toString().toUpperCase() ?? 'ASSIGNED';
-              
+              String tripStatus =
+                  request['trip_status']?.toString().toUpperCase() ??
+                      'ASSIGNED';
+
               return Column(
                 children: [
                   _buildApprovedCard(
@@ -1199,8 +1215,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-
-
   Widget _buildApprovedCard({
     required String pickup,
     required String drop,
@@ -1216,7 +1230,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String buttonText;
     Color buttonColor;
     bool isEnabled;
-    
+
     // Check if trip_status is COMPLETED directly
     if (tripStatus == 'COMPLETED') {
       buttonText = 'Trip Completed';
@@ -1254,15 +1268,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: tripStatus == 'COMPLETED' ? Colors.grey.shade100 :
-                       tripStatus == 'STARTED' ? Colors.green.shade100 : Colors.blue.shade100,
+                color: tripStatus == 'COMPLETED'
+                    ? Colors.grey.shade100
+                    : tripStatus == 'STARTED'
+                        ? Colors.green.shade100
+                        : Colors.blue.shade100,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 tripStatus,
                 style: TextStyle(
-                  color: tripStatus == 'COMPLETED' ? Colors.grey.shade800 :
-                         tripStatus == 'STARTED' ? Colors.green.shade800 : Colors.blue.shade800,
+                  color: tripStatus == 'COMPLETED'
+                      ? Colors.grey.shade800
+                      : tripStatus == 'STARTED'
+                          ? Colors.green.shade800
+                          : Colors.blue.shade800,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1289,9 +1309,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Column(
                     children: [
-                      const Icon(Icons.location_on, color: Colors.green, size: 24),
-                      Container(width: 2, height: 12, color: Colors.transparent),
-                      const Icon(Icons.location_on, color: Color(0xFF8B0000), size: 24),
+                      const Icon(Icons.location_on,
+                          color: Colors.green, size: 24),
+                      Container(
+                          width: 2, height: 12, color: Colors.transparent),
+                      const Icon(Icons.location_on,
+                          color: Color(0xFF8B0000), size: 24),
                     ],
                   ),
                   const SizedBox(width: 12),
@@ -1301,9 +1324,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(pickup, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text(pickup,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 16),
-                          Text(drop, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text(drop,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -1319,11 +1346,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Pickup at 6:30 PM ( 12 Mar )', style: TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold)),
+                        const Text('Pickup at 6:30 PM ( 12 Mar )',
+                            style: TextStyle(
+                                color: Colors.black54,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        Text('customer : $customer', style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.bold)),
+                        Text('customer : $customer',
+                            style: const TextStyle(
+                                color: Colors.black54,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
-                        Text(phone, style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.bold)),
+                        Text(phone,
+                            style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -1335,96 +1374,125 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            _buildSquareActionButton(Icons.close, Colors.red, onTap: () => _showApprovedCancelDialog(context)),
+                            _buildSquareActionButton(Icons.close, Colors.red,
+                                onTap: () =>
+                                    _showApprovedCancelDialog(context)),
                             const SizedBox(width: 8),
-                            _buildSquareActionButton(Icons.navigation, Colors.blue, onTap: () {}),
+                            _buildSquareActionButton(
+                                Icons.navigation, Colors.blue,
+                                onTap: () {}),
                             const SizedBox(width: 8),
-                            _buildSquareActionButton(Icons.call, Colors.green, onTap: () {}),
+                            _buildSquareActionButton(Icons.call, Colors.green,
+                                onTap: () {}),
                           ],
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
                           child: Container(
-                            decoration: tripStatus == 'STARTED' ? BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.greenLight, AppColors.greenDark],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ) : null,
-                            child: ElevatedButton(
-                              onPressed: isEnabled ? () async {
-                                if (tripStatus == 'STARTED') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => TripCompletedScreen(
-                                        tripData: {
-                                          'pickup': pickup,
-                                          'drop': drop,
-                                          'type': type,
-                                          'customer': customer,
-                                          'phone': phone,
-                                          'request_id': requestId,
-                                          'trip_id': tripId,
-                                        },
-                                        startingKm: odometer,
-                                      ),
+                            decoration: tripStatus == 'STARTED'
+                                ? BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        AppColors.greenLight,
+                                        AppColors.greenDark
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
                                     ),
-                                  ).then((_) => _fetchAvailableTrips());
-                                } else if (tripStatus == 'ASSIGNED') {
-                                  if (tripId != null) {
-                                    try {
-                                      await ApiService.startTripAPI(tripId);
-                                      await _fetchAvailableTrips();
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => TripStartScreen(
-                                            tripData: {
-                                              'pickup': pickup,
-                                              'drop': drop,
-                                              'type': type,
-                                              'customer': customer,
-                                              'phone': phone,
-                                              'request_id': requestId,
-                                              'trip_id': tripId,
-                                            },
+                                    borderRadius: BorderRadius.circular(12),
+                                  )
+                                : null,
+                            child: ElevatedButton(
+                              onPressed: isEnabled
+                                  ? () async {
+                                      if (tripStatus == 'STARTED') {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                TripCompletedScreen(
+                                              tripData: {
+                                                'pickup': pickup,
+                                                'drop': drop,
+                                                'type': type,
+                                                'customer': customer,
+                                                'phone': phone,
+                                                'request_id': requestId,
+                                                'trip_id': tripId,
+                                              },
+                                              startingKm: odometer,
+                                            ),
                                           ),
-                                        ),
-                                      ).then((result) {
-                                        if (result != null) _fetchAvailableTrips();
-                                      });
-                                    } catch (e) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Failed to start trip: $e'), backgroundColor: Colors.red),
-                                      );
+                                        ).then((_) => _fetchAvailableTrips());
+                                      } else if (tripStatus == 'ASSIGNED') {
+                                        if (tripId != null) {
+                                          try {
+                                            // Navigate to start screen immediately
+                                            // Actual start happens after entering KM
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    TripStartScreen(
+                                                  tripData: {
+                                                    'pickup': pickup,
+                                                    'drop': drop,
+                                                    'type': type,
+                                                    'customer': customer,
+                                                    'phone': phone,
+                                                    'request_id': requestId,
+                                                    'trip_id': tripId,
+                                                  },
+                                                ),
+                                              ),
+                                            ).then((result) {
+                                              if (result != null)
+                                                _fetchAvailableTrips();
+                                            });
+                                          } catch (e) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      'Failed to navigate: $e'),
+                                                  backgroundColor: Colors.red),
+                                            );
+                                          }
+                                        }
+                                      }
                                     }
-                                  }
-                                }
-                              } : null,
+                                  : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: buttonColor,
-                                shadowColor: tripStatus == 'STARTED' ? Colors.transparent : null,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shadowColor: tripStatus == 'STARTED'
+                                    ? Colors.transparent
+                                    : null,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 elevation: tripStatus == 'STARTED' ? 0 : 4,
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    tripStatus == 'COMPLETED' ? Icons.check_circle :
-                                    tripStatus == 'STARTED' ? Icons.check_circle_outline : Icons.timer_outlined,
+                                    tripStatus == 'COMPLETED'
+                                        ? Icons.check_circle
+                                        : tripStatus == 'STARTED'
+                                            ? Icons.check_circle_outline
+                                            : Icons.timer_outlined,
                                     color: Colors.white,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     buttonText,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
                                   ),
                                 ],
                               ),
@@ -1595,23 +1663,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         if (snapshot.hasError) {
           return const Center(
-            child: Text('Error loading trip history', style: TextStyle(color: Colors.red)),
+            child: Text('Error loading trip history',
+                style: TextStyle(color: Colors.red)),
           );
         }
 
         final allTrips = snapshot.data ?? [];
-        
+
         // Filter for completed trips assigned to this driver
         final completedTrips = allTrips.where((trip) {
-          final status = (trip['trip_status'] ?? trip['status'] ?? '').toString().toUpperCase();
+          final status = (trip['trip_status'] ?? trip['status'] ?? '')
+              .toString()
+              .toUpperCase();
           final assignedDriverId = trip['assigned_driver_id']?.toString();
           return status == 'COMPLETED' && assignedDriverId == _driverId;
         }).toList();
 
         // Sort by completion date (most recent first)
         completedTrips.sort((a, b) {
-          final dateA = a['completed_at'] ?? a['updated_at'] ?? a['created_at'] ?? '';
-          final dateB = b['completed_at'] ?? b['updated_at'] ?? b['created_at'] ?? '';
+          final dateA =
+              a['completed_at'] ?? a['updated_at'] ?? a['created_at'] ?? '';
+          final dateB =
+              b['completed_at'] ?? b['updated_at'] ?? b['created_at'] ?? '';
           return dateB.toString().compareTo(dateA.toString());
         });
 
@@ -1647,7 +1720,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFF424242),
                       borderRadius: BorderRadius.circular(8),
@@ -1675,7 +1749,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     border: TableBorder.all(color: Colors.white70),
                     children: [
                       TableRow(
-                        decoration: const BoxDecoration(color: Color(0xFF9E9E9E)),
+                        decoration:
+                            const BoxDecoration(color: Color(0xFF9E9E9E)),
                         children: [
                           _buildTableHeader('No'),
                           _buildTableHeader('Date'),
@@ -1686,8 +1761,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ...completedTrips.asMap().entries.map((entry) {
                         final index = entry.key;
                         final trip = entry.value;
-                        final dateStr = trip['completed_at'] ?? trip['created_at'];
-                        final formattedDate = dateStr != null ? _formatTripTime(dateStr) : '-';
+                        final dateStr =
+                            trip['completed_at'] ?? trip['created_at'];
+                        final formattedDate =
+                            dateStr != null ? _formatTripTime(dateStr) : '-';
 
                         return TableRow(
                           decoration: BoxDecoration(

@@ -36,7 +36,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
     try {
       debugPrint('Starting Razorpay payment...');
-      
+
       razorpayService.openCheckout(
         amount: 500.0, // ₹500
         name: "Chola Cabs",
@@ -44,7 +44,6 @@ class _WalletScreenState extends State<WalletScreen> {
         contact: "9999999999",
         email: "driver@cholacabs.com",
       );
-      
     } catch (e) {
       debugPrint('Payment error: $e');
       setState(() => isLoading = false);
@@ -59,9 +58,9 @@ class _WalletScreenState extends State<WalletScreen> {
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     setState(() => isLoading = false);
-    
+
     debugPrint('Payment Success: ${response.paymentId}');
-    
+
     // Save payment details to backend
     final saved = await RazorpayService.savePaymentDetails(
       amount: 500.0,
@@ -69,7 +68,7 @@ class _WalletScreenState extends State<WalletScreen> {
       razorpayOrderId: response.orderId ?? '',
       razorpaySignature: response.signature ?? '',
     );
-    
+
     if (saved) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -104,6 +103,7 @@ class _WalletScreenState extends State<WalletScreen> {
       SnackBar(content: Text('External wallet: ${response.walletName}')),
     );
   }
+
   final List<Map<String, dynamic>> transactions = [
     {
       'title': 'Trip Earning',
@@ -137,146 +137,111 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFE0E0E0),
-      appBar: const CustomAppBar(),
-      endDrawer: _buildDrawer(context),
-      body: Column(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFFE0E0E0),
-                    Color(0xFFBDBDBD),
-                  ],
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/dashboard', (route) => false);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFE0E0E0),
+        appBar: const CustomAppBar(),
+        endDrawer: _buildDrawer(context),
+        body: Column(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFFE0E0E0),
+                      Color(0xFFBDBDBD),
+                    ],
+                  ),
                 ),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Balance Card
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF66BB6A),
-                            Color(0xFF388E3C),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Balance Card
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF66BB6A),
+                              Color(0xFF388E3C),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Available Balance',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Available Balance',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                '₹4,300.00',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Opacity(
-                            opacity: 0.6,
-                            child: AppLogo(width: 80, height: 80),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Stats Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              const Icon(Icons.local_taxi,
-                                  color: Colors.orange, size: 28),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Trips Completed',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade700,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                '15',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: isLoading ? null : _startPayment,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: isLoading ? Colors.grey.shade300 : Colors.grey.shade400,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  '₹4,300.00',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
+                            const Opacity(
+                              opacity: 0.6,
+                              child: AppLogo(width: 80, height: 80),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      // Stats Row
+                      Row(
+                        children: [
+                          Expanded(
                             child: Row(
                               children: [
-                                if (isLoading)
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                                    ),
-                                  )
-                                else
-                                  const Icon(Icons.add, color: Colors.black, size: 24),
-                                const SizedBox(width: 8),
+                                const Icon(Icons.local_taxi,
+                                    color: Colors.orange, size: 28),
+                                const SizedBox(width: 12),
                                 Text(
-                                  isLoading ? 'Processing...' : 'Add Money',
-                                  style: const TextStyle(
-                                    fontSize: 16,
+                                  'Trips Completed',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  '15',
+                                  style: TextStyle(
+                                    fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
                                   ),
@@ -284,39 +249,86 @@ class _WalletScreenState extends State<WalletScreen> {
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    // Transaction History Header
-                    const Text(
-                      'Transaction History',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF424242),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Transaction List
-                    ...transactions.map((transaction) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _buildTransactionItem(
-                            transaction['title'],
-                            transaction['date'],
-                            transaction['tripId'],
-                            transaction['amount'],
-                            transaction['type'],
+                          GestureDetector(
+                            onTap: isLoading ? null : _startPayment,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isLoading
+                                    ? Colors.grey.shade300
+                                    : Colors.grey.shade400,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  if (isLoading)
+                                    const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.black),
+                                      ),
+                                    )
+                                  else
+                                    const Icon(Icons.add,
+                                        color: Colors.black, size: 24),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    isLoading ? 'Processing...' : 'Add Money',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        )),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      // Transaction History Header
+                      const Text(
+                        'Transaction History',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF424242),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Transaction List
+                      ...transactions.map((transaction) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildTransactionItem(
+                              transaction['title'],
+                              transaction['date'],
+                              transaction['tripId'],
+                              transaction['amount'],
+                              transaction['type'],
+                            ),
+                          )),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          // Bottom Navigation
-          const BottomNavigation(currentRoute: '/wallet'),
-        ],
+            // Bottom Navigation
+            const BottomNavigation(currentRoute: '/wallet'),
+          ],
+        ),
       ),
     );
   }

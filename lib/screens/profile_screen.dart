@@ -93,246 +93,254 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.appGradientEnd,
-      appBar: const CustomAppBar(),
-      endDrawer: const AppDrawer(),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Profile Header
-            SizedBox(
-              height: 280,
-              child: Stack(
-                children: [
-                  // Curved background
-                  Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade700,
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(150),
-                        bottomRight: Radius.circular(150),
-                      ),
-                    ),
-                  ),
-                  // Profile content
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 100,
-                    child: Column(
-                      children: [
-                        // Profile image
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.grey.shade300,
-                              backgroundImage: _profilePhotoPath != null
-                                  ? FileImage(File(_profilePhotoPath!))
-                                  : null,
-                              child: _profilePhotoPath == null
-                                  ? const Icon(Icons.person,
-                                      size: 60, color: Colors.grey)
-                                  : null,
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.grey,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.camera_alt,
-                                    size: 20, color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _name,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _primaryLocation.isNotEmpty
-                              ? _primaryLocation
-                              : 'No Location',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Personal Details Section
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Personal Details',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildDetailRow('Mobile Number', _phoneNumber),
-                  _buildDetailRow('Email', _email, isLink: true),
-                  _buildDetailRow('Aadhaar Number', _aadhaarNumber),
-                  _buildDetailRow('Driving License', _licenseNumber),
-                ],
-              ),
-            ),
-
-            // Vehicle Details and KYC Status Section
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Vehicle Details
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/dashboard', (route) => false);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.appGradientEnd,
+        appBar: const CustomAppBar(),
+        endDrawer: const AppDrawer(),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Profile Header
+              SizedBox(
+                height: 280,
+                child: Stack(
+                  children: [
+                    // Curved background
+                    Container(
+                      height: 150,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        color: Colors.grey.shade700,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(150),
+                          bottomRight: Radius.circular(150),
+                        ),
                       ),
+                    ),
+                    // Profile content
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 100,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Vehicle Details',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
+                          // Profile image
+                          Stack(
                             children: [
-                              Text(
-                                _vehicleType.isNotEmpty ? _vehicleType : 'Type',
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.w500),
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Colors.grey.shade300,
+                                backgroundImage: _profilePhotoPath != null
+                                    ? FileImage(File(_profilePhotoPath!))
+                                    : null,
+                                child: _profilePhotoPath == null
+                                    ? const Icon(Icons.person,
+                                        size: 60, color: Colors.grey)
+                                    : null,
                               ),
-                              const Spacer(),
-                              Text(
-                                '$_seatingCapacity Seats',
-                                style: const TextStyle(
-                                    fontSize: 14, color: Colors.grey),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.grey,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.camera_alt,
+                                      size: 20, color: Colors.white),
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _vehicleNumber.isNotEmpty
-                                ? _vehicleNumber
-                                : 'NO NUMBER',
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
                           const SizedBox(height: 16),
-                          _buildVehicleDetailRow('Make', _vehicleBrand),
-                          _buildVehicleDetailRow('Model', _vehicleModel),
-                          _buildVehicleDetailRow('Color', _vehicleColor),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-
-                  // KYC Status
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'KYC Status',
-                            style: TextStyle(
-                              fontSize: 18,
+                          Text(
+                            _name,
+                            style: const TextStyle(
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.black,
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          _buildKYCItem(
-                              'License', 'Verified', Icons.credit_card),
-                          const SizedBox(height: 16),
-                          _buildKYCItem(
-                              'Aadhaar Card', 'Verified', Icons.credit_card),
-                          const SizedBox(height: 16),
-                          _buildKYCItem('Vehicle Photos', 'Verified',
-                              Icons.directions_car),
+                          const SizedBox(height: 4),
+                          Text(
+                            _primaryLocation.isNotEmpty
+                                ? _primaryLocation
+                                : 'No Location',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
+              // Personal Details Section
+              Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Personal Details',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildDetailRow('Mobile Number', _phoneNumber),
+                    _buildDetailRow('Email', _email, isLink: true),
+                    _buildDetailRow('Aadhaar Number', _aadhaarNumber),
+                    _buildDetailRow('Driving License', _licenseNumber),
+                  ],
+                ),
+              ),
 
+              // Vehicle Details and KYC Status Section
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Vehicle Details
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Vehicle Details',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Text(
+                                  _vehicleType.isNotEmpty
+                                      ? _vehicleType
+                                      : 'Type',
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '$_seatingCapacity Seats',
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _vehicleNumber.isNotEmpty
+                                  ? _vehicleNumber
+                                  : 'NO NUMBER',
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildVehicleDetailRow('Make', _vehicleBrand),
+                            _buildVehicleDetailRow('Model', _vehicleModel),
+                            _buildVehicleDetailRow('Color', _vehicleColor),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
 
-            const SizedBox(height: 20),
-          ],
+                    // KYC Status
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'KYC Status',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            _buildKYCItem(
+                                'License', 'Verified', Icons.credit_card),
+                            const SizedBox(height: 16),
+                            _buildKYCItem(
+                                'Aadhaar Card', 'Verified', Icons.credit_card),
+                            const SizedBox(height: 16),
+                            _buildKYCItem('Vehicle Photos', 'Verified',
+                                Icons.directions_car),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
+        bottomNavigationBar: _isApprovedDriver
+            ? const BottomNavigation(currentRoute: '/profile')
+            : null,
       ),
-      bottomNavigationBar: _isApprovedDriver
-          ? const BottomNavigation(currentRoute: '/profile')
-          : null,
     );
   }
 

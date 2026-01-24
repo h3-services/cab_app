@@ -105,8 +105,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        showBackButton: false,
+        showBackButton: true,
         showMenuIcon: false,
+        showProfileIcon: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
