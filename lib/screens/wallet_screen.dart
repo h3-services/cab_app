@@ -18,6 +18,7 @@ class WalletScreen extends StatefulWidget {
 class _WalletScreenState extends State<WalletScreen> {
   bool isLoading = false;
   double walletBalance = 0.0;
+  int completedTripsCount = 0;
   List<Map<String, dynamic>> transactions = [];
   late RazorpayService _razorpayService;
 
@@ -71,6 +72,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
         List<Map<String, dynamic>> transactionHistory = [];
         Set<String> processedTxnIds = {};
+        int completedCount = 0;
 
         // Process Payments (Top-ups)
         for (var payment in payments) {
@@ -121,6 +123,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 (trip['is_completed'] == true);
 
             if (isMyTrip && isCompleted) {
+              completedCount++;
               final fare = (num.tryParse(trip['fare']?.toString() ??
                           trip['total_fare']?.toString() ??
                           trip['total_amount']?.toString() ??
@@ -139,7 +142,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 final serviceFee = fare * 0.02;
 
                 transactionHistory.add({
-                  'title': 'Trip Earning',
+                  'title': 'Trip Fare',
                   'date': displayDate,
                   'tripId': tripIdVisible,
                   'transaction_id': '',
@@ -196,6 +199,7 @@ class _WalletScreenState extends State<WalletScreen> {
         });
 
         setState(() {
+          completedTripsCount = completedCount;
           transactions = transactionHistory;
         });
 
@@ -408,9 +412,9 @@ class _WalletScreenState extends State<WalletScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                const Text(
-                                  '15',
-                                  style: TextStyle(
+                                Text(
+                                  completedTripsCount.toString(),
+                                  style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,

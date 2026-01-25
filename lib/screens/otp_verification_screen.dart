@@ -23,177 +23,153 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
-      body: Column(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.appGradientStart,
-                    AppColors.appGradientEnd,
-                  ],
-                ),
-              ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-
-                      // Logo section
-                      Center(
-                        child: Image.asset(
-                          'assets/images/chola_cabs_logo.png',
-                          width: 150,
-                          height: 150,
-                          fit: BoxFit.contain,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.appGradientStart,
+              AppColors.appGradientEnd,
+            ],
+          ),
+        ),
+        child: MediaQuery.removePadding(
+          context: context,
+          removeTop: true,
+          removeBottom: true,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.08, vertical: 20),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Verification Code',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // Verification Code section
-                      const Text(
-                        'Verification Code',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                        SizedBox(height: 8),
+                        Text(
+                          'We have sent the verification\ncode to your email address',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                            height: 1.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      const Text(
-                        'We have sent the verification\ncode to your email address',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black54,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-
-                      // OTP Input Fields
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: List.generate(4, (index) {
-                          return Container(
-                            width: 62,
-                            height: 62,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Colors.black,
-                                  Colors.white,
-                                  Colors.black
-                                ],
-                                stops: [0.0, 0.5, 1.0],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Container(
-                              margin: const EdgeInsets.all(1),
+                        SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: List.generate(4, (index) {
+                            final boxSize = screenWidth * 0.16;
+                            return Container(
+                              width: boxSize,
+                              height: boxSize,
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(7),
-                              ),
-                              child: TextField(
-                                controller: _otpControllers[index],
-                                focusNode: _focusNodes[index],
-                                textAlign: TextAlign.center,
-                                keyboardType: TextInputType.number,
-                                maxLength: 1,
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  counterText: '',
+                                gradient: const LinearGradient(
+                                  colors: [Colors.black, Colors.white, Colors.black],
+                                  stops: [0.0, 0.5, 1.0],
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Container(
+                                margin: const EdgeInsets.all(1),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(7),
                                 ),
-                                onChanged: (value) {
-                                  if (value.isNotEmpty && index < 3) {
-                                    _focusNodes[index + 1].requestFocus();
-                                  } else if (value.isEmpty && index > 0) {
-                                    _focusNodes[index - 1].requestFocus();
-                                  }
-                                },
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Resend OTP
-                      Row(
-                        children: [
-                          const Text(
-                            "Didn't receive OTP ? ",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              // Resend OTP logic
-                            },
-                            child: const Text(
-                              'Resend OTP',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.blue,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // Continue button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleContinue,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.buttonGradientEnd,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white)
-                              : const Text(
-                                  'Continue',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                child: TextField(
+                                  controller: _otpControllers[index],
+                                  focusNode: _focusNodes[index],
+                                  textAlign: TextAlign.center,
+                                  keyboardType: TextInputType.number,
+                                  maxLength: 1,
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    counterText: '',
                                   ),
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  onChanged: (value) {
+                                    if (value.isNotEmpty && index < 3) {
+                                      _focusNodes[index + 1].requestFocus();
+                                    } else if (value.isEmpty && index > 0) {
+                                      _focusNodes[index - 1].requestFocus();
+                                    }
+                                  },
                                 ),
+                              ),
+                            );
+                          }),
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(
+                              "Didn't receive OTP ? ",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {},
+                              child: Text(
+                                'Resend OTP',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleContinue,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.buttonGradientEnd,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : const Text(
+                                    'Continue',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -213,7 +189,6 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     });
 
     try {
-      // 1. PREPARE IDENTIFIERS FIRST
       final combinedDeviceId = await DeviceService.getDeviceId();
       String? fcmToken;
       try {
@@ -222,14 +197,12 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         debugPrint("Notice: FCM Token retrieval issue: $e");
       }
 
-      // 2. SHOW IN TERMINAL BEFORE STORAGE (Mandatory requirement)
       debugPrint("\n##########################################");
       debugPrint("IDENTIFIERS READY FOR STORAGE:");
       debugPrint("DEVICE ID (Hardware): $combinedDeviceId");
       debugPrint("FCM TOKEN (Firebase): ${fcmToken ?? 'NULL'}");
       debugPrint("##########################################\n");
 
-      // 3. PERFORM LOGIN / VERIFICATION
       final result = await AuthService.verifyDeviceAndLogin(phoneNumber);
 
       if (result['success']) {
@@ -244,13 +217,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         if (driverId != null) {
           await prefs.setString('driverId', driverId);
 
-          // 4. EXPLICITLY STORE ON BACKEND
           debugPrint("SYNCING DATA TO BACKEND FOR DRIVER: $driverId");
 
-          // Store Device ID
           await ApiService.updateDriverDeviceId(driverId, combinedDeviceId);
 
-          // Store FCM Token
           if (fcmToken != null) {
             await ApiService.addFcmToken(driverId, fcmToken);
           }
@@ -258,21 +228,40 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           debugPrint("SYNC COMPLETED SUCCESSFULLY");
         }
 
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'])),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _otpControllers) {
+      controller.dispose();
+    }
+    for (var node in _focusNodes) {
+      node.dispose();
+    }
+    super.dispose();
   }
 }
 
@@ -285,7 +274,6 @@ class MountainPainter extends CustomPainter {
 
     final path = Path();
 
-    // Draw mountain silhouette
     path.moveTo(0, size.height);
     path.lineTo(size.width * 0.2, size.height * 0.3);
     path.lineTo(size.width * 0.35, size.height * 0.5);
@@ -314,13 +302,12 @@ class CircularTextPainter extends CustomPainter {
       color: Color(0xFF8B4513),
     );
 
-    // Draw "CHOLA CABS" in circular pattern
     _drawTextOnCircle(canvas, 'CHOLA CABS', center, radius, textStyle, -1.5);
   }
 
   void _drawTextOnCircle(Canvas canvas, String text, Offset center,
       double radius, TextStyle style, double startAngle) {
-    final angleStep = 6.28 / text.length; // 2π divided by text length
+    final angleStep = 6.28 / text.length;
 
     for (int i = 0; i < text.length; i++) {
       final angle = startAngle + (i * angleStep);
@@ -329,7 +316,7 @@ class CircularTextPainter extends CustomPainter {
 
       canvas.save();
       canvas.translate(x, y);
-      canvas.rotate(angle + 1.57); // π/2 to rotate text upright
+      canvas.rotate(angle + 1.57);
 
       final textPainter = TextPainter(
         text: TextSpan(text: text[i], style: style),

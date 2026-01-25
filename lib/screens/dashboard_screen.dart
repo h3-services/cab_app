@@ -1835,11 +1835,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 trip['odo_end'] ?? trip['ending_km'] ?? '0';
 
                             // New/Calculated values
-                            final totalCost = (trip['total_amount'] ??
+                            final totalCost = (trip['fare'] ??
+                                    trip['total_fare'] ??
+                                    trip['total_amount'] ??
                                     trip['amount'] ??
                                     800.0)
                                 .toDouble();
-                            final walletFee = totalCost * 0.02;
+                            final serviceFee = totalCost * 0.02;
                             final distance =
                                 trip['distance'] ?? trip['distance_km'] ?? 5;
 
@@ -1860,7 +1862,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 _buildTableCell(
                                     '₹${totalCost.toStringAsFixed(2)}'),
                                 _buildTableCell(
-                                    '₹${walletFee.toStringAsFixed(2)}'),
+                                    '₹${serviceFee.toStringAsFixed(2)}'),
                                 _buildTableCell(status),
                               ],
                             );
