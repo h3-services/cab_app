@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'trip_start_screen.dart';
 import 'dart:math' as math;
 import '../widgets/common/custom_app_bar.dart';
@@ -52,6 +53,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _checkApprovalStatus(String driverId) async {
     try {
       final driverData = await ApiService.getDriverDetails(driverId);
+
+      // Store driver data for immediate access in other screens (like Wallet)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('driver_data', jsonEncode(driverData));
+
       final bool isApproved = driverData['is_approved'] == true;
       final String kycVerified =
           (driverData['kyc_verified'] ?? '').toString().toLowerCase();
@@ -578,12 +584,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const Spacer(),
-              Text(
-                trip['trip_type'] ?? 'ONE WAY',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    trip['trip_type'] ?? 'ONE WAY',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    '₹${(trip['total_amount'] ?? trip['amount'] ?? 0.0).toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1635,7 +1654,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Completed Trips',
+                    'Completed Trips Here',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -1649,9 +1668,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: const Color(0xFF424242),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      '${completedTrips.length} trips',
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'History Filter',
+                          style: TextStyle(color: Colors.white, fontSize: 13),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.keyboard_arrow_down,
+                            color: Colors.white, size: 20),
+                      ],
                     ),
                   ),
                 ],
@@ -1662,48 +1688,100 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: const Color(0xFFBDBDBD),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.vertical,
-                  child: Table(
-                    columnWidths: const {
-                      0: FlexColumnWidth(0.8),
-                      1: FlexColumnWidth(2),
-                      2: FlexColumnWidth(2),
-                      3: FlexColumnWidth(1.2),
-                    },
-                    border: TableBorder.all(color: Colors.white70),
-                    children: [
-                      TableRow(
-                        decoration:
-                            const BoxDecoration(color: Color(0xFF9E9E9E)),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                          minWidth: MediaQuery.of(context).size.width),
+                      child: Table(
+                        columnWidths: const {
+                          0: FixedColumnWidth(50),
+                          1: FixedColumnWidth(100),
+                          2: FixedColumnWidth(150),
+                          3: FixedColumnWidth(150),
+                          4: FixedColumnWidth(80),
+                          5: FixedColumnWidth(80),
+                          6: FixedColumnWidth(100),
+                          7: FixedColumnWidth(100),
+                          8: FixedColumnWidth(100),
+                          9: FixedColumnWidth(100),
+                        },
+                        border: TableBorder.all(color: Colors.white70),
                         children: [
-                          _buildTableHeader('No'),
-                          _buildTableHeader('Date'),
-                          _buildTableHeader('Pickup'),
-                          _buildTableHeader('Status'),
+                          TableRow(
+                            decoration:
+                                const BoxDecoration(color: Color(0xFF9E9E9E)),
+                            children: [
+                              _buildTableHeader('No'),
+                              _buildTableHeader('Date'),
+                              _buildTableHeader('Pickup'),
+                              _buildTableHeader('Drop'),
+                              _buildTableHeader('Start KM'),
+                              _buildTableHeader('End KM'),
+                              _buildTableHeader('Distance'),
+                              _buildTableHeader('Total Cost:'),
+                              _buildTableHeader('Wallet Fee (2%)'),
+                              _buildTableHeader('Status'),
+                            ],
+                          ),
+                          ...completedTrips.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final trip = entry.value;
+
+                            // Original fields
+                            final dateStr =
+                                trip['completed_at'] ?? trip['created_at'];
+                            final formattedDate = dateStr != null
+                                ? _formatTripTime(dateStr.toString())
+                                : '-';
+                            final pickup = trip['pickup_address'] ?? '-';
+                            final drop = trip['drop_address'] ?? '-';
+                            final status = (trip['trip_status'] ??
+                                    trip['status'] ??
+                                    'COMPLETED')
+                                .toString()
+                                .toUpperCase();
+
+                            // Odometer readings
+                            final startKm =
+                                trip['odo_start'] ?? trip['starting_km'] ?? '0';
+                            final endKm =
+                                trip['odo_end'] ?? trip['ending_km'] ?? '0';
+
+                            // New/Calculated values
+                            final totalCost = (trip['total_amount'] ??
+                                    trip['amount'] ??
+                                    800.0)
+                                .toDouble();
+                            final walletFee = totalCost * 0.02;
+                            final distance =
+                                trip['distance'] ?? trip['distance_km'] ?? 5;
+
+                            return TableRow(
+                              decoration: BoxDecoration(
+                                color: index % 2 == 0
+                                    ? const Color(0xFFC0C0C0)
+                                    : const Color(0xFFBDBDBD),
+                              ),
+                              children: [
+                                _buildTableCell('${index + 1}'),
+                                _buildTableCell(formattedDate),
+                                _buildTableCell(pickup),
+                                _buildTableCell(drop),
+                                _buildTableCell('$startKm'),
+                                _buildTableCell('$endKm'),
+                                _buildTableCell('$distance km'),
+                                _buildTableCell(
+                                    '₹${totalCost.toStringAsFixed(2)}'),
+                                _buildTableCell(
+                                    '₹${walletFee.toStringAsFixed(2)}'),
+                                _buildTableCell(status),
+                              ],
+                            );
+                          }),
                         ],
                       ),
-                      ...completedTrips.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final trip = entry.value;
-                        final dateStr =
-                            trip['completed_at'] ?? trip['created_at'];
-                        final formattedDate =
-                            dateStr != null ? _formatTripTime(dateStr) : '-';
-
-                        return TableRow(
-                          decoration: BoxDecoration(
-                            color: index % 2 == 0
-                                ? const Color(0xFFC0C0C0)
-                                : const Color(0xFFBDBDBD),
-                          ),
-                          children: [
-                            _buildTableCell('${index + 1}'),
-                            _buildTableCell(formattedDate),
-                            _buildTableCell(trip['pickup_address'] ?? '-'),
-                            _buildTableCell('COMPLETED'),
-                          ],
-                        );
-                      }),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -1716,7 +1794,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildTableHeader(String text) {
     return Padding(
-      padding: const EdgeInsets.all(12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 12.0),
       child: Text(
         text,
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
@@ -1727,7 +1805,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildTableCell(String text) {
     return Padding(
-      padding: const EdgeInsets.all(12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 12.0),
       child: Text(
         text,
         style: const TextStyle(fontSize: 13),

@@ -17,7 +17,6 @@ class ApiService {
     required String aadharNumber,
     required String licenceExpiry,
     required String deviceId,
-    String? fcmToken,
   }) async {
     final url = Uri.parse('$baseUrl/drivers/');
 
@@ -30,7 +29,6 @@ class ApiService {
       "aadhar_number": aadharNumber,
       "licence_expiry": licenceExpiry,
       "device_id": deviceId,
-      "fcm_token": fcmToken,
     };
 
     try {

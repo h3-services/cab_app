@@ -3,8 +3,6 @@ import '../services/image_picker_service.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../widgets/widgets.dart';
-import '../services/device_service.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -39,7 +37,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   bool get _allDocumentsUploaded =>
       _uploadedDocuments.values.every((uploaded) => uploaded);
 
-  @override
   bool _isInitialized = false;
 
   @override
@@ -489,90 +486,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         await prefs.setString('rcExpiryDate', userData?['rcExpiryDate'] ?? '');
         await prefs.setString('fcExpiryDate', userData?['fcExpiryDate'] ?? '');
       } else if (driverId.isEmpty) {
-        debugPrint("Performing deferred registration...");
-
-        // --- Hardware & FCM Fetching ---
-        final realDeviceId = await DeviceService.getDeviceId();
-        String? fcmToken;
-        try {
-          fcmToken = await FirebaseMessaging.instance.getToken();
-        } catch (e) {
-          debugPrint("Note: Token fetch error: $e");
-        }
-
-        // VISIBLE TERMINAL BLOCK
-        debugPrint("\n##########################################");
-        debugPrint("REGISTRATION - IDENTIFIERS FOR BACKEND:");
-        debugPrint("HARDWARE DEVICE ID: $realDeviceId");
-        debugPrint("FCM TOKEN: ${fcmToken ?? 'NULL'}");
-        debugPrint("##########################################\n");
-
-        // 1. Register Driver
-        final driverResponse = await ApiService.registerDriver(
-          name: userData?['name'] ?? '',
-          phoneNumber: userData?['phoneNumber'] ?? '',
-          email: userData?['email'] ?? '',
-          primaryLocation: userData?['primaryLocation'] ?? '',
-          licenceNumber: userData?['licenceNumber'] ?? '',
-          aadharNumber: userData?['aadharNumber'] ?? '',
-          licenceExpiry: userData?['licenceExpiry'] ?? '',
-          deviceId: realDeviceId,
-          fcmToken: fcmToken,
-        );
-
-        driverId = driverResponse['id']?.toString() ??
-            driverResponse['driver_id']?.toString() ??
-            '';
-        if (driverId.isEmpty)
-          throw Exception('Driver Registration Failed: No ID returned');
-
-        // 2. Register Vehicle
-        final vehicleResponse = await ApiService.registerVehicle(
-          vehicleType: userData?['vehicleType'] ?? '',
-          vehicleBrand: userData?['vehicleBrand'] ?? '',
-          vehicleModel: userData?['vehicleModel'] ?? '',
-          vehicleNumber: userData?['vehicleNumber'] ?? '',
-          vehicleColor: userData?['vehicleColor'] ?? '',
-          seatingCapacity: userData?['seatingCapacity'] ?? 4,
-          driverId: driverId,
-          rcExpiryDate: userData?['rcExpiryDate'] ?? '',
-          fcExpiryDate: userData?['fcExpiryDate'] ?? '',
-        );
-
-        vehicleId = vehicleResponse['id']?.toString() ??
-            vehicleResponse['vehicle_id']?.toString() ??
-            '';
-        if (vehicleId.isEmpty)
-          throw Exception('Vehicle Registration Failed: No ID returned');
-
-        // 3. Save IDs and Details to SharedPreferences (Moved from PersonalDetails)
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('driverId', driverId);
-        await prefs.setString('vehicleId', vehicleId);
-
-        // Save Personal Details
-        await prefs.setString('name', userData?['name'] ?? '');
-        await prefs.setString('phoneNumber', userData?['phoneNumber'] ?? '');
-        await prefs.setString('email', userData?['email'] ?? '');
-        await prefs.setString(
-            'primaryLocation', userData?['primaryLocation'] ?? '');
-        await prefs.setString(
-            'licenseNumber', userData?['licenceNumber'] ?? '');
-        await prefs.setString('aadhaarNumber', userData?['aadharNumber'] ?? '');
-
-        // Save Vehicle Details
-        await prefs.setString('vehicleType', userData?['vehicleType'] ?? '');
-        await prefs.setString('vehicleBrand', userData?['vehicleBrand'] ?? '');
-        await prefs.setString('vehicleModel', userData?['vehicleModel'] ?? '');
-        await prefs.setString(
-            'vehicleNumber', userData?['vehicleNumber'] ?? '');
-        await prefs.setString('vehicleColor', userData?['vehicleColor'] ?? '');
-        await prefs.setString(
-            'seatingCapacity', (userData?['seatingCapacity'] ?? 4).toString());
-        await prefs.setString(
-            'licenceExpiry', userData?['licenceExpiry'] ?? '');
-        await prefs.setString('rcExpiryDate', userData?['rcExpiryDate'] ?? '');
-        await prefs.setString('fcExpiryDate', userData?['fcExpiryDate'] ?? '');
+        debugPrint("ERROR: Driver ID missing in KYC screen flow.");
+        throw Exception(
+            'Driver ID missing. Please restart the registration process.');
       }
 
       if (driverId.isEmpty) throw Exception('Driver ID missing. Restart flow.');

@@ -5,7 +5,6 @@ import '../services/device_service.dart';
 import '../services/api_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
@@ -32,7 +31,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   String? _selectedVehicleType;
   String? _selectedSeatingCapacity;
   String? phoneNumber;
-  String? _testDeviceId;
   bool _isDataLoaded = false;
   List<String> _errorFields = [];
 
@@ -336,7 +334,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     aadharNumber: _aadharController.text,
                                     licenceExpiry: licenseDate,
                                     deviceId: realDeviceId,
-                                    fcmToken: fcmToken,
                                   );
 
                                   driverId = driverRes['id']?.toString() ??
@@ -345,7 +342,16 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                   if (driverId != null) {
                                     await prefs.setString('driverId', driverId);
 
-                                    // Register Vehicle
+                                    // 4. EXPLICITLY STORE FCM TOKEN IN DEDICATED CALL
+                                    // (Device ID is already stored in Step 3 above via registerDriver)
+                                    if (fcmToken != null) {
+                                      debugPrint(
+                                          "Storing FCM Token to dedicated endpoint...");
+                                      await ApiService.addFcmToken(
+                                          driverId, fcmToken);
+                                    }
+
+                                    // 5. Register Vehicle
                                     final vehicleRes =
                                         await ApiService.registerVehicle(
                                       vehicleType: _selectedVehicleType!,
@@ -497,8 +503,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     final randomSuffix = random.substring(random.length - 6);
 
     setState(() {
-      _testDeviceId = "test_device_$randomSuffix";
-
       // Only set random phone if we don't have a verified one
       if (phoneNumber == null || phoneNumber!.isEmpty) {
         phoneNumber = "9823$randomSuffix";
