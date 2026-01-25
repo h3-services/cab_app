@@ -49,7 +49,6 @@ class _WalletScreenState extends State<WalletScreen> {
       final driverId = prefs.getString('driverId');
 
       if (driverId != null) {
-        // 1. Get balance from cache instantly if available
         final cachedDriverData = prefs.getString('driver_data');
         if (cachedDriverData != null) {
           final data = json.decode(cachedDriverData);
@@ -60,7 +59,6 @@ class _WalletScreenState extends State<WalletScreen> {
           });
         }
 
-        // 2. Fetch latest data in parallel
         final results = await Future.wait([
           PaymentService.getAllPayments(),
           ApiService.getAllTrips(),
@@ -101,7 +99,7 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-        // Process Trips (Earnings and Fees)
+        // Process Trips - Show completed trip fares as earnings
         for (var trip in allTrips) {
           if (trip is Map<String, dynamic>) {
             final tripDriverId = (trip['assigned_driver_id'] ??
@@ -118,13 +116,11 @@ class _WalletScreenState extends State<WalletScreen> {
                   driverId.trim().toLowerCase();
             }
 
-            // More permissive status check to catch variations
             bool isCompleted = tripStatus == 'COMPLETED' ||
                 tripStatus == 'CLOSED' ||
                 (trip['is_completed'] == true);
 
             if (isMyTrip && isCompleted) {
-              // Strictly prioritize 'fare' as per user input
               final fare = (num.tryParse(trip['fare']?.toString() ??
                           trip['total_fare']?.toString() ??
                           trip['total_amount']?.toString() ??
@@ -134,16 +130,15 @@ class _WalletScreenState extends State<WalletScreen> {
                       0)
                   .toDouble();
 
-              final date = trip['completed_at'] ??
-                  trip['created_at'] ??
-                  DateTime.now().toIso8601String();
-              final displayDate = date.toString().split('T')[0];
-              final tripIdVisible = (trip['trip_id'] ?? 'TRIP').toString();
-
               if (fare > 0) {
-                // Trip Gross Earning
+                final date = trip['completed_at'] ??
+                    trip['created_at'] ??
+                    DateTime.now().toIso8601String();
+                final displayDate = date.toString().split('T')[0];
+                final tripIdVisible = (trip['trip_id'] ?? 'TRIP').toString();
+
                 transactionHistory.add({
-                  'title': 'Total Trip Cost',
+                  'title': 'Trip Earning',
                   'date': displayDate,
                   'tripId': tripIdVisible,
                   'transaction_id': '',
@@ -151,71 +146,12 @@ class _WalletScreenState extends State<WalletScreen> {
                   'type': 'earning',
                   'raw_date': date,
                 });
-
-                // Find matching wallet transaction to show ACTUAL service fee (as per user's request)
-                final matchingTxn = walletTxns.firstWhere(
-                  (txn) => (txn['trip_id']?.toString() == tripIdVisible ||
-                      (txn['description']?.toString().contains(tripIdVisible) ??
-                          false)),
-                  orElse: () => null,
-                );
-
-                double feeAmount = 0;
-                String txnId = '';
-                String txnDate = date;
-
-                if (matchingTxn != null) {
-                  // User's idea: Calculate based on balance change if available
-                  final before = (num.tryParse(
-                              matchingTxn['balance_before']?.toString() ??
-                                  '0') ??
-                          0)
-                      .toDouble();
-                  final after = (num.tryParse(
-                              matchingTxn['balance_after']?.toString() ??
-                                  '0') ??
-                          0)
-                      .toDouble();
-
-                  if (before != 0 || after != 0) {
-                    feeAmount = (before - after).abs();
-                  } else {
-                    feeAmount = (num.tryParse(
-                                matchingTxn['amount']?.toString() ?? '0') ??
-                            0)
-                        .toDouble()
-                        .abs();
-                  }
-
-                  txnId = matchingTxn['transaction_id']?.toString() ?? '';
-                  txnDate = matchingTxn['created_at'] ?? date;
-
-                  if (matchingTxn['transaction_id'] != null) {
-                    processedTxnIds
-                        .add(matchingTxn['transaction_id'].toString());
-                  }
-                } else {
-                  // Fallback to 2% if server transaction record isn't found yet
-                  feeAmount = fare * 0.02;
-                }
-
-                if (feeAmount > 0) {
-                  transactionHistory.add({
-                    'title': 'Service Fee (2%)',
-                    'date': displayDate,
-                    'tripId': tripIdVisible,
-                    'transaction_id': txnId,
-                    'amount': '-₹${feeAmount.toStringAsFixed(2)}',
-                    'type': 'spending',
-                    'raw_date': txnDate,
-                  });
-                }
               }
             }
           }
         }
 
-        // Process actual Wallet Transaction records from backend
+        // Process Wallet Transactions
         for (var txn in walletTxns) {
           final txnId = txn['transaction_id']?.toString();
           if (txnId != null && processedTxnIds.contains(txnId)) continue;
@@ -252,7 +188,7 @@ class _WalletScreenState extends State<WalletScreen> {
           transactions = transactionHistory;
         });
 
-        // 3. Update live balance from API
+        // Update live balance from API
         final driverData = await ApiService.getDriverDetails(driverId);
         await prefs.setString('driver_data', jsonEncode(driverData));
         setState(() {
@@ -284,13 +220,6 @@ class _WalletScreenState extends State<WalletScreen> {
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     setState(() => isLoading = true);
 
-    debugPrint('=== RAZORPAY PAYMENT SUCCESS ===');
-    debugPrint('Payment ID: ${response.paymentId}');
-    debugPrint('Order ID: ${response.orderId}');
-    debugPrint('Signature: ${response.signature}');
-    debugPrint('Amount: ₹500.00');
-    debugPrint('================================');
-
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
@@ -299,13 +228,11 @@ class _WalletScreenState extends State<WalletScreen> {
         throw Exception('Driver ID not found. Please login again.');
       }
 
-      debugPrint('=== DRIVER INFO ===');
-      debugPrint('Driver ID: $driverId');
-      debugPrint('==================');
+      const amount = 500.0;
 
-      final apiResponse = await PaymentService.createPayment(
+      await PaymentService.createPayment(
         driverId: driverId,
-        amount: 500.0,
+        amount: amount,
         paymentMethod: 'RAZORPAY',
         transactionType: 'ONLINE',
         razorpayPaymentId: response.paymentId!,
@@ -313,55 +240,40 @@ class _WalletScreenState extends State<WalletScreen> {
         razorpaySignature: response.signature ?? '',
       );
 
-      debugPrint('=== API RESPONSE SUCCESS ===');
-      debugPrint('API Response: $apiResponse');
-      debugPrint('============================');
-
-      // 4. Get CURRENT data from API first to be absolutely sure of the balance BEFORE updating
       final currentData = await ApiService.getDriverDetails(driverId);
       final currentBalance =
           (num.tryParse(currentData['wallet_balance']?.toString() ?? '0') ?? 0)
               .toDouble();
+      final newBalance = currentBalance + amount;
 
-      final newTotalBalance = currentBalance + 500.0;
-      debugPrint(
-          'Adding ₹500 to current balance: $currentBalance. New Total: $newTotalBalance');
+      await ApiService.updateWalletBalance(driverId, newBalance);
 
-      // 4. Update the wallet_balance using the dedicated PATCH call
-      await ApiService.updateWalletBalance(driverId, newTotalBalance);
-
-      // 5. Update local cache and state IMMEDIATELY so the user sees the change
-      setState(() {
-        walletBalance = newTotalBalance;
-      });
-
-      // Update the cached json string
-      currentData['wallet_balance'] = newTotalBalance;
+      setState(() => walletBalance = newBalance);
+      currentData['wallet_balance'] = newBalance;
       await prefs.setString('driver_data', jsonEncode(currentData));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Payment successful! New balance: ₹${newTotalBalance.toStringAsFixed(2)}'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Payment successful! New balance: ₹${newBalance.toStringAsFixed(2)}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
 
-      // Refresh transaction history
       _loadWalletData();
     } catch (e) {
-      debugPrint('=== API ERROR ===');
-      debugPrint('Error: $e');
-      debugPrint('=================');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Payment API error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -413,7 +325,6 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Balance Card
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
@@ -421,9 +332,9 @@ class _WalletScreenState extends State<WalletScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              const Color(0xFF66BB6A),
-                              const Color(0xFF388E3C)
-                            ], // Standard Green
+                              Color(0xFF66BB6A),
+                              Color(0xFF388E3C)
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
@@ -469,7 +380,6 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // Stats Row
                       Row(
                         children: [
                           Expanded(
@@ -548,7 +458,6 @@ class _WalletScreenState extends State<WalletScreen> {
                         ],
                       ),
                       const SizedBox(height: 32),
-                      // Transaction History Header
                       const Text(
                         'Transaction History',
                         style: TextStyle(
@@ -558,7 +467,6 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Transaction List
                       if (transactions.isEmpty && !isLoading)
                         const Center(
                           child: Padding(
@@ -590,7 +498,6 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
               ),
             ),
-            // Bottom Navigation
             const BottomNavigation(currentRoute: '/wallet'),
           ],
         ),
