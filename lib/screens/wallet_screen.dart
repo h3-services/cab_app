@@ -99,7 +99,7 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-        // Process Trips - Show completed trip fares as earnings
+        // Process Trips - Show completed trip fares as earnings with service fee
         for (var trip in allTrips) {
           if (trip is Map<String, dynamic>) {
             final tripDriverId = (trip['assigned_driver_id'] ??
@@ -136,6 +136,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     DateTime.now().toIso8601String();
                 final displayDate = date.toString().split('T')[0];
                 final tripIdVisible = (trip['trip_id'] ?? 'TRIP').toString();
+                final serviceFee = fare * 0.02;
 
                 transactionHistory.add({
                   'title': 'Trip Earning',
@@ -144,6 +145,16 @@ class _WalletScreenState extends State<WalletScreen> {
                   'transaction_id': '',
                   'amount': '+₹${fare.toStringAsFixed(2)}',
                   'type': 'earning',
+                  'raw_date': date,
+                });
+
+                transactionHistory.add({
+                  'title': 'Service Fee (2%)',
+                  'date': displayDate,
+                  'tripId': tripIdVisible,
+                  'transaction_id': '',
+                  'amount': '-₹${serviceFee.toStringAsFixed(2)}',
+                  'type': 'spending',
                   'raw_date': date,
                 });
               }
