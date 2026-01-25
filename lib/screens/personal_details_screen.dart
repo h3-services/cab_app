@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../widgets/widgets.dart';
 import '../constants/app_colors.dart';
 import '../services/device_service.dart';
+import '../services/api_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
@@ -284,25 +287,123 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     _formatDateForApi(_rcExpiryController.text);
                                 String fcDate =
                                     _formatDateForApi(_fcExpiryController.text);
-
-                                // Get Device ID
-                                String deviceId = _testDeviceId ??
+                                // 1. PREPARE IDENTIFIERS
+                                final realDeviceId =
                                     await DeviceService.getDeviceId();
+                                String? fcmToken;
+                                try {
+                                  fcmToken = await FirebaseMessaging.instance
+                                      .getToken();
+                                } catch (e) {
+                                  debugPrint("Note: Token fetch error: $e");
+                                }
 
-                                // Prepare data for next screen (Defer API calls or Update)
+                                // VISIBLE TERMINAL BLOCK
+                                debugPrint(
+                                    "\n##########################################");
+                                debugPrint(
+                                    "PERSONAL DETAILS - STORING TO BACKEND:");
+                                debugPrint("HARDWARE DEVICE ID: $realDeviceId");
+                                debugPrint("FCM TOKEN: ${fcmToken ?? 'NULL'}");
+                                debugPrint(
+                                    "##########################################\n");
+
+                                // 2. PREPARE IDs
                                 final prefs =
                                     await SharedPreferences.getInstance();
-                                String? existingDriverId =
-                                    prefs.getString('driverId');
-                                String? existingVehicleId =
+                                String? driverId = prefs.getString('driverId');
+                                String? vehicleId =
                                     prefs.getString('vehicleId');
                                 final args =
                                     ModalRoute.of(context)!.settings.arguments;
                                 bool isEditing =
                                     (args is Map && args['isEditing'] == true);
 
+                                // 3. PERFORM STORAGE (Register or Update)
+                                if (!isEditing &&
+                                    (driverId == null || driverId.isEmpty)) {
+                                  debugPrint("Performing new Registration...");
+
+                                  // Register Driver
+                                  final driverRes =
+                                      await ApiService.registerDriver(
+                                    name: _nameController.text,
+                                    phoneNumber: phoneNumber ?? '',
+                                    email: _emailController.text,
+                                    primaryLocation:
+                                        _primaryLocationController.text,
+                                    licenceNumber: _licenseController.text,
+                                    aadharNumber: _aadharController.text,
+                                    licenceExpiry: licenseDate,
+                                    deviceId: realDeviceId,
+                                    fcmToken: fcmToken,
+                                  );
+
+                                  driverId = driverRes['id']?.toString() ??
+                                      driverRes['driver_id']?.toString();
+
+                                  if (driverId != null) {
+                                    await prefs.setString('driverId', driverId);
+
+                                    // Register Vehicle
+                                    final vehicleRes =
+                                        await ApiService.registerVehicle(
+                                      vehicleType: _selectedVehicleType!,
+                                      vehicleBrand: _vehicleMakeController.text,
+                                      vehicleModel:
+                                          _vehicleModelController.text,
+                                      vehicleNumber:
+                                          _vehicleNumberController.text,
+                                      vehicleColor:
+                                          _vehicleColorController.text,
+                                      seatingCapacity: int.tryParse(
+                                              _selectedSeatingCapacity ??
+                                                  '4') ??
+                                          4,
+                                      driverId: driverId,
+                                      rcExpiryDate: rcDate,
+                                      fcExpiryDate: fcDate,
+                                    );
+
+                                    vehicleId = vehicleRes['id']?.toString() ??
+                                        vehicleRes['vehicle_id']?.toString();
+
+                                    if (vehicleId != null) {
+                                      await prefs.setString(
+                                          'vehicleId', vehicleId);
+                                    }
+                                  }
+                                } else if (isEditing &&
+                                    driverId != null &&
+                                    vehicleId != null) {
+                                  debugPrint("Updating existing details...");
+
+                                  await ApiService.updateDriver(
+                                    driverId: driverId,
+                                    name: _nameController.text,
+                                    email: _emailController.text,
+                                    primaryLocation:
+                                        _primaryLocationController.text,
+                                    licenceNumber: _licenseController.text,
+                                    aadharNumber: _aadharController.text,
+                                    licenceExpiry: licenseDate,
+                                  );
+
+                                  await ApiService.updateVehicle(
+                                    vehicleId: vehicleId,
+                                    vehicleType: _selectedVehicleType!,
+                                    vehicleBrand: _vehicleMakeController.text,
+                                    vehicleModel: _vehicleModelController.text,
+                                    vehicleColor: _vehicleColorController.text,
+                                    seatingCapacity: int.tryParse(
+                                            _selectedSeatingCapacity ?? '4') ??
+                                        4,
+                                    rcExpiryDate: rcDate,
+                                    fcExpiryDate: fcDate,
+                                  );
+                                }
+
                                 Map<String, dynamic> userData = {
-                                  // Personal
                                   'name': _nameController.text,
                                   'phoneNumber': phoneNumber ?? '',
                                   'email': _emailController.text,
@@ -311,9 +412,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                   'licenceNumber': _licenseController.text,
                                   'aadharNumber': _aadharController.text,
                                   'licenceExpiry': licenseDate,
-                                  'deviceId': deviceId,
-
-                                  // Vehicle
+                                  'deviceId': realDeviceId,
                                   'vehicleType': _selectedVehicleType,
                                   'vehicleBrand': _vehicleMakeController.text,
                                   'vehicleModel': _vehicleModelController.text,
@@ -325,15 +424,12 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                       4,
                                   'rcExpiryDate': rcDate,
                                   'fcExpiryDate': fcDate,
-
-                                  // Update flags
-                                  // Update flags
-                                  'driverId': existingDriverId,
-                                  'vehicleId': existingVehicleId,
+                                  'driverId': driverId,
+                                  'vehicleId': vehicleId,
                                   'isEditing': isEditing,
                                   'errorFields': (args is Map)
                                       ? args['errorFields']
-                                      : null, // Pass back errors
+                                      : null,
                                 };
 
                                 // Hide loading before navigating

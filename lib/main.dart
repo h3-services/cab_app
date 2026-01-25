@@ -12,12 +12,27 @@ import 'screens/profile_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/trip_process_screen.dart';
 import 'screens/otp_verification_screen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  // Initialize Firebase (make sure google-services.json is present in android/app)
+  try {
+    await Firebase.initializeApp();
+    // Request notification permissions for Android 13+
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  } catch (e) {
+    debugPrint("Firebase init error (ignore if no config): $e");
+  }
+
   runApp(const MyApp());
 }
 

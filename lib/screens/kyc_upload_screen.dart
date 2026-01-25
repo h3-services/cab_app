@@ -3,6 +3,8 @@ import '../services/image_picker_service.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 import '../widgets/widgets.dart';
+import '../services/device_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -489,6 +491,22 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       } else if (driverId.isEmpty) {
         debugPrint("Performing deferred registration...");
 
+        // --- Hardware & FCM Fetching ---
+        final realDeviceId = await DeviceService.getDeviceId();
+        String? fcmToken;
+        try {
+          fcmToken = await FirebaseMessaging.instance.getToken();
+        } catch (e) {
+          debugPrint("Note: Token fetch error: $e");
+        }
+
+        // VISIBLE TERMINAL BLOCK
+        debugPrint("\n##########################################");
+        debugPrint("REGISTRATION - IDENTIFIERS FOR BACKEND:");
+        debugPrint("HARDWARE DEVICE ID: $realDeviceId");
+        debugPrint("FCM TOKEN: ${fcmToken ?? 'NULL'}");
+        debugPrint("##########################################\n");
+
         // 1. Register Driver
         final driverResponse = await ApiService.registerDriver(
           name: userData?['name'] ?? '',
@@ -498,7 +516,8 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
           licenceNumber: userData?['licenceNumber'] ?? '',
           aadharNumber: userData?['aadharNumber'] ?? '',
           licenceExpiry: userData?['licenceExpiry'] ?? '',
-          deviceId: userData?['deviceId'] ?? '',
+          deviceId: realDeviceId,
+          fcmToken: fcmToken,
         );
 
         driverId = driverResponse['id']?.toString() ??

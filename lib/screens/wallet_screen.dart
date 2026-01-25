@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../widgets/widgets.dart';
 import '../widgets/bottom_navigation.dart';
 import '../services/razorpay_service.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
+import '../services/payment_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -12,13 +15,20 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  late RazorpayService razorpayService;
   bool isLoading = false;
+  double walletBalance = 0.0;
+  List<Map<String, dynamic>> transactions = [];
+  late RazorpayService _razorpayService;
 
   @override
   void initState() {
     super.initState();
-    razorpayService = RazorpayService(
+    _initRazorpay();
+    _loadWalletData();
+  }
+
+  void _initRazorpay() {
+    _razorpayService = RazorpayService(
       onSuccess: _handlePaymentSuccess,
       onError: _handlePaymentError,
       onWallet: _handleExternalWallet,
@@ -27,113 +37,145 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   void dispose() {
-    razorpayService.dispose();
+    _razorpayService.dispose();
     super.dispose();
   }
 
-  void _startPayment() async {
+  Future<void> _loadWalletData() async {
     setState(() => isLoading = true);
-
     try {
-      debugPrint('Starting Razorpay payment...');
-
-      razorpayService.openCheckout(
-        amount: 500.0, // ₹500
-        name: "Chola Cabs",
-        description: "Add Money to Wallet",
-        contact: "9999999999",
-        email: "driver@cholacabs.com",
-      );
+      final prefs = await SharedPreferences.getInstance();
+      final driverId = prefs.getString('driverId');
+      
+      if (driverId != null) {
+        final payments = await PaymentService.getAllPayments();
+        
+        double balance = 0.0;
+        List<Map<String, dynamic>> transactionHistory = [];
+        
+        for (var payment in payments) {
+          final paymentDriverId = payment['driver_id']?.toString();
+          if (paymentDriverId == driverId) {
+            final amount = (num.tryParse(payment['amount']?.toString() ?? '0') ?? 0) / 100.0;
+            final type = payment['transaction_type'] ?? '';
+            
+            if (type == 'ONLINE') {
+              balance += amount;
+              transactionHistory.add({
+                'title': 'Wallet Top-up',
+                'date': payment['payment_date']?.toString().split('T')[0] ?? DateTime.now().toString().split(' ')[0],
+                'tripId': 'N/A',
+                'transaction_id': payment['transaction_id'] ?? '',
+                'amount': '+₹${amount.toStringAsFixed(2)}',
+                'type': 'earning',
+              });
+            }
+          }
+        }
+        
+        setState(() {
+          walletBalance = balance;
+          transactions = transactionHistory;
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+      }
     } catch (e) {
-      debugPrint('Payment error: $e');
+      debugPrint('Error loading wallet data: $e');
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Payment failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
-  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    setState(() => isLoading = false);
-
-    debugPrint('Payment Success: ${response.paymentId}');
-
-    // Save payment details to backend
-    final saved = await RazorpayService.savePaymentDetails(
+  void _showPaymentDialog() {
+    _razorpayService.openCheckout(
       amount: 500.0,
-      razorpayPaymentId: response.paymentId ?? '',
-      razorpayOrderId: response.orderId ?? '',
-      razorpaySignature: response.signature ?? '',
+      name: 'Chola Cabs',
+      description: 'Wallet Top-up',
+      contact: '9999999999',
+      email: 'user@example.com',
     );
+  }
 
-    if (saved) {
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    setState(() => isLoading = true);
+    
+    debugPrint('=== RAZORPAY PAYMENT SUCCESS ===');
+    debugPrint('Payment ID: ${response.paymentId}');
+    debugPrint('Order ID: ${response.orderId}');
+    debugPrint('Signature: ${response.signature}');
+    debugPrint('Amount: ₹500.00');
+    debugPrint('================================');
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final driverId = prefs.getString('driverId');
+      
+      if (driverId == null || driverId.isEmpty) {
+        throw Exception('Driver ID not found. Please login again.');
+      }
+      
+      debugPrint('=== DRIVER INFO ===');
+      debugPrint('Driver ID: $driverId');
+      debugPrint('==================');
+      
+      final apiResponse = await PaymentService.createPayment(
+        driverId: driverId,
+        amount: 500.0,
+        paymentMethod: 'RAZORPAY',
+        transactionType: 'ONLINE',
+        razorpayPaymentId: response.paymentId!,
+        razorpayOrderId: response.orderId ?? '',
+        razorpaySignature: response.signature ?? '',
+      );
+      
+      debugPrint('=== API RESPONSE SUCCESS ===');
+      debugPrint('API Response: $apiResponse');
+      debugPrint('============================');
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Payment successful! ₹500 added to wallet'),
           backgroundColor: Colors.green,
         ),
       );
-    } else {
+      
+      // Refresh wallet data from API
+      _loadWalletData();
+    } catch (e) {
+      debugPrint('=== API ERROR ===');
+      debugPrint('Error: $e');
+      debugPrint('=================');
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Payment completed but failed to update wallet'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: Text('Payment API error: $e'),
+          backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
-    debugPrint('Payment error: ${response.code} - ${response.message}');
-    setState(() => isLoading = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Payment failed: ${response.message ?? 'Unknown error'}'),
+        content: Text('Payment failed: ${response.message}'),
         backgroundColor: Colors.red,
       ),
     );
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
-    setState(() => isLoading = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('External wallet: ${response.walletName}')),
+      SnackBar(
+        content: Text('External wallet: ${response.walletName}'),
+      ),
     );
   }
 
-  final List<Map<String, dynamic>> transactions = [
-    {
-      'title': 'Trip Earning',
-      'date': 'Today',
-      'tripId': 'Trip ID: TRIP001',
-      'amount': '+₹430',
-      'type': 'earning',
-    },
-    {
-      'title': 'Service Fee',
-      'date': 'Today',
-      'tripId': 'Trip ID: TRIP001',
-      'amount': '-₹30',
-      'type': 'fee',
-    },
-    {
-      'title': 'Trip Earning',
-      'date': 'Yesterday',
-      'tripId': 'Trip ID: TRIP012',
-      'amount': '+₹1,300',
-      'type': 'earning',
-    },
-    {
-      'title': 'Trip Earning',
-      'date': '10 Days before',
-      'tripId': 'Trip ID: TRIP015',
-      'amount': '+₹3,050',
-      'type': 'earning',
-    },
-  ];
+
 
   @override
   Widget build(BuildContext context) {
@@ -202,8 +244,8 @@ class _WalletScreenState extends State<WalletScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                const Text(
-                                  '₹4,300.00',
+                                Text(
+                                  '₹${walletBalance.toStringAsFixed(2)}',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 32,
@@ -250,7 +292,7 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                           ),
                           GestureDetector(
-                            onTap: isLoading ? null : _startPayment,
+                            onTap: isLoading ? null : _showPaymentDialog,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 20, vertical: 12),
@@ -310,16 +352,30 @@ class _WalletScreenState extends State<WalletScreen> {
                       ),
                       const SizedBox(height: 16),
                       // Transaction List
-                      ...transactions.map((transaction) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _buildTransactionItem(
-                              transaction['title'],
-                              transaction['date'],
-                              transaction['tripId'],
-                              transaction['amount'],
-                              transaction['type'],
+                      if (transactions.isEmpty && !isLoading)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32),
+                            child: Text(
+                              'No transactions yet',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
                             ),
-                          )),
+                          ),
+                        )
+                      else
+                        ...transactions.map((transaction) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _buildTransactionItem(
+                                transaction['title'],
+                                transaction['date'],
+                                transaction['tripId'] != 'N/A' ? 'Trip ID: ${transaction['tripId']}' : 'Transaction ID: ${transaction['transaction_id']}',
+                                transaction['amount'],
+                                transaction['type'],
+                              ),
+                            )),
                     ],
                   ),
                 ),

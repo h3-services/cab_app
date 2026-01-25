@@ -25,7 +25,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _driverRequests = [];
   List<dynamic> _allTrips = [];
   bool _isLoadingTrips = false;
-  Set<String> _startedTripIds = {}; // Track started trips
 
   @override
   void initState() {
@@ -86,76 +85,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  bool _isTripStarted(Map<String, dynamic> request) {
-    // Check trip status from multiple possible fields
-    final tripStatus = (request['trip_status'] ??
-            request['trip']?['trip_status'] ??
-            request['status'] ??
-            '')
-        .toString()
-        .toUpperCase();
-
-    debugPrint(
-        'Checking trip status for trip ${request['trip_id']}: $tripStatus');
-
-    // Check if trip is in started state
-    final isStarted = tripStatus == 'STARTED' ||
-        tripStatus == 'IN_PROGRESS' ||
-        tripStatus == 'ON_TRIP' ||
-        tripStatus.contains('STARTED') ||
-        tripStatus.contains('PROGRESS');
-
-    debugPrint('Trip ${request['trip_id']} is started: $isStarted');
-    return isStarted;
-  }
-
-  bool _isTripCompleted(Map<String, dynamic> request) {
-    final tripStatus = (request['trip_status'] ??
-            request['trip']?['trip_status'] ??
-            request['status'] ??
-            '')
-        .toString()
-        .toUpperCase();
-    final requestStatus = (request['status'] ?? '').toString().toUpperCase();
-
-    debugPrint(
-        'Checking completion for trip ${request['trip_id']}: tripStatus=$tripStatus, requestStatus=$requestStatus');
-
-    final isCompleted =
-        tripStatus == 'COMPLETED' || requestStatus == 'COMPLETED';
-    debugPrint('Trip ${request['trip_id']} is completed: $isCompleted');
-
-    return isCompleted;
-  }
-
-  Future<bool> _checkTripStatus(String tripId) async {
-    try {
-      final tripDetails = await ApiService.getTripDetails(tripId);
-      final status = (tripDetails['trip_status'] ?? tripDetails['status'] ?? '')
-          .toString()
-          .toUpperCase();
-      debugPrint('Fresh trip status for $tripId: $status');
-      return status == 'STARTED' ||
-          status.contains('STARTED') ||
-          status.contains('PROGRESS');
-    } catch (e) {
-      debugPrint('Error fetching trip status: $e');
-      return false;
-    }
-  }
-
-  Future<bool> _checkTripCompleted(String tripId) async {
-    try {
-      final tripDetails = await ApiService.getTripDetails(tripId);
-      final status = (tripDetails['trip_status'] ?? tripDetails['status'] ?? '')
-          .toString()
-          .toUpperCase();
-      return status == 'COMPLETED';
-    } catch (e) {
-      return false;
-    }
-  }
-
   Future<void> _fetchAvailableTrips() async {
     if (!mounted) return;
     setState(() => _isLoadingTrips = true);
@@ -171,8 +100,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final trips = results[0];
       final requests = results[1];
 
-      // 2. Filter available trips (Exclude ones already requested)
-      final requestedTripIds = requests
+      // 2. Enhance requests with fresh trip status data
+      final enhancedRequests = <Map<String, dynamic>>[];
+      for (final request in requests) {
+        final tripId = request['trip_id']?.toString();
+        if (tripId != null) {
+          try {
+            final tripDetails = await ApiService.getTripDetails(tripId);
+            final enhancedRequest = Map<String, dynamic>.from(request);
+            enhancedRequest['trip_status'] = tripDetails['trip_status'] ??
+                tripDetails['status'] ??
+                request['trip_status'];
+            enhancedRequests.add(enhancedRequest);
+          } catch (e) {
+            enhancedRequests.add(request);
+          }
+        } else {
+          enhancedRequests.add(request);
+        }
+      }
+
+      // 3. Filter available trips (Exclude ones already requested)
+      final requestedTripIds = enhancedRequests
           .where((r) =>
               (r['status'] ?? '').toString().toUpperCase() != 'CANCELLED')
           .map((r) => r['trip_id'].toString())
@@ -191,13 +140,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _allTrips = openTrips;
           _availableTrips = filteredTrips;
-          _driverRequests = requests;
+          _driverRequests = enhancedRequests;
           _isLoadingTrips = false;
         });
         // Debug: Log driver requests structure
-        if (requests.isNotEmpty) {
-          debugPrint('Driver Requests Keys: ${requests.first.keys}');
-          debugPrint('First Request: ${requests.first}');
+        if (enhancedRequests.isNotEmpty) {
+          debugPrint('Driver Requests Keys: ${enhancedRequests.first.keys}');
+          debugPrint('First Request: ${enhancedRequests.first}');
         }
       }
     } catch (e) {
@@ -1070,40 +1019,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _getDefinitiveTripStatus(Map<String, dynamic> request) {
-    // Check ALL possible status fields including nested ones
-    final statusChecks = [
-      request['trip_status']?.toString()?.toUpperCase(),
-      request['status']?.toString()?.toUpperCase(),
-      request['trip']?['trip_status']?.toString()?.toUpperCase(),
-      request['trip']?['status']?.toString()?.toUpperCase(),
-      request['request_status']?.toString()?.toUpperCase(),
-      request['trip_request_status']?.toString()?.toUpperCase(),
-    ];
-
-    // Check for COMPLETED first
-    for (String? status in statusChecks) {
-      if (status == 'COMPLETED') {
-        return 'COMPLETED';
-      }
-    }
-
-    // Check for STARTED variations
-    for (String? status in statusChecks) {
-      if (status != null &&
-          (status == 'STARTED' ||
-              status == 'IN_PROGRESS' ||
-              status == 'ON_TRIP' ||
-              status == 'ONWAY' ||
-              status.contains('PROGRESS') ||
-              status.contains('STARTED'))) {
-        return 'STARTED';
-      }
-    }
-
-    return 'ASSIGNED';
-  }
-
   Widget _buildApprovedContent() {
     final approvedRequests = _driverRequests.where((r) {
       final status = (r['status'] ?? '').toString().toUpperCase();
@@ -1182,10 +1097,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             ...approvedRequests.map((request) {
-              // Direct status check from trip_status field
-              String tripStatus =
-                  request['trip_status']?.toString().toUpperCase() ??
-                      'ASSIGNED';
+              String tripStatus = (request['trip_status'] ?? 'ASSIGNED')
+                  .toString()
+                  .toUpperCase();
 
               return Column(
                 children: [
@@ -1231,12 +1145,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color buttonColor;
     bool isEnabled;
 
+    // Check for various started statuses
+    bool isTripStarted = tripStatus == 'STARTED' ||
+        tripStatus == 'IN_PROGRESS' ||
+        tripStatus == 'ON_TRIP' ||
+        tripStatus == 'ON-TRIP' ||
+        tripStatus == 'ONWAY' ||
+        tripStatus.contains('STARTED') ||
+        tripStatus.contains('PROGRESS');
+
     // Check if trip_status is COMPLETED directly
     if (tripStatus == 'COMPLETED') {
       buttonText = 'Trip Completed';
       buttonColor = Colors.green;
       isEnabled = false;
-    } else if (tripStatus == 'STARTED') {
+    } else if (isTripStarted) {
       buttonText = 'Complete Trip';
       buttonColor = Colors.transparent;
       isEnabled = true;
@@ -1406,7 +1329,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: ElevatedButton(
                               onPressed: isEnabled
                                   ? () async {
-                                      if (tripStatus == 'STARTED') {
+                                      if (isTripStarted) {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(

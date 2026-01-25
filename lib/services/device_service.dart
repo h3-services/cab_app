@@ -9,17 +9,25 @@ class DeviceService {
     try {
       if (Platform.isAndroid) {
         final androidInfo = await _deviceInfo.androidInfo;
-        // Use androidId as primary, fallback to other identifiers
-        String deviceId = androidInfo.id;
-        if (deviceId.isEmpty || deviceId == 'unknown') {
-          deviceId = '${androidInfo.brand}_${androidInfo.model}_${androidInfo.device}';
-        }
-        print('Android Device ID: $deviceId');
+
+        // Combine 3 distinct hardware identifiers for Android
+        final String id = androidInfo.id; // Build ID / Hardware ID
+        final String hardware = androidInfo.hardware; // Hardware Name
+        final String model = androidInfo.model; // Device Model
+
+        final String deviceId = '${id}_${hardware}_${model}';
+        print('Android Combined Device ID: $deviceId');
         return deviceId;
       } else if (Platform.isIOS) {
         final iosInfo = await _deviceInfo.iosInfo;
-        String deviceId = iosInfo.identifierForVendor ?? 'unknown_ios';
-        print('iOS Device ID: $deviceId');
+
+        // Combine 3 identifiers for iOS for consistency
+        final String vendorId = iosInfo.identifierForVendor ?? 'unknown';
+        final String model = iosInfo.model;
+        final String systemName = iosInfo.systemName;
+
+        final String deviceId = '${vendorId}_${model}_${systemName}';
+        print('iOS Combined Device ID: $deviceId');
         return deviceId;
       } else {
         return 'unsupported_platform';
@@ -30,11 +38,11 @@ class DeviceService {
     }
   }
 
-  /// Generates a unique device identifier combining phone number and device ID
+  /// Generates a unique device identifier combining three hardware IDs
   static Future<String> generateDeviceIdentifier(String phoneNumber) async {
     final deviceId = await getDeviceId();
-    final identifier = '${phoneNumber}_$deviceId';
-    print('Generated device identifier: $identifier');
-    return identifier;
+    // Returning only the hardware combined ID as requested
+    print('Generated hardware-based device identifier: $deviceId');
+    return deviceId;
   }
 }

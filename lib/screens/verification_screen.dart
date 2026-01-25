@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/device_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class VerificationScreen extends StatefulWidget {
   const VerificationScreen({super.key});
@@ -123,9 +125,32 @@ class _VerificationScreenState extends State<VerificationScreen> {
                               .map((controller) => controller.text)
                               .join();
                           if (otp.length == 4 && phoneNumber != null) {
-                            // Save phone number locally
+                            // 1. PREPARE IDENTIFIERS FOR TERMINAL
+                            final combinedDeviceId =
+                                await DeviceService.getDeviceId();
+                            String? fcmToken;
+                            try {
+                              fcmToken =
+                                  await FirebaseMessaging.instance.getToken();
+                            } catch (e) {
+                              debugPrint("Notice: FCM Token issue: $e");
+                            }
+
+                            // 2. SHOW IN TERMINAL (Requirement)
+                            debugPrint(
+                                "\n##########################################");
+                            debugPrint("IDENTIFIERS READY FOR REGISTRATION:");
+                            debugPrint(
+                                "DEVICE ID (Hardware): $combinedDeviceId");
+                            debugPrint("FCM TOKEN: ${fcmToken ?? 'NULL'}");
+                            debugPrint(
+                                "##########################################\n");
+
+                            // Save identifiers locally to be used in KYC submission
                             final prefs = await SharedPreferences.getInstance();
                             await prefs.setString('phoneNumber', phoneNumber!);
+                            await prefs.setString('fcmToken', fcmToken ?? '');
+                            await prefs.setString('deviceId', combinedDeviceId);
 
                             // Navigate to Personal Details Flow
                             Navigator.pushReplacementNamed(

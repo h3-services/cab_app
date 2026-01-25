@@ -4,15 +4,18 @@ import 'device_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService {
-  static String get _baseUrl => dotenv.env['API_BASE_URL'] ?? 'https://api.example.com';
+  static String get _baseUrl =>
+      dotenv.env['BASE_URL'] ?? 'https://api.cholacabs.in/api/v1';
 
-  static Future<Map<String, dynamic>> verifyDeviceAndLogin(String phoneNumber) async {
+  static Future<Map<String, dynamic>> verifyDeviceAndLogin(
+      String phoneNumber) async {
     try {
-      final deviceIdentifier = await DeviceService.generateDeviceIdentifier(phoneNumber);
+      final deviceIdentifier =
+          await DeviceService.generateDeviceIdentifier(phoneNumber);
       print('Sending device identifier: $deviceIdentifier'); // Debug log
-      
+
       final response = await http.post(
-        Uri.parse('$_baseUrl/api/v1/drivers/'),
+        Uri.parse('$_baseUrl/drivers/'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -35,7 +38,8 @@ class AuthService {
       } else if (response.statusCode == 409) {
         return {
           'success': false,
-          'message': 'This account is registered on another device. Please contact support to reset your device.',
+          'message':
+              'This account is registered on another device. Please contact support to reset your device.',
         };
       } else {
         return {

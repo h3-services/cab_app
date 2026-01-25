@@ -17,6 +17,7 @@ class ApiService {
     required String aadharNumber,
     required String licenceExpiry,
     required String deviceId,
+    String? fcmToken,
   }) async {
     final url = Uri.parse('$baseUrl/drivers/');
 
@@ -29,6 +30,7 @@ class ApiService {
       "aadhar_number": aadharNumber,
       "licence_expiry": licenceExpiry,
       "device_id": deviceId,
+      "fcm_token": fcmToken,
     };
 
     try {
@@ -537,7 +539,8 @@ class ApiService {
   static Future<void> startTripV2(String tripId, String startingKm) async {
     final url = Uri.parse('$baseUrl/trips/$tripId/start');
     debugPrint('PATCH Request: $url');
-    debugPrint('Request Body: ${jsonEncode({'odo_start': int.parse(startingKm)})}');
+    debugPrint(
+        'Request Body: ${jsonEncode({'odo_start': int.parse(startingKm)})}');
     try {
       final response = await http.patch(
         url,
@@ -623,7 +626,8 @@ class ApiService {
   }
 
   static Future<void> updateOdometerStart(String tripId, num odoStart) async {
-    final url = Uri.parse('$baseUrl/trips/$tripId/odometer-start?odo_start=$odoStart');
+    final url =
+        Uri.parse('$baseUrl/trips/$tripId/odometer-start?odo_start=$odoStart');
     debugPrint('PATCH Request: $url');
     try {
       final response = await http.patch(
@@ -645,7 +649,8 @@ class ApiService {
 
   static Future<Map<String, dynamic>> updateOdometerEnd(
       String tripId, num odoEnd) async {
-    final url = Uri.parse('$baseUrl/trips/$tripId/odometer-end?odo_end=$odoEnd');
+    final url =
+        Uri.parse('$baseUrl/trips/$tripId/odometer-end?odo_end=$odoEnd');
     debugPrint('PATCH Request: $url');
     try {
       final response = await http.patch(
@@ -664,6 +669,116 @@ class ApiService {
     } catch (e) {
       debugPrint('API Error: $e');
       throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> createPayment({
+    required String driverId,
+    required double amount,
+    required String paymentMethod,
+    required String transactionType,
+    String? tripId,
+    String? transactionId,
+    String? razorpayPaymentId,
+    String? razorpayOrderId,
+    String? razorpaySignature,
+    String status = 'SUCCESS',
+  }) async {
+    final url = Uri.parse('$baseUrl/../api/v1/payments/');
+
+    final body = {
+      "driver_id": driverId,
+      "amount": (amount * 100).toInt(),
+      "transaction_type": transactionType,
+      "status": status,
+      "transaction_id": transactionId ??
+          razorpayPaymentId ??
+          'TXN${DateTime.now().millisecondsSinceEpoch}',
+      "razorpay_payment_id": razorpayPaymentId ?? '',
+      "razorpay_order_id": razorpayOrderId ?? '',
+      "razorpay_signature": razorpaySignature ?? '',
+    };
+
+    try {
+      debugPrint('POST Request: $url');
+      debugPrint('Body: ${jsonEncode(body)}');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+            'Failed to create payment: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<void> updateDriverDeviceId(
+      String driverId, String deviceId) async {
+    // Using query parameters as it seems to be the pattern for PATCH in this API
+    final url =
+        Uri.parse('$baseUrl/drivers/$driverId/device-id?device_id=$deviceId');
+    debugPrint('PATCH Request (Device ID): $url');
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Accept': 'application/json',
+        },
+      );
+
+      debugPrint('Device ID Update - Status: ${response.statusCode}');
+      debugPrint('Device ID Update - Response: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        debugPrint(
+            'WARNING: Failed to update Device ID. Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('CRITICAL: Error updating Device ID: $e');
+    }
+  }
+
+  static Future<void> addFcmToken(String driverId, String token) async {
+    final url = Uri.parse('$baseUrl/drivers/$driverId/fcm-token');
+    debugPrint('POST Request (FCM Token): $url');
+
+    final body = {
+      "fcm_token": token,
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      debugPrint('FCM Token Update - Status: ${response.statusCode}');
+      debugPrint('FCM Token Update - Response: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        debugPrint(
+            'WARNING: Failed to add FCM token. Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('CRITICAL: Error updating FCM token: $e');
     }
   }
 
