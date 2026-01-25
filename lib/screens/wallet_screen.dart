@@ -6,6 +6,7 @@ import '../widgets/widgets.dart';
 import '../widgets/bottom_navigation.dart';
 import '../services/razorpay_service.dart';
 import '../services/payment_service.dart';
+import '../services/api_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -46,36 +47,219 @@ class _WalletScreenState extends State<WalletScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
-      
+
       if (driverId != null) {
-        final payments = await PaymentService.getAllPayments();
-        
-        double balance = 0.0;
+        // 1. Get balance from cache instantly if available
+        final cachedDriverData = prefs.getString('driver_data');
+        if (cachedDriverData != null) {
+          final data = json.decode(cachedDriverData);
+          setState(() {
+            walletBalance =
+                (num.tryParse(data['wallet_balance']?.toString() ?? '0') ?? 0)
+                    .toDouble();
+          });
+        }
+
+        // 2. Fetch latest data in parallel
+        final results = await Future.wait([
+          PaymentService.getAllPayments(),
+          ApiService.getAllTrips(),
+          PaymentService.getWalletTransactions(driverId),
+        ]);
+
+        final List payments = results[0];
+        final List allTrips = results[1];
+        final List walletTxns = results[2];
+
         List<Map<String, dynamic>> transactionHistory = [];
-        
+        Set<String> processedTxnIds = {};
+
+        // Process Payments (Top-ups)
         for (var payment in payments) {
           final paymentDriverId = payment['driver_id']?.toString();
           if (paymentDriverId == driverId) {
-            final amount = (num.tryParse(payment['amount']?.toString() ?? '0') ?? 0) / 100.0;
+            final amount =
+                (num.tryParse(payment['amount']?.toString() ?? '0') ?? 0) /
+                    100.0;
             final type = payment['transaction_type'] ?? '';
-            
+
             if (type == 'ONLINE') {
-              balance += amount;
               transactionHistory.add({
                 'title': 'Wallet Top-up',
-                'date': payment['payment_date']?.toString().split('T')[0] ?? DateTime.now().toString().split(' ')[0],
+                'date': payment['payment_date']?.toString().split('T')[0] ??
+                    DateTime.now().toString().split(' ')[0],
                 'tripId': 'N/A',
                 'transaction_id': payment['transaction_id'] ?? '',
                 'amount': '+₹${amount.toStringAsFixed(2)}',
                 'type': 'earning',
+                'raw_date': payment['payment_date'] ?? '',
               });
+              if (payment['transaction_id'] != null) {
+                processedTxnIds.add(payment['transaction_id'].toString());
+              }
             }
           }
         }
-        
+
+        // Process Trips (Earnings and Fees)
+        for (var trip in allTrips) {
+          if (trip is Map<String, dynamic>) {
+            final tripDriverId = (trip['assigned_driver_id'] ??
+                    trip['driver_id'] ??
+                    trip['driver']?['driver_id'])
+                ?.toString();
+            final tripStatus = (trip['trip_status'] ?? trip['status'] ?? '')
+                .toString()
+                .toUpperCase();
+
+            bool isMyTrip = false;
+            if (driverId != null && tripDriverId != null) {
+              isMyTrip = tripDriverId.trim().toLowerCase() ==
+                  driverId.trim().toLowerCase();
+            }
+
+            // More permissive status check to catch variations
+            bool isCompleted = tripStatus == 'COMPLETED' ||
+                tripStatus == 'CLOSED' ||
+                (trip['is_completed'] == true);
+
+            if (isMyTrip && isCompleted) {
+              // Strictly prioritize 'fare' as per user input
+              final fare = (num.tryParse(trip['fare']?.toString() ??
+                          trip['total_fare']?.toString() ??
+                          trip['total_amount']?.toString() ??
+                          trip['amount']?.toString() ??
+                          trip['total_cost']?.toString() ??
+                          '0') ??
+                      0)
+                  .toDouble();
+
+              final date = trip['completed_at'] ??
+                  trip['created_at'] ??
+                  DateTime.now().toIso8601String();
+              final displayDate = date.toString().split('T')[0];
+              final tripIdVisible = (trip['trip_id'] ?? 'TRIP').toString();
+
+              if (fare > 0) {
+                // Trip Gross Earning
+                transactionHistory.add({
+                  'title': 'Total Trip Cost',
+                  'date': displayDate,
+                  'tripId': tripIdVisible,
+                  'transaction_id': '',
+                  'amount': '+₹${fare.toStringAsFixed(2)}',
+                  'type': 'earning',
+                  'raw_date': date,
+                });
+
+                // Find matching wallet transaction to show ACTUAL service fee (as per user's request)
+                final matchingTxn = walletTxns.firstWhere(
+                  (txn) => (txn['trip_id']?.toString() == tripIdVisible ||
+                      (txn['description']?.toString().contains(tripIdVisible) ??
+                          false)),
+                  orElse: () => null,
+                );
+
+                double feeAmount = 0;
+                String txnId = '';
+                String txnDate = date;
+
+                if (matchingTxn != null) {
+                  // User's idea: Calculate based on balance change if available
+                  final before = (num.tryParse(
+                              matchingTxn['balance_before']?.toString() ??
+                                  '0') ??
+                          0)
+                      .toDouble();
+                  final after = (num.tryParse(
+                              matchingTxn['balance_after']?.toString() ??
+                                  '0') ??
+                          0)
+                      .toDouble();
+
+                  if (before != 0 || after != 0) {
+                    feeAmount = (before - after).abs();
+                  } else {
+                    feeAmount = (num.tryParse(
+                                matchingTxn['amount']?.toString() ?? '0') ??
+                            0)
+                        .toDouble()
+                        .abs();
+                  }
+
+                  txnId = matchingTxn['transaction_id']?.toString() ?? '';
+                  txnDate = matchingTxn['created_at'] ?? date;
+
+                  if (matchingTxn['transaction_id'] != null) {
+                    processedTxnIds
+                        .add(matchingTxn['transaction_id'].toString());
+                  }
+                } else {
+                  // Fallback to 2% if server transaction record isn't found yet
+                  feeAmount = fare * 0.02;
+                }
+
+                if (feeAmount > 0) {
+                  transactionHistory.add({
+                    'title': 'Service Fee (2%)',
+                    'date': displayDate,
+                    'tripId': tripIdVisible,
+                    'transaction_id': txnId,
+                    'amount': '-₹${feeAmount.toStringAsFixed(2)}',
+                    'type': 'spending',
+                    'raw_date': txnDate,
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // Process actual Wallet Transaction records from backend
+        for (var txn in walletTxns) {
+          final txnId = txn['transaction_id']?.toString();
+          if (txnId != null && processedTxnIds.contains(txnId)) continue;
+
+          final amount =
+              (num.tryParse(txn['amount']?.toString() ?? '0') ?? 0).toDouble();
+          final title = txn['description'] ?? 'Wallet Transaction';
+          final date = txn['created_at'] ?? DateTime.now().toIso8601String();
+          final displayDate = date.toString().split('T')[0];
+
+          if (!title.contains('Service Fee') || amount != 0) {
+            transactionHistory.add({
+              'title': title,
+              'date': displayDate,
+              'tripId': txn['trip_id']?.toString() ?? 'N/A',
+              'transaction_id': txn['transaction_id'] ?? '',
+              'amount': amount < 0
+                  ? '-₹${amount.abs().toStringAsFixed(2)}'
+                  : '+₹${amount.toStringAsFixed(2)}',
+              'type': amount < 0 ? 'spending' : 'earning',
+              'raw_date': date,
+            });
+          }
+        }
+
+        // Sort by date descending
+        transactionHistory.sort((a, b) {
+          final dateA = a['raw_date'].toString();
+          final dateB = b['raw_date'].toString();
+          return dateB.compareTo(dateA);
+        });
+
         setState(() {
-          walletBalance = balance;
           transactions = transactionHistory;
+        });
+
+        // 3. Update live balance from API
+        final driverData = await ApiService.getDriverDetails(driverId);
+        await prefs.setString('driver_data', jsonEncode(driverData));
+        setState(() {
+          walletBalance =
+              (num.tryParse(driverData['wallet_balance']?.toString() ?? '0') ??
+                      0)
+                  .toDouble();
           isLoading = false;
         });
       } else {
@@ -99,26 +283,26 @@ class _WalletScreenState extends State<WalletScreen> {
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
     setState(() => isLoading = true);
-    
+
     debugPrint('=== RAZORPAY PAYMENT SUCCESS ===');
     debugPrint('Payment ID: ${response.paymentId}');
     debugPrint('Order ID: ${response.orderId}');
     debugPrint('Signature: ${response.signature}');
     debugPrint('Amount: ₹500.00');
     debugPrint('================================');
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
-      
+
       if (driverId == null || driverId.isEmpty) {
         throw Exception('Driver ID not found. Please login again.');
       }
-      
+
       debugPrint('=== DRIVER INFO ===');
       debugPrint('Driver ID: $driverId');
       debugPrint('==================');
-      
+
       final apiResponse = await PaymentService.createPayment(
         driverId: driverId,
         amount: 500.0,
@@ -128,25 +312,48 @@ class _WalletScreenState extends State<WalletScreen> {
         razorpayOrderId: response.orderId ?? '',
         razorpaySignature: response.signature ?? '',
       );
-      
+
       debugPrint('=== API RESPONSE SUCCESS ===');
       debugPrint('API Response: $apiResponse');
       debugPrint('============================');
 
+      // 4. Get CURRENT data from API first to be absolutely sure of the balance BEFORE updating
+      final currentData = await ApiService.getDriverDetails(driverId);
+      final currentBalance =
+          (num.tryParse(currentData['wallet_balance']?.toString() ?? '0') ?? 0)
+              .toDouble();
+
+      final newTotalBalance = currentBalance + 500.0;
+      debugPrint(
+          'Adding ₹500 to current balance: $currentBalance. New Total: $newTotalBalance');
+
+      // 4. Update the wallet_balance using the dedicated PATCH call
+      await ApiService.updateWalletBalance(driverId, newTotalBalance);
+
+      // 5. Update local cache and state IMMEDIATELY so the user sees the change
+      setState(() {
+        walletBalance = newTotalBalance;
+      });
+
+      // Update the cached json string
+      currentData['wallet_balance'] = newTotalBalance;
+      await prefs.setString('driver_data', jsonEncode(currentData));
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Payment successful! ₹500 added to wallet'),
+        SnackBar(
+          content: Text(
+              'Payment successful! New balance: ₹${newTotalBalance.toStringAsFixed(2)}'),
           backgroundColor: Colors.green,
         ),
       );
-      
-      // Refresh wallet data from API
+
+      // Refresh transaction history
       _loadWalletData();
     } catch (e) {
       debugPrint('=== API ERROR ===');
       debugPrint('Error: $e');
       debugPrint('=================');
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Payment API error: $e'),
@@ -174,8 +381,6 @@ class _WalletScreenState extends State<WalletScreen> {
       ),
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -216,9 +421,9 @@ class _WalletScreenState extends State<WalletScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Color(0xFF66BB6A),
-                              Color(0xFF388E3C),
-                            ],
+                              const Color(0xFF66BB6A),
+                              const Color(0xFF388E3C)
+                            ], // Standard Green
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
@@ -247,7 +452,9 @@ class _WalletScreenState extends State<WalletScreen> {
                                 Text(
                                   '₹${walletBalance.toStringAsFixed(2)}',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: walletBalance < 0
+                                        ? const Color(0xFFFF5252)
+                                        : Colors.white,
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -371,7 +578,9 @@ class _WalletScreenState extends State<WalletScreen> {
                               child: _buildTransactionItem(
                                 transaction['title'],
                                 transaction['date'],
-                                transaction['tripId'] != 'N/A' ? 'Trip ID: ${transaction['tripId']}' : 'Transaction ID: ${transaction['transaction_id']}',
+                                transaction['tripId'] != 'N/A'
+                                    ? 'Trip ID: ${transaction['tripId']}'
+                                    : 'Transaction ID: ${transaction['transaction_id']}',
                                 transaction['amount'],
                                 transaction['type'],
                               ),

@@ -28,20 +28,25 @@ class PaymentService {
       "payment_method": paymentMethod,
       "transaction_type": transactionType,
       "status": status,
-      "transaction_id": transactionId ?? razorpayPaymentId ?? _generateTransactionId(),
+      "transaction_id":
+          transactionId ?? razorpayPaymentId ?? _generateTransactionId(),
       "payment_date": DateTime.now().toIso8601String(),
     };
 
     // Add optional fields
     if (tripId != null) body["trip_id"] = tripId;
-    if (razorpayPaymentId != null) body["razorpay_payment_id"] = razorpayPaymentId;
+    if (razorpayPaymentId != null)
+      body["razorpay_payment_id"] = razorpayPaymentId;
     if (razorpayOrderId != null) body["razorpay_order_id"] = razorpayOrderId;
-    if (razorpaySignature != null) body["razorpay_signature"] = razorpaySignature;
+    if (razorpaySignature != null)
+      body["razorpay_signature"] = razorpaySignature;
 
     try {
       debugPrint('=== PAYMENT API DEBUG ===');
       debugPrint('POST Request URL: $url');
-      debugPrint('Request Headers: ${jsonEncode({"Content-Type": "application/json"})}');
+      debugPrint('Request Headers: ${jsonEncode({
+            "Content-Type": "application/json"
+          })}');
       debugPrint('Request Body: ${jsonEncode(body)}');
       debugPrint('========================');
 
@@ -195,7 +200,8 @@ class PaymentService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Failed to create wallet transaction: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Failed to create wallet transaction: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       debugPrint('Wallet Transaction Error: $e');
@@ -203,17 +209,21 @@ class PaymentService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getWalletTransactions(String driverId) async {
-    final url = Uri.parse('$baseUrl/api/v1/wallet-transactions/');
+  static Future<List<Map<String, dynamic>>> getWalletTransactions(
+      String driverId) async {
+    final url =
+        Uri.parse('$baseUrl/api/v1/wallet-transactions/?driver_id=$driverId');
 
     try {
-      final response = await http.get(url, headers: {'Content-Type': 'application/json'});
+      final response =
+          await http.get(url, headers: {'Content-Type': 'application/json'});
 
       if (response.statusCode == 200) {
         final List<dynamic> transactions = jsonDecode(response.body);
         return transactions.cast<Map<String, dynamic>>();
       } else {
-        throw Exception('Failed to get wallet transactions: ${response.statusCode}');
+        throw Exception(
+            'Failed to get wallet transactions: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Get Wallet Transactions Error: $e');

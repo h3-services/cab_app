@@ -58,6 +58,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('driver_data', jsonEncode(driverData));
 
+      // Store individual fields for Profile and Drawer screens
+      await prefs.setString('name', driverData['name'] ?? 'Driver');
+      await prefs.setString('phoneNumber', driverData['phone_number'] ?? '');
+      await prefs.setString('email', driverData['email'] ?? '');
+      await prefs.setString(
+          'primaryLocation', driverData['primary_location'] ?? '');
+      await prefs.setString(
+          'licenseNumber', driverData['licence_number'] ?? '');
+      await prefs.setString('aadhaarNumber', driverData['aadhar_number'] ?? '');
+
+      // Store vehicle details if available
+      final vehicle = driverData['vehicle'];
+      if (vehicle != null) {
+        await prefs.setString('vehicleType', vehicle['vehicle_type'] ?? '');
+        await prefs.setString('vehicleBrand', vehicle['vehicle_brand'] ?? '');
+        await prefs.setString('vehicleModel', vehicle['vehicle_model'] ?? '');
+        await prefs.setString('vehicleNumber', vehicle['vehicle_number'] ?? '');
+        await prefs.setString('vehicleColor', vehicle['vehicle_color'] ?? '');
+        await prefs.setString(
+            'seatingCapacity', (vehicle['seating_capacity'] ?? '').toString());
+      }
+
+      // Photo handling fallback (if needed)
+      if (driverData['photo_url'] != null) {
+        await prefs.setString('profile_photo_url', driverData['photo_url']);
+      }
+
       final bool isApproved = driverData['is_approved'] == true;
       final String kycVerified =
           (driverData['kyc_verified'] ?? '').toString().toLowerCase();
@@ -69,11 +96,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Navigator.pushReplacementNamed(context, '/approval-pending');
         }
       } else {
-        // Approved! Unlock UI
+        // Approved! Load trips before unlocking UI
         if (mounted) {
           _tripStateService.setReadyForTrip(isAvailable);
-          setState(() => _isCheckingStatus = false);
-          _fetchAvailableTrips();
+
+          debugPrint('Main Loading: Fetching initial trips...');
+          await _fetchAvailableTrips();
+
+          if (mounted) {
+            setState(() => _isCheckingStatus = false);
+          }
         }
       }
     } catch (e) {
@@ -101,30 +133,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final requestsFuture = _driverId != null
           ? ApiService.getDriverRequests(_driverId!)
           : Future.value([]);
+      final driverFuture = _driverId != null
+          ? ApiService.getDriverDetails(_driverId!)
+          : Future.value(null);
 
-      final results = await Future.wait([tripsFuture, requestsFuture]);
-      final trips = results[0];
-      final requests = results[1];
+      final results =
+          await Future.wait([tripsFuture, requestsFuture, driverFuture]);
+      final trips = results[0] as List<dynamic>;
+      final requests = results[1] as List<dynamic>;
+      final driverData = results[2] as Map<String, dynamic>?;
 
-      // 2. Enhance requests with fresh trip status data
-      final enhancedRequests = <Map<String, dynamic>>[];
-      for (final request in requests) {
+      if (driverData != null && mounted) {
+        // Sync availability status and store driver data
+        final bool isAvailable = driverData['is_available'] == true;
+        _tripStateService.setReadyForTrip(isAvailable);
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('driver_data', jsonEncode(driverData));
+      }
+
+      // 2. Enhance requests with fresh trip status data in parallel
+      final enhancedRequests = await Future.wait(requests.map((request) async {
         final tripId = request['trip_id']?.toString();
         if (tripId != null) {
           try {
             final tripDetails = await ApiService.getTripDetails(tripId);
-            final enhancedRequest = Map<String, dynamic>.from(request);
-            enhancedRequest['trip_status'] = tripDetails['trip_status'] ??
+            final enhanced = Map<String, dynamic>.from(request);
+
+            // Resolve trip status with high priority on tripDetails
+            final resolvedStatus = tripDetails['trip_status'] ??
                 tripDetails['status'] ??
-                request['trip_status'];
-            enhancedRequests.add(enhancedRequest);
+                request['trip_status'] ??
+                request['trip']?['trip_status'] ??
+                request['trip']?['status'] ??
+                request['status'];
+
+            enhanced['trip_status'] = resolvedStatus;
+
+            // Also merge odometer and other details
+            enhanced['odo_start'] = tripDetails['odo_start'] ??
+                request['odo_start'] ??
+                request['trip']?['odo_start'];
+
+            enhanced['odo_end'] = tripDetails['odo_end'] ??
+                request['odo_end'] ??
+                request['trip']?['odo_end'];
+
+            enhanced['distance'] = tripDetails['distance'] ??
+                tripDetails['distance_km'] ??
+                request['distance'] ??
+                request['distance_km'];
+
+            return enhanced;
           } catch (e) {
-            enhancedRequests.add(request);
+            debugPrint('Failed to enhance request $tripId: $e');
+            return Map<String, dynamic>.from(request);
           }
-        } else {
-          enhancedRequests.add(request);
         }
-      }
+        return Map<String, dynamic>.from(request);
+      }));
 
       // 3. Filter available trips (Exclude ones already requested)
       final requestedTripIds = enhancedRequests
@@ -143,10 +210,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .toList();
 
       if (mounted) {
+        // Check for an active trip to auto-select the Approved tab
+        int initialTab = selectedTab;
+        final hasActiveTrip = enhancedRequests.any((r) {
+          final tripStatus =
+              (r['trip_status'] ?? r['status'] ?? '').toString().toUpperCase();
+          return tripStatus == 'STARTED' ||
+              tripStatus == 'ON_TRIP' ||
+              tripStatus == 'ONWAY';
+        });
+
+        if (hasActiveTrip && selectedTab == 0) {
+          initialTab = 2; // Auto-switch to Approved tab
+          debugPrint(
+              'Main Loading: Active trip detected! Switching to Approved tab.');
+        }
+
         setState(() {
           _allTrips = openTrips;
           _availableTrips = filteredTrips;
           _driverRequests = enhancedRequests;
+          selectedTab = initialTab;
           _isLoadingTrips = false;
         });
         // Debug: Log driver requests structure
@@ -1041,12 +1125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildApprovedContent() {
     final approvedRequests = _driverRequests.where((r) {
       final status = (r['status'] ?? '').toString().toUpperCase();
-      final tripStatus = (r['trip_status'] ??
-              r['trip']?['trip_status'] ??
-              r['trip']?['status'] ??
-              '')
-          .toString()
-          .toUpperCase();
+      final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
 
       return status == 'APPROVED' ||
           status == 'ACCEPTED' ||
@@ -1137,6 +1216,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         .toString(),
                     requestId: request['request_id']?.toString() ?? '',
                     tripId: request['trip_id']?.toString(),
+                    request: request,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -1158,6 +1238,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String odometer,
     String? requestId,
     String? tripId,
+    Map<String, dynamic>? request,
   }) {
     // Simple status-based logic
     String buttonText;
@@ -1288,8 +1369,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Pickup at 6:30 PM ( 12 Mar )',
-                            style: TextStyle(
+                        Text(
+                            'Pickup at ${_formatTripTime(request?['planned_start_at'] ?? request?['created_at'])}',
+                            style: const TextStyle(
                                 color: Colors.black54,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold)),
@@ -1332,7 +1414,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: Container(
-                            decoration: tripStatus == 'STARTED'
+                            decoration: isTripStarted // Use isTripStarted here
                                 ? BoxDecoration(
                                     gradient: const LinearGradient(
                                       colors: [
@@ -1367,7 +1449,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                           ),
                                         ).then((_) => _fetchAvailableTrips());
-                                      } else if (tripStatus == 'ASSIGNED') {
+                                      } else {
+                                        // Simplified else condition
                                         if (tripId != null) {
                                           try {
                                             // Navigate to start screen immediately
@@ -1406,15 +1489,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     }
                                   : null,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: buttonColor,
-                                shadowColor: tripStatus == 'STARTED'
+                                backgroundColor: isTripStarted
                                     ? Colors.transparent
-                                    : null,
+                                    : buttonColor, // Use isTripStarted here
+                                shadowColor:
+                                    isTripStarted ? Colors.transparent : null,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),
-                                elevation: tripStatus == 'STARTED' ? 0 : 4,
+                                elevation: isTripStarted
+                                    ? 0
+                                    : 4, // Use isTripStarted here
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1422,7 +1508,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   Icon(
                                     tripStatus == 'COMPLETED'
                                         ? Icons.check_circle
-                                        : tripStatus == 'STARTED'
+                                        : isTripStarted // Use isTripStarted here
                                             ? Icons.check_circle_outline
                                             : Icons.timer_outlined,
                                     color: Colors.white,
@@ -1719,8 +1805,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               _buildTableHeader('Start KM'),
                               _buildTableHeader('End KM'),
                               _buildTableHeader('Distance'),
-                              _buildTableHeader('Total Cost:'),
-                              _buildTableHeader('Wallet Fee (2%)'),
+                              _buildTableHeader('Total Trip Cost'),
+                              _buildTableHeader('Service Fee (2%)'),
                               _buildTableHeader('Status'),
                             ],
                           ),

@@ -121,7 +121,8 @@ class _TripStartScreenState extends State<TripStartScreen> {
                           if (tripId != null) {
                             // 1. Mark trip as started and save odometer
                             await ApiService.updateOdometerStart(
-                                tripId.toString(), int.parse(_startingKmController.text));
+                                tripId.toString(),
+                                int.parse(_startingKmController.text));
 
                             // 2. Try to sync request status (important for Dashboard UI)
                             if (requestId != null) {
@@ -140,7 +141,8 @@ class _TripStartScreenState extends State<TripStartScreen> {
 
                           if (context.mounted) {
                             Navigator.pop(context); // Pop loading
-                            Navigator.pop(context, tripId?.toString()); // Return trip ID as string
+                            Navigator.pop(context,
+                                tripId?.toString()); // Return trip ID as string
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('Trip started successfully!')),
@@ -488,8 +490,14 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                                   tripData: widget.tripData,
                                   startingKm: widget.startingKm,
                                   endingKm: _endingKmController.text,
-                                  distance: result['distance_km'] ?? result['distance'] ?? 0,
-                                  fare: result['fare'] ?? result['total_fare'] ?? result['total_cost'] ?? result['amount'] ?? 500,
+                                  distance: result['distance_km'] ??
+                                      result['distance'] ??
+                                      0,
+                                  fare: result['fare'] ??
+                                      result['total_fare'] ??
+                                      result['total_cost'] ??
+                                      result['amount'] ??
+                                      500,
                                 ),
                               ),
                             );
@@ -736,12 +744,12 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     try {
       final tripDetails = await ApiService.getTripDetails(tripId.toString());
       setState(() {
-        actualFare = tripDetails['fare'] ?? 
-                    tripDetails['total_fare'] ?? 
-                    tripDetails['total_cost'] ?? 
-                    tripDetails['amount'] ?? 
-                    widget.fare ?? 
-                    500;
+        actualFare = tripDetails['fare'] ??
+            tripDetails['total_fare'] ??
+            tripDetails['total_cost'] ??
+            tripDetails['amount'] ??
+            widget.fare ??
+            500;
         isLoading = false;
       });
     } catch (e) {
@@ -766,12 +774,13 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     final endKm = num.tryParse(widget.endingKm) ?? 0;
     final dist = widget.distance ?? (endKm - startKm).abs();
     final ratePerKm = 12.0;
-    
+
     // Use actualFare from API, fallback to calculation
-    final totalCost = (actualFare != null && actualFare! > 0) 
-        ? actualFare!.toDouble() 
+    final totalCost = (actualFare != null && actualFare! > 0)
+        ? actualFare!.toDouble()
         : (dist * ratePerKm * 1.02);
-    final walletFee = (actualFare != null && actualFare! > 0) ? 0 : (dist * ratePerKm * 0.02);
+    final walletFee =
+        (actualFare != null && actualFare! > 0) ? 0 : (dist * ratePerKm * 0.02);
 
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
@@ -824,8 +833,8 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                   _buildSummaryRow(
                       'Rate per KM', '₹ ${ratePerKm.toStringAsFixed(2)}'),
                 if (actualFare == null || actualFare == 0)
-                  _buildSummaryRow('Wallet fee ( 2% of KM cost )',
-                      '₹ ${walletFee.toStringAsFixed(2)}'),
+                  _buildSummaryRow(
+                      'Service Fee (2%)', '₹ ${walletFee.toStringAsFixed(2)}'),
                 const SizedBox(height: 20),
                 Container(
                   width: double.infinity,
@@ -839,7 +848,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Total Cost',
+                        'Total Trip Cost',
                         style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -1112,21 +1121,22 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                       onPressed: () async {
                         // Close dialog immediately
                         Navigator.pop(dialogContext);
-                        
+
                         // Mark trip as completed
                         final tripId = widget.tripData['trip_id'];
                         if (tripId != null) {
                           try {
-                            await ApiService.completeTripStatus(tripId.toString());
+                            await ApiService.completeTripStatus(
+                                tripId.toString());
                           } catch (e) {
                             debugPrint('Failed to mark trip as completed: $e');
                           }
                         }
-                        
+
                         // Close screens and return to dashboard
                         Navigator.popUntil(
                             context, ModalRoute.withName('/dashboard'));
-                        
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text('Trip closed successfully!')),

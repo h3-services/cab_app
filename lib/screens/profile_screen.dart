@@ -23,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _licenseNumber = '';
   String _aadhaarNumber = '';
   String? _profilePhotoPath;
+  String? _profilePhotoUrl;
 
   // Vehicle Details
   String _vehicleType = '';
@@ -80,6 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _licenseNumber = prefs.getString('licenseNumber') ?? '';
       _aadhaarNumber = prefs.getString('aadhaarNumber') ?? '';
       _profilePhotoPath = prefs.getString('profile_photo_path');
+      _profilePhotoUrl = prefs.getString('profile_photo_url');
 
       // Vehicle
       _vehicleType = prefs.getString('vehicleType') ?? '';
@@ -135,10 +137,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               CircleAvatar(
                                 radius: 40,
                                 backgroundColor: Colors.grey.shade300,
-                                backgroundImage: _profilePhotoPath != null
-                                    ? FileImage(File(_profilePhotoPath!))
-                                    : null,
-                                child: _profilePhotoPath == null
+                                backgroundImage: _profilePhotoUrl != null
+                                    ? NetworkImage(_profilePhotoUrl!)
+                                    : (_profilePhotoPath != null
+                                        ? FileImage(File(_profilePhotoPath!))
+                                            as ImageProvider
+                                        : null),
+                                child: (_profilePhotoUrl == null &&
+                                        _profilePhotoPath == null)
                                     ? const Icon(Icons.person,
                                         size: 60, color: Colors.grey)
                                     : null,

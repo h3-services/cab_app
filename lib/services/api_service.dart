@@ -250,10 +250,11 @@ class ApiService {
     required String licenceNumber,
     required String aadharNumber,
     required String licenceExpiry,
+    double? walletBalance,
   }) async {
     final url = Uri.parse('$baseUrl/drivers/$driverId');
 
-    final body = {
+    final Map<String, dynamic> body = {
       "name": name,
       "email": email,
       "primary_location": primaryLocation,
@@ -261,6 +262,10 @@ class ApiService {
       "aadhar_number": aadharNumber,
       "licence_expiry": licenceExpiry,
     };
+
+    if (walletBalance != null) {
+      body["wallet_balance"] = walletBalance;
+    }
 
     try {
       debugPrint('PUT Request: $url');
@@ -626,16 +631,20 @@ class ApiService {
   static Future<void> updateOdometerStart(String tripId, num odoStart) async {
     final url =
         Uri.parse('$baseUrl/trips/$tripId/odometer-start?odo_start=$odoStart');
-    debugPrint('PATCH Request: $url');
+    debugPrint('PATCH Request (Odometer Start): $url');
+
     try {
       final response = await http.patch(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
       );
       debugPrint('Response Status: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');
 
-      if (response.statusCode != 200) {
+      if (response.statusCode != 200 && response.statusCode != 204) {
         throw Exception(
             'Failed to update odometer start: ${response.statusCode} - ${response.body}');
       }
@@ -649,11 +658,15 @@ class ApiService {
       String tripId, num odoEnd) async {
     final url =
         Uri.parse('$baseUrl/trips/$tripId/odometer-end?odo_end=$odoEnd');
-    debugPrint('PATCH Request: $url');
+    debugPrint('PATCH Request (Odometer End): $url');
+
     try {
       final response = await http.patch(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
       );
       debugPrint('Response Status: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');
@@ -663,6 +676,35 @@ class ApiService {
       } else {
         throw Exception(
             'Failed to update odometer end: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  static Future<void> updateWalletBalance(
+      String driverId, double newBalance) async {
+    final url = Uri.parse(
+        '$baseUrl/drivers/$driverId/wallet-balance?new_balance=$newBalance');
+    debugPrint('PATCH Request (Wallet Balance): $url');
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        // Sending body as well just in case, but query param is primary for this API
+        body: jsonEncode({'new_balance': newBalance}),
+      );
+
+      debugPrint('Wallet Balance Update - Status: ${response.statusCode}');
+      debugPrint('Wallet Balance Update - Response: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception(
+            'Failed to update wallet balance: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       debugPrint('API Error: $e');

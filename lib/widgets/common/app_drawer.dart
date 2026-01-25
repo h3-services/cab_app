@@ -12,6 +12,7 @@ class AppDrawer extends StatefulWidget {
 class _AppDrawerState extends State<AppDrawer> {
   String _name = 'Driver';
   String? _profilePhotoPath;
+  String? _profilePhotoUrl;
 
   @override
   void initState() {
@@ -24,6 +25,7 @@ class _AppDrawerState extends State<AppDrawer> {
     setState(() {
       _name = prefs.getString('name') ?? 'Driver';
       _profilePhotoPath = prefs.getString('profile_photo_path');
+      _profilePhotoUrl = prefs.getString('profile_photo_url');
     });
   }
 
@@ -50,10 +52,12 @@ class _AppDrawerState extends State<AppDrawer> {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: Colors.grey.shade400,
-                  backgroundImage: _profilePhotoPath != null
-                      ? FileImage(File(_profilePhotoPath!))
-                      : null,
-                  child: _profilePhotoPath == null
+                  backgroundImage: _profilePhotoUrl != null
+                      ? NetworkImage(_profilePhotoUrl!)
+                      : (_profilePhotoPath != null
+                          ? FileImage(File(_profilePhotoPath!)) as ImageProvider
+                          : null),
+                  child: (_profilePhotoUrl == null && _profilePhotoPath == null)
                       ? const Icon(Icons.person, size: 40, color: Colors.grey)
                       : null,
                 ),
