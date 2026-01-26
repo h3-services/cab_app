@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart'; // For debugPrint
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
@@ -825,26 +825,18 @@ class ApiService {
   static Future<void> _uploadFile(String url, String fieldName, File file,
       {String? filename, String method = 'POST'}) async {
     try {
-      debugPrint('$method Upload Request: $url');
       var request = http.MultipartRequest(method, Uri.parse(url));
       request.files.add(await http.MultipartFile.fromPath(
         fieldName,
         file.path,
         filename: filename,
       ));
-
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
-
-      debugPrint('Response Status: ${response.statusCode}');
-      debugPrint('Response Body: ${response.body}');
-
       if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception(
-            'Upload failed: ${response.statusCode} - ${response.body}');
+        throw Exception('Upload failed: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Upload Error: $e');
       throw Exception('Upload error: $e');
     }
   }

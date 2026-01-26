@@ -70,6 +70,11 @@ class _WalletScreenState extends State<WalletScreen> {
         final List allTrips = results[1];
         final List walletTxns = results[2];
 
+        debugPrint('Payments count: ${payments.length}');
+        debugPrint('Trips count: ${allTrips.length}');
+        debugPrint('Wallet Txns count: ${walletTxns.length}');
+        debugPrint('Wallet Txns: $walletTxns');
+
         List<Map<String, dynamic>> transactionHistory = [];
         Set<String> processedTxnIds = {};
         int completedCount = 0;
@@ -101,7 +106,7 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-        // Process Trips - Show completed trip fares as earnings with service fee
+        // Process Trips - Show completed trip fares as earnings and create service fee
         for (var trip in allTrips) {
           if (trip is Map<String, dynamic>) {
             final tripDriverId = (trip['assigned_driver_id'] ??
@@ -139,7 +144,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     DateTime.now().toIso8601String();
                 final displayDate = date.toString().split('T')[0];
                 final tripIdVisible = (trip['trip_id'] ?? 'TRIP').toString();
-                final serviceFee = fare * 0.02;
+                final serviceFee = fare * 0.0172;
 
                 transactionHistory.add({
                   'title': 'Trip Fare',
@@ -152,7 +157,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 });
 
                 transactionHistory.add({
-                  'title': 'Service Fee (2%)',
+                  'title': 'Service Fee',
                   'date': displayDate,
                   'tripId': tripIdVisible,
                   'transaction_id': '',
@@ -165,30 +170,39 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-        // Process Wallet Transactions
+        // Get latest service fee from wallet transactions
+        debugPrint('Looking for service fees in ${walletTxns.length} transactions');
+        Map<String, dynamic>? latestServiceFee;
         for (var txn in walletTxns) {
-          final txnId = txn['transaction_id']?.toString();
-          if (txnId != null && processedTxnIds.contains(txnId)) continue;
-
-          final amount =
-              (num.tryParse(txn['amount']?.toString() ?? '0') ?? 0).toDouble();
-          final title = txn['description'] ?? 'Wallet Transaction';
-          final date = txn['created_at'] ?? DateTime.now().toIso8601String();
-          final displayDate = date.toString().split('T')[0];
-
-          if (!title.contains('Service Fee') || amount != 0) {
-            transactionHistory.add({
-              'title': title,
-              'date': displayDate,
-              'tripId': txn['trip_id']?.toString() ?? 'N/A',
-              'transaction_id': txn['transaction_id'] ?? '',
-              'amount': amount < 0
-                  ? '-₹${amount.abs().toStringAsFixed(2)}'
-                  : '+₹${amount.toStringAsFixed(2)}',
-              'type': amount < 0 ? 'spending' : 'earning',
-              'raw_date': date,
-            });
+          final amount = (num.tryParse(txn['amount']?.toString() ?? '0') ?? 0).toDouble();
+          if (amount < 0) {
+            if (latestServiceFee == null) {
+              latestServiceFee = txn;
+            } else {
+              final currentDate = txn['created_at'] ?? txn['date'] ?? '';
+              final latestDate = latestServiceFee['created_at'] ?? latestServiceFee['date'] ?? '';
+              if (currentDate.toString().compareTo(latestDate.toString()) > 0) {
+                latestServiceFee = txn;
+              }
+            }
           }
+        }
+
+        // Add latest service fee card if found
+        if (latestServiceFee != null) {
+          final amount = (num.tryParse(latestServiceFee['amount']?.toString() ?? '0') ?? 0).toDouble();
+          final date = latestServiceFee['created_at'] ?? latestServiceFee['date'] ?? DateTime.now().toIso8601String();
+          final displayDate = date.toString().split('T')[0];
+          
+          transactionHistory.add({
+            'title': 'Service Fee',
+            'date': displayDate,
+            'tripId': latestServiceFee['trip_id']?.toString() ?? 'N/A',
+            'transaction_id': '',
+            'amount': '-₹${amount.abs().toStringAsFixed(2)}',
+            'type': 'spending',
+            'raw_date': date.toString(),
+          });
         }
 
         // Sort by date descending
@@ -495,15 +509,20 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                           ),
                         )
+                      else if (isLoading)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
                       else
                         ...transactions.map((transaction) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: _buildTransactionItem(
                                 transaction['title'],
                                 transaction['date'],
-                                transaction['tripId'] != 'N/A'
-                                    ? 'Trip ID: ${transaction['tripId']}'
-                                    : 'Transaction ID: ${transaction['transaction_id']}',
+                                transaction['tripId'],
                                 transaction['amount'],
                                 transaction['type'],
                               ),
@@ -523,6 +542,8 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget _buildTransactionItem(
       String title, String date, String tripId, String amount, String type) {
     bool isEarning = type == 'earning';
+    String subtitle = tripId != 'N/A' ? 'Trip ID: $tripId' : '';
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -539,7 +560,7 @@ class _WalletScreenState extends State<WalletScreen> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isEarning ? Icons.directions_car : Icons.remove_circle,
+              isEarning ? Icons.trending_up : Icons.trending_down,
               color: Colors.white,
               size: 24,
             ),
@@ -566,14 +587,14 @@ class _WalletScreenState extends State<WalletScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 2),
+                if (subtitle.isNotEmpty) ...[const SizedBox(height: 2),
                 Text(
-                  tripId,
+                  subtitle,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
                   ),
-                ),
+                ),]
               ],
             ),
           ),
