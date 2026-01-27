@@ -35,12 +35,10 @@ class _AppDrawerState extends State<AppDrawer> {
       backgroundColor: Colors.grey.shade300,
       child: Column(
         children: [
-          // Header with logo and profile
           Container(
             padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
             child: Column(
               children: [
-                // CHOLA CABS Logo
                 Image.asset(
                   'assets/images/chola_cabs_logo.png',
                   width: 80,
@@ -48,7 +46,6 @@ class _AppDrawerState extends State<AppDrawer> {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 30),
-                // Profile Image
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: Colors.grey.shade400,
@@ -73,8 +70,6 @@ class _AppDrawerState extends State<AppDrawer> {
               ],
             ),
           ),
-
-          // Menu Items
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/widgets.dart';
 import '../services/api_service.dart';
+import '../constants/error_codes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApprovalPendingScreen extends StatefulWidget {
@@ -19,7 +20,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   Future<void> _checkStatus() async {
     setState(() {
       _isLoading = true;
-      // Reset states
       _isRejected = false;
       _errorMessages = [];
       _errorFields = [];
@@ -39,7 +39,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
             "Status Check: isApproved=$isApproved, kycStatus=$kycVerified");
 
         if (kycVerified == 'rejected') {
-          // Parse errors
           List<String> errorFields = [];
           if (driverData['errors'] != null &&
               driverData['errors']['details'] != null) {
@@ -47,6 +46,8 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                 driverData['errors']['details'];
             details.forEach((code, errorData) {
               int codeInt = int.tryParse(code) ?? 0;
+              _errorMessages.add(ErrorCodes.getMessage(codeInt));
+
               if (codeInt >= 1001 && codeInt <= 1003) {
                 errorFields.add('Driving License');
               } else if (codeInt >= 1004 && codeInt <= 1005) {
@@ -57,27 +58,17 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                 errorFields.add('RC Book');
               } else if (codeInt >= 1009 && codeInt <= 1010) {
                 errorFields.add('FC Certificate');
-              } else if (codeInt == 1011) {
-                errorFields.add('Front View');
-                errorFields.add('Back View');
-                errorFields.add('Left Side View');
-                errorFields.add('Right Side View');
-              } else if (codeInt == 2000) {
-                errorFields.add('Name');
-              } else if (codeInt == 2001) {
-                errorFields.add('Phone Number');
-              } else if (codeInt == 2002) {
-                errorFields.add('Email');
-              } else if (codeInt == 2003) {
+              } else if (codeInt == 1011 || codeInt == 1013 || codeInt == 1014 || codeInt == 1015) {
+                errorFields.addAll(['Front View', 'Back View', 'Left Side View', 'Right Side View']);
+              } else if (codeInt >= 2001 && codeInt <= 2008) {
                 errorFields.add('Personal Details');
-              } else if (codeInt == 3001) {
-                errorFields.add('Vehicle Number');
+              } else if (codeInt >= 3001 && codeInt <= 3008) {
+                errorFields.add('Vehicle Details');
               }
             });
           }
 
           if (mounted) {
-            // Construct args for KycUploadScreen
             final Map<String, dynamic> args = {
               'isEditing': true,
               'driverId': driverId,
@@ -89,7 +80,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
               'licenceNumber': driverData['licence_number'],
               'aadharNumber': driverData['aadhar_number'],
               'licenceExpiry': driverData['licence_expiry'],
-              // Vehicle details fallback to prefs
               'vehicleType': prefs.getString('vehicleType'),
               'vehicleBrand': prefs.getString('vehicleBrand'),
               'vehicleModel': prefs.getString('vehicleModel'),
@@ -155,13 +145,10 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   Future<void> _handleFixErrors() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Prepare data map for KycUploadScreen
     final Map<String, dynamic> args = {
       'isEditing': true,
       'driverId': prefs.getString('driverId'),
-      'vehicleId':
-          prefs.getString('vehicleId'), // Important for vehicle updates
-      // Pass other fields from prefs if available to avoid empty fields in update
+      'vehicleId': prefs.getString('vehicleId'),
       'name': prefs.getString('name'),
       'email': prefs.getString('email'),
       'phoneNumber': prefs.getString('phoneNumber'),
@@ -177,8 +164,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       'seatingCapacity': prefs.getString('seatingCapacity'),
       'rcExpiryDate': prefs.getString('rcExpiryDate'),
       'fcExpiryDate': prefs.getString('fcExpiryDate'),
-
-      'errorFields': _errorFields, // Pass the errors!
+      'errorFields': _errorFields,
     };
 
     if (mounted) {
@@ -208,7 +194,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo
                 Image.asset(
                   'assets/images/chola_cabs_logo.png',
                   width: 120,
@@ -216,8 +201,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 40),
-
-                // Title
                 const Text(
                   'Approval Pending',
                   style: TextStyle(
@@ -227,8 +210,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-
-                // Approval Icon
                 Container(
                   width: 200,
                   height: 150,
@@ -243,10 +224,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Message
-                // Message
-                if (_isRejected) ...[
+                if (_isRejected) ...{
                   const Text(
                     'Application Rejected',
                     style: TextStyle(
@@ -303,7 +281,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                     child: const Text('Fix Issues Now'),
                   ),
                   const SizedBox(height: 10),
-                ] else
+                } else
                   const Text(
                     'Your documents have been submitted successfully.\nThey are currently under review by the admin.\nYou will be notified once your account is approved.\nPlease wait while the verification is completed.',
                     textAlign: TextAlign.center,
@@ -314,8 +292,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                     ),
                   ),
                 const SizedBox(height: 30),
-
-                // Refresh Button
                 ElevatedButton.icon(
                   onPressed: _isLoading ? null : _checkStatus,
                   icon: _isLoading

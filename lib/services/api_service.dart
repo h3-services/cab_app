@@ -822,6 +822,27 @@ class ApiService {
     }
   }
 
+  static Future<void> updateTripStatus(String tripId, String status) async {
+    final url = Uri.parse('$baseUrl/trips/$tripId/status?new_status=$status');
+    debugPrint('PATCH Request (Trip Status): $url');
+    try {
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception(
+            'Failed to update trip status: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<void> _uploadFile(String url, String fieldName, File file,
       {String? filename, String method = 'POST'}) async {
     try {

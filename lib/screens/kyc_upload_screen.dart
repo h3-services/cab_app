@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/image_picker_service.dart';
 import '../constants/app_colors.dart';
+import '../constants/error_codes.dart';
 import '../services/api_service.dart';
 import '../widgets/widgets.dart';
 import 'dart:io';
@@ -31,8 +32,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   Map<String, dynamic>? userData;
   bool _isEditing = false;
   bool _isSubmitting = false;
-  bool _isTestMode = false; // Test Mode Flag
+  bool _isTestMode = false;
   List<String> _errorFields = [];
+  Map<String, String> _errorMessages = {};
 
   bool get _allDocumentsUploaded =>
       _uploadedDocuments.values.every((uploaded) => uploaded);
@@ -55,11 +57,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     }
 
     if (_isEditing) {
-      // Pre-fill as valid since we are updating existing application
       setState(() {
         _uploadedDocuments.updateAll((key, value) => true);
 
-        // If there are error fields, mark them as NOT uploaded so user must re-upload
         for (var field in _errorFields) {
           if (_uploadedDocuments.containsKey(field)) {
             _uploadedDocuments[field] = false;
@@ -88,17 +88,11 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
           ),
         ],
         onBack: () {
-          // If editing (from rejection), we might want to go to personal details or just pop
-          // But user requested "if that click person and detail section go"
-          // We can navigate to personal details screen
           if (_isEditing) {
-            // Pass arguments back if needed, or just pop if it was pushed
-            // However, usually going "back" from KYC implies checking Personal Details
             Map<String, dynamic> args =
                 Map<String, dynamic>.from(userData ?? {});
             args['isEditing'] = true;
-            args['errorFields'] =
-                _errorFields; // Explicitly pass the local list
+            args['errorFields'] = _errorFields;
             Navigator.pushReplacementNamed(context, '/personal-details',
                 arguments: args);
           } else {
@@ -144,7 +138,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                 color: Colors.black54,
               ),
             ),
-            // Test Mode Toggle
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Row(
@@ -267,8 +260,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                   onPressed: _isSubmitting
                       ? null
                       : () {
-                          // Check if all are uploaded/selected
-                          // We check if value is true in _uploadedDocuments (which we set on selection now)
                           bool allSelected = _uploadedDocuments.length == 9 &&
                               _uploadedDocuments.values.every((v) => v);
 
@@ -324,7 +315,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
           final List<XFile> images = await ImagePicker().pickMultiImage();
           if (images.isNotEmpty) {
             int index = 0;
-            // 1. Assign first image to the clicked item
             if (index < images.length) {
               setState(() {
                 _uploadedImages[title] = File(images[index].path);
@@ -333,7 +323,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
               index++;
             }
 
-            // 2. Auto-fill other empty items
             for (var key in _uploadedDocuments.keys) {
               if (index >= images.length) break;
               if (key != title && _uploadedDocuments[key] == false) {
@@ -373,7 +362,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         ),
         child: Row(
           children: [
-            // Icon or Preview
             if (isSelected && selectedFile != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
@@ -406,7 +394,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                   const SizedBox(height: 2),
                   Text(
                     hasError
-                        ? 'Resubmission Required'
+                        ? _errorMessages[title] ?? 'Resubmission Required'
                         : (isSelected ? 'Tap to change' : subtitle),
                     style: TextStyle(
                       fontSize: 12,
@@ -475,7 +463,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
           fcExpiryDate: userData?['fcExpiryDate'] ?? '',
         );
 
-        // Update Local Storage
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('name', userData?['name'] ?? '');
         await prefs.setString('email', userData?['email'] ?? '');
@@ -493,8 +480,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
       if (driverId.isEmpty) throw Exception('Driver ID missing. Restart flow.');
 
-      // Iterate through all required keys to ensure everything is uploaded
-      // (Or just iterate _uploadedImages if we trust the validation)
       for (var entry in _uploadedImages.entries) {
         String title = entry.key;
         File file = entry.value!;
@@ -519,7 +504,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
               await ApiService.reuploadDriverPhoto(driverId, file);
             else
               await ApiService.uploadDriverPhoto(driverId, file);
-            // Save Profile Photo Path locally
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('profile_photo_path', file.path);
             break;
@@ -574,7 +558,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         }
       }
 
-      // Update Status back to 'pending' if this was a correction/resubmission
       if (_isEditing) {
         debugPrint('Clearing previous errors...');
         await ApiService.clearDriverErrors(driverId);
@@ -582,7 +565,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
         await ApiService.updateKycStatus(driverId, 'pending');
       }
 
-      // Success!
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isKycSubmitted', true);
 

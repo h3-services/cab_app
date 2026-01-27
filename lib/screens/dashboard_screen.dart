@@ -248,6 +248,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _cancelRequest(String requestId) async {
+    _showCancelTripDialog(requestId);
+  }
+
+  void _showCancelTripDialog(String requestId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF424242),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.verified,
+                        size: 28, color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'Cancel Trip ?',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'You are about to cancel this trip .This action cannot be undone. Please confirm only if you are unable to continue the trip.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'No, Go Back',
+                        style: TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await _performCancelRequest(requestId);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.greenPrimary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Yes, Cancel Trip',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performCancelRequest(String requestId) async {
     setState(() {
       final index = _driverRequests
           .indexWhere((r) => r['request_id'].toString() == requestId);
@@ -260,7 +360,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await ApiService.updateRequestStatus(requestId, "CANCELLED");
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Request Cancelled")));
+          .showSnackBar(const SnackBar(content: Text("Trip cancelled")));
+      setState(() {
+        selectedTab = 0;
+      });
       _fetchAvailableTrips();
     } catch (e) {
       if (!mounted) return;
@@ -358,9 +461,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -472,7 +575,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildTabButton(
                     'Pending (${_driverRequests.where((r) => (r['status'] ?? '').toString().toUpperCase() == 'PENDING').length})',
                     1,
-                    const Color(0xFFDAA520)),
+                    const Color(0xFFFFD700)),
                 const SizedBox(width: 8),
                 _buildTabButton(
                     'Approved (${_driverRequests.where((r) {
@@ -532,7 +635,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           setState(() {
             selectedTab = index;
           });
-          // Refresh data when switching to approved tab
           if (index == 2) {
             _fetchAvailableTrips();
           }
@@ -540,7 +642,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? color : const Color(0xFF9E9E9E),
+            gradient: isSelected
+                ? LinearGradient(
+                    colors: index == 0
+                        ? [AppColors.grayPrimary, AppColors.black]
+                        : index == 1
+                            ? [const Color(0xFFFFD700), const Color(0xFFFFA500)]
+                            : [AppColors.bluePrimary, AppColors.blueDark],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  )
+                : null,
+            color: isSelected ? null : const Color(0xFF9E9E9E),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -568,7 +681,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : const Color(0xFF9E9E9E),
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: [AppColors.greenPrimary, AppColors.greenDark],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : null,
+          color: isSelected ? null : const Color(0xFF9E9E9E),
           borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(
@@ -753,21 +873,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  padding: EdgeInsets.zero,
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check, color: Colors.white, size: 16),
-                    SizedBox(width: 4),
-                    Text(
-                      'Request Ride',
-                      style: TextStyle(color: Colors.white),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.greenPrimary, AppColors.greenDark],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check, color: Colors.white, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'Request Ride',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -975,11 +1107,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   if (request['request_id'] != null) {
-                    _cancelRequest(request['request_id'].toString());
+                    _showCancelTripDialog(request['request_id'].toString());
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD32F2F),
+                  backgroundColor: Colors.transparent,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1254,10 +1386,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         tripStatus.contains('STARTED') ||
         tripStatus.contains('PROGRESS');
 
-    // Check if trip_status is COMPLETED directly
+    // Check if trip_status is COMPLETED or CANCELLED directly
     if (tripStatus == 'COMPLETED') {
       buttonText = 'Trip Completed';
       buttonColor = Colors.green;
+      isEnabled = false;
+    } else if (tripStatus == 'CANCELLED') {
+      buttonText = 'Trip Cancelled';
+      buttonColor = Colors.red;
       isEnabled = false;
     } else if (isTripStarted) {
       buttonText = 'Complete Trip';
@@ -1399,8 +1535,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             _buildSquareActionButton(Icons.close, Colors.red,
-                                onTap: () =>
-                                    _showApprovedCancelDialog(context)),
+                                onTap: () {
+                                  final tripStatus = (request?['trip_status'] ?? '').toString().toUpperCase();
+                                  if (tripStatus == 'ASSIGNED') {
+                                    _showApprovedCancelDialog(context, tripId);
+                                  }
+                                }),
                             const SizedBox(width: 8),
                             _buildSquareActionButton(
                                 Icons.navigation, Colors.blue,
@@ -1414,19 +1554,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: Container(
-                            decoration: isTripStarted // Use isTripStarted here
-                                ? BoxDecoration(
-                                    gradient: const LinearGradient(
+                            decoration: BoxDecoration(
+                              gradient: tripStatus == 'CANCELLED'
+                                  ? LinearGradient(
                                       colors: [
-                                        AppColors.greenLight,
-                                        AppColors.greenDark
+                                        const Color(0xFFFC4E4E),
+                                        const Color(0xFF882A2A)
                                       ],
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  )
-                                : null,
+                                    )
+                                  : tripStatus == 'COMPLETED'
+                                      ? LinearGradient(
+                                          colors: [
+                                            AppColors.bluePrimary,
+                                            AppColors.blueDark
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        )
+                                      : isTripStarted
+                                          ? LinearGradient(
+                                              colors: [
+                                                const Color(0xFFFFD700),
+                                                const Color(0xFFFFA500)
+                                              ],
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                            )
+                                          : LinearGradient(
+                                              colors: [
+                                                AppColors.greenPrimary,
+                                                AppColors.greenDark
+                                              ],
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                            ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             child: ElevatedButton(
                               onPressed: isEnabled
                                   ? () async {
@@ -1450,11 +1615,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           ),
                                         ).then((_) => _fetchAvailableTrips());
                                       } else {
-                                        // Simplified else condition
                                         if (tripId != null) {
                                           try {
-                                            // Navigate to start screen immediately
-                                            // Actual start happens after entering KM
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
@@ -1489,18 +1651,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     }
                                   : null,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isTripStarted
-                                    ? Colors.transparent
-                                    : buttonColor, // Use isTripStarted here
-                                shadowColor:
-                                    isTripStarted ? Colors.transparent : null,
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12)),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),
-                                elevation: isTripStarted
-                                    ? 0
-                                    : 4, // Use isTripStarted here
+                                elevation: 0,
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1508,7 +1665,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   Icon(
                                     tripStatus == 'COMPLETED'
                                         ? Icons.check_circle
-                                        : isTripStarted // Use isTripStarted here
+                                        : isTripStarted
                                             ? Icons.check_circle_outline
                                             : Icons.timer_outlined,
                                     color: Colors.white,
@@ -1555,13 +1712,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showApprovedCancelDialog(BuildContext context) {
+  void _showApprovedCancelDialog(BuildContext context, String? tripId) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: const Color(0xFFE8E8E8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -1570,20 +1727,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFF424242),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.shield_outlined,
-                        size: 24, color: Colors.black54),
+                    child: const Icon(Icons.verified,
+                        size: 28, color: Colors.white),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   const Expanded(
                     child: Text(
                       'sure you want to close this trip?',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -1595,9 +1752,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const Text(
                 'Once you close this trip, you will not be able to modify any trip details. Please review the final amount before confirming.',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   color: Colors.black87,
-                  height: 1.4,
+                  height: 1.5,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1612,21 +1769,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Reason for Cancelling Trip',
-                  hintStyle: const TextStyle(fontSize: 14, color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -1634,12 +1776,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: const Text(
                         'No, Go Back',
                         style: TextStyle(
-                          color: Colors.grey,
+                          color: Color(0xFF9E9E9E),
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
                         ),
@@ -1649,18 +1791,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Trip closed successfully')),
-                        );
+                        if (tripId != null) {
+                          try {
+                            await ApiService.updateTripStatus(tripId, 'CANCELLED');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Trip cancelled successfully')),
+                            );
+                            _fetchAvailableTrips();
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text('Failed to cancel trip: $e'),
+                                  backgroundColor: Colors.red),
+                            );
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4CAF50),
+                        backgroundColor: AppColors.greenPrimary,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: const Text(
                         'Yes, Cancel Trip',
@@ -1841,7 +1995,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     trip['amount'] ??
                                     800.0)
                                 .toDouble();
-                            final serviceFee = totalCost * 0.02;
+                            final serviceFee = totalCost * 0.0172;
                             final distance =
                                 trip['distance'] ?? trip['distance_km'] ?? 5;
 
