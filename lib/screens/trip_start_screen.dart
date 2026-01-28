@@ -27,21 +27,12 @@ class _TripStartScreenState extends State<TripStartScreen> {
           const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back,
-                      color: AppColors.appGradientStart),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Text(
-                  'Starting KM',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.appGradientStart),
-                ),
-              ],
+            child: const Text(
+              'Starting KM',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black),
             ),
           ),
           const SizedBox(height: 20),
@@ -97,106 +88,109 @@ class _TripStartScreenState extends State<TripStartScreen> {
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       'Back to Trip page',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                      style: TextStyle(color: Colors.white, fontSize: 16,fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_startingKmController.text.isNotEmpty) {
-                        final tripId = widget.tripData['trip_id'];
-                        final requestId = widget.tripData['request_id'];
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.greenPrimary, AppColors.greenDark],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_startingKmController.text.isNotEmpty) {
+                          final tripId = widget.tripData['trip_id'];
+                          final requestId = widget.tripData['request_id'];
 
-                        try {
-                          // Show loading indicator
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (c) => const Center(
-                                child: CircularProgressIndicator()),
-                          );
-
-                          if (tripId != null) {
-                            // 1. Mark trip as started and save odometer
-                            await ApiService.updateOdometerStart(
-                                tripId.toString(),
-                                int.parse(_startingKmController.text));
-
-                            // 2. Try to sync request status (important for Dashboard UI)
-                            if (requestId != null) {
-                              try {
-                                await ApiService.updateRequestStatus(
-                                    requestId.toString(), "STARTED");
-                              } catch (e) {
-                                debugPrint("Syncing request status failed: $e");
-                                // We don't throw here because odometer is already saved
-                              }
-                            }
-                          } else {
-                            throw Exception(
-                                "Missing Trip Information: trip_id is required");
-                          }
-
-                          if (context.mounted) {
-                            Navigator.pop(context); // Pop loading
-                            Navigator.pop(context,
-                                tripId?.toString()); // Return trip ID as string
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Trip started successfully!')),
+                          try {
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (c) => const Center(
+                                  child: CircularProgressIndicator()),
                             );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            Navigator.pop(context); // Pop loading
 
-                            // Check if the trip is already started
-                            if (e.toString().contains(
-                                "Cannot start trip with status STARTED")) {
-                              // If already started, try to sync status once more to be sure Dashboard sees it
+                            if (tripId != null) {
+                              await ApiService.updateOdometerStart(
+                                  tripId.toString(),
+                                  int.parse(_startingKmController.text));
+
                               if (requestId != null) {
                                 try {
                                   await ApiService.updateRequestStatus(
                                       requestId.toString(), "STARTED");
-                                } catch (_) {}
+                                } catch (e) {
+                                  debugPrint("Syncing request status failed: $e");
+                                }
                               }
-                              Navigator.pop(context,
-                                  true); // Return to Dashboard as success
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Trip is already in progress')),
-                              );
-                              return;
+                            } else {
+                              throw Exception(
+                                  "Missing Trip Information: trip_id is required");
                             }
 
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Failed to start trip: $e')),
-                            );
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              Navigator.pop(context, tripId?.toString());
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Trip started successfully!')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              Navigator.pop(context);
+
+                              if (e.toString().contains(
+                                  "Cannot start trip with status STARTED")) {
+                                if (requestId != null) {
+                                  try {
+                                    await ApiService.updateRequestStatus(
+                                        requestId.toString(), "STARTED");
+                                  } catch (_) {}
+                                }
+                                Navigator.pop(context, true);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Trip is already in progress')),
+                                );
+                                return;
+                              }
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text('Failed to start trip: $e')),
+                              );
+                            }
                           }
                         }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.play_arrow, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
-                        Text('Start Ride',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16)),
-                      ],
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text('Start Ride',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -374,25 +368,6 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
       body: Column(
         children: [
           const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Text(
-                  'Completed Trip',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(20),
@@ -445,108 +420,114 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       'Back to Trip page',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                      style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_endingKmController.text.isNotEmpty) {
-                        try {
-                          final endingKm =
-                              num.tryParse(_endingKmController.text);
-                          if (endingKm == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Invalid ending KM')),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.greenPrimary, AppColors.greenDark],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_endingKmController.text.isNotEmpty) {
+                          try {
+                            final endingKm =
+                                num.tryParse(_endingKmController.text);
+                            if (endingKm == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Invalid ending KM')),
+                              );
+                              return;
+                            }
+
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (c) => const Center(
+                                  child: CircularProgressIndicator()),
                             );
-                            return;
-                          }
 
-                          // Show loading
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (c) => const Center(
-                                child: CircularProgressIndicator()),
-                          );
+                            final tripId = widget.tripData['trip_id'];
+                            if (tripId != null) {
+                              final result = await ApiService.updateOdometerEnd(
+                                  tripId.toString(), endingKm);
 
-                          final tripId = widget.tripData['trip_id'];
-                          if (tripId != null) {
-                            // Call API
-                            final result = await ApiService.updateOdometerEnd(
-                                tripId.toString(), endingKm);
+                              if (!context.mounted) return;
+                              Navigator.pop(context);
 
-                            if (!context.mounted) return;
-                            Navigator.pop(context); // Pop loading
-
-                            // Navigate to Summary with API results
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TripSummaryScreen(
-                                  tripData: widget.tripData,
-                                  startingKm: widget.startingKm,
-                                  endingKm: _endingKmController.text,
-                                  distance: result['distance_km'] ??
-                                      result['distance'] ??
-                                      0,
-                                  fare: result['fare'] ??
-                                      result['total_fare'] ??
-                                      result['total_cost'] ??
-                                      result['amount'] ??
-                                      500,
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => TripSummaryScreen(
+                                    tripData: widget.tripData,
+                                    startingKm: widget.startingKm,
+                                    endingKm: _endingKmController.text,
+                                    distance: result['distance_km'] ??
+                                        result['distance'] ??
+                                        0,
+                                    fare: result['fare'] ??
+                                        result['total_fare'] ??
+                                        result['total_cost'] ??
+                                        result['amount'] ??
+                                        500,
+                                  ),
                                 ),
-                              ),
-                            );
-                          } else {
-                            // Fallback (Offline/Missing ID)
-                            if (!context.mounted) return;
-                            Navigator.pop(context); // Pop loading
+                              );
+                            } else {
+                              if (!context.mounted) return;
+                              Navigator.pop(context);
 
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => TripSummaryScreen(
-                                  tripData: widget.tripData,
-                                  startingKm: widget.startingKm,
-                                  endingKm: _endingKmController.text,
-                                  // Local calc as fallback
-                                  distance: null,
-                                  fare: null,
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => TripSummaryScreen(
+                                    tripData: widget.tripData,
+                                    startingKm: widget.startingKm,
+                                    endingKm: _endingKmController.text,
+                                    distance: null,
+                                    fare: null,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            Navigator.pop(context); // Pop loading
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
                           }
                         }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
-                        Text('Calculate Cost',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16)),
-                      ],
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text('Calculate Cost',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16)),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -778,9 +759,9 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     // Use actualFare from API, fallback to calculation
     final totalCost = (actualFare != null && actualFare! > 0)
         ? actualFare!.toDouble()
-        : (dist * ratePerKm * 1.02);
+        : (dist * ratePerKm * 1.10);
     final walletFee =
-        (actualFare != null && actualFare! > 0) ? 0 : (dist * ratePerKm * 0.02);
+        (actualFare != null && actualFare! > 0) ? 0 : (dist * ratePerKm * 0.10);
 
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
@@ -791,21 +772,12 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
           const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back,
-                      color: AppColors.appGradientStart),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Text(
-                  'Completed Trip',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.appGradientStart),
-                ),
-              ],
+            child: const Text(
+              'Trip Summary',
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black),
             ),
           ),
           const SizedBox(height: 20),
@@ -834,7 +806,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                       'Rate per KM', '₹ ${ratePerKm.toStringAsFixed(2)}'),
                 if (actualFare == null || actualFare == 0)
                   _buildSummaryRow(
-                      'Service Fee (2%)', '₹ ${walletFee.toStringAsFixed(2)}'),
+                      'Service Fee (10%)', '₹ ${walletFee.toStringAsFixed(2)}'),
                 const SizedBox(height: 20),
                 Container(
                   width: double.infinity,
@@ -867,45 +839,39 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
               ],
             ),
           ),
-          const Spacer(),
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Back to Trip page',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
-                  ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.greenPrimary, AppColors.greenDark],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _showCloseTripDialog(context, totalCost),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
-                        Text('Close Trip',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16)),
-                      ],
-                    ),
-                  ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ElevatedButton(
+                onPressed: () => _showCloseTripDialog(context, totalCost),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
-              ],
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check, color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Text('Close Trip',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16)),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -1076,6 +1042,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
       builder: (dialogContext) => Dialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1083,19 +1050,37 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    'assets/images/chola_cabs_logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               const Text(
                 'Are you sure to close this trip?',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: Colors.black),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               const Text(
                 'Once you close this trip, you will not be able to modify any trip details. Please review the final amount before confirming.',
                 style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.4),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
@@ -1109,49 +1094,64 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('Cancel',
-                          style: TextStyle(color: Colors.grey, fontSize: 16)),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.red.shade600, Colors.red.shade800],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('Cancel',
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        // Close dialog immediately
-                        Navigator.pop(dialogContext);
-
-                        // Mark trip as completed
-                        final tripId = widget.tripData['trip_id'];
-                        if (tripId != null) {
-                          try {
-                            await ApiService.completeTripStatus(
-                                tripId.toString());
-                          } catch (e) {
-                            debugPrint('Failed to mark trip as completed: $e');
-                          }
-                        }
-
-                        // Close screens and return to dashboard
-                        Navigator.popUntil(
-                            context, ModalRoute.withName('/dashboard'));
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Trip closed successfully!')),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.greenPrimary, AppColors.greenDark],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text('Close Trip',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600)),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          final tripId = widget.tripData['trip_id'];
+                          if (tripId != null) {
+                            try {
+                              await ApiService.completeTripStatus(
+                                  tripId.toString());
+                            } catch (e) {
+                              debugPrint('Failed to mark trip as completed: $e');
+                            }
+                          }
+                          Navigator.popUntil(
+                              context, ModalRoute.withName('/dashboard'));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Trip closed successfully!')),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Close Trip',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600)),
+                      ),
                     ),
                   ),
                 ],

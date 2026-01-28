@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../widgets/widgets.dart';
 import '../widgets/bottom_navigation.dart';
+import '../widgets/common/custom_app_bar.dart';
 import '../services/razorpay_service.dart';
 import '../services/payment_service.dart';
 import '../services/api_service.dart';
@@ -144,7 +145,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     DateTime.now().toIso8601String();
                 final displayDate = date.toString().split('T')[0];
                 final tripIdVisible = (trip['trip_id'] ?? 'TRIP').toString();
-                final serviceFee = fare * 0.0172;
+                final serviceFee = fare * 0.10;
 
                 transactionHistory.add({
                   'title': 'Trip Fare',
@@ -170,40 +171,6 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-        // Get latest service fee from wallet transactions
-        debugPrint('Looking for service fees in ${walletTxns.length} transactions');
-        Map<String, dynamic>? latestServiceFee;
-        for (var txn in walletTxns) {
-          final amount = (num.tryParse(txn['amount']?.toString() ?? '0') ?? 0).toDouble();
-          if (amount < 0) {
-            if (latestServiceFee == null) {
-              latestServiceFee = txn;
-            } else {
-              final currentDate = txn['created_at'] ?? txn['date'] ?? '';
-              final latestDate = latestServiceFee['created_at'] ?? latestServiceFee['date'] ?? '';
-              if (currentDate.toString().compareTo(latestDate.toString()) > 0) {
-                latestServiceFee = txn;
-              }
-            }
-          }
-        }
-
-        // Add latest service fee card if found
-        if (latestServiceFee != null) {
-          final amount = (num.tryParse(latestServiceFee['amount']?.toString() ?? '0') ?? 0).toDouble();
-          final date = latestServiceFee['created_at'] ?? latestServiceFee['date'] ?? DateTime.now().toIso8601String();
-          final displayDate = date.toString().split('T')[0];
-          
-          transactionHistory.add({
-            'title': 'Service Fee',
-            'date': displayDate,
-            'tripId': latestServiceFee['trip_id']?.toString() ?? 'N/A',
-            'transaction_id': '',
-            'amount': '-₹${amount.abs().toStringAsFixed(2)}',
-            'type': 'spending',
-            'raw_date': date.toString(),
-          });
-        }
 
         // Sort by date descending
         transactionHistory.sort((a, b) {
@@ -441,7 +408,7 @@ class _WalletScreenState extends State<WalletScreen> {
                             onTap: isLoading ? null : _showPaymentDialog,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
+                                  horizontal: 20, vertical: 16),
                               decoration: BoxDecoration(
                                 color: isLoading
                                     ? Colors.grey.shade300
@@ -470,7 +437,7 @@ class _WalletScreenState extends State<WalletScreen> {
                                     )
                                   else
                                     const Icon(Icons.add,
-                                        color: Colors.black, size: 24),
+                                        color: Colors.green, size: 24),
                                   const SizedBox(width: 8),
                                   Text(
                                     isLoading ? 'Processing...' : 'Add Money',

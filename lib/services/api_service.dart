@@ -629,8 +629,7 @@ class ApiService {
   }
 
   static Future<void> updateOdometerStart(String tripId, num odoStart) async {
-    final url =
-        Uri.parse('$baseUrl/trips/$tripId/odometer-start?odo_start=$odoStart');
+    final url = Uri.parse('$baseUrl/trips/$tripId/odometer/start?odo_start=$odoStart');
     debugPrint('PATCH Request (Odometer Start): $url');
 
     try {
@@ -657,7 +656,7 @@ class ApiService {
   static Future<Map<String, dynamic>> updateOdometerEnd(
       String tripId, num odoEnd) async {
     final url =
-        Uri.parse('$baseUrl/trips/$tripId/odometer-end?odo_end=$odoEnd');
+        Uri.parse('$baseUrl/trips/$tripId/odometer/end?odo_end=$odoEnd');
     debugPrint('PATCH Request (Odometer End): $url');
 
     try {
