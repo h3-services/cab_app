@@ -154,6 +154,31 @@ class ApiService {
         filename: filename);
   }
 
+  static Future<Map<String, dynamic>> getVehicleByDriver(String driverId) async {
+    final url = Uri.parse('$baseUrl/vehicles/');
+    try {
+      debugPrint('GET Request: $url');
+      final response = await http.get(url);
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> vehicles = jsonDecode(response.body);
+        final vehicle = vehicles.firstWhere(
+          (v) => v['driver_id'] == driverId,
+          orElse: () => {},
+        );
+        return vehicle is Map<String, dynamic> ? vehicle : {};
+      } else {
+        throw Exception('Failed to get vehicles: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      return {};
+    }
+  }
+
   static Future<Map<String, dynamic>> getDriverDetails(String driverId) async {
     final url = Uri.parse('$baseUrl/drivers/$driverId');
     try {
@@ -411,7 +436,7 @@ class ApiService {
   }
 
   static Future<List<dynamic>> getAvailableTrips() async {
-    final url = Uri.parse('$baseUrl/trips/');
+    final url = Uri.parse('$baseUrl/trips/available');
     debugPrint('GET Request: $url');
     try {
       final response = await http.get(url);
@@ -421,14 +446,12 @@ class ApiService {
       if (response.statusCode == 200) {
         var decoded = jsonDecode(response.body);
         if (decoded is List) return decoded;
-        // Handle common wrapper cases if any, otherwise return empty or throw
         return [];
       } else {
         throw Exception('Failed to load trips: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('API Error: $e');
-      // Return empty list on error to allow UI to show placeholder or empty state
       return [];
     }
   }

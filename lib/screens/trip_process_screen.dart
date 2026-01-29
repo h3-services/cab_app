@@ -316,47 +316,58 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Trip Summary',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Trip Summary',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildSummaryRow('Distance Traveled', '50 km'),
-                _buildSummaryRow('Vehicle Type', 'Sedan'),
-                _buildSummaryRow('Rate per KM', '₹ 12.00'),
-                _buildSummaryRow('Wallet fee ( 2% of KM cost )', '₹ 12.00'),
-                const SizedBox(height: 12),
-                const Divider(thickness: 1, color: Colors.grey),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text(
-                      'Total Cost',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                  const SizedBox(height: 16),
+                  _buildSummaryHeader('RIDE DISTANCE', 'TIME TAKEN IN HRS', 'TARIFF TYPE'),
+                  _buildSummaryRow('387', '10.7900', 'MUV-Innova'),
+                  const SizedBox(height: 12),
+                  const Divider(thickness: 1, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '7353'),
+                  _buildSummaryRow('Waiting Charges(Rs)', '225'),
+                  _buildSummaryRow('Inter-State Permit(Rs)', '0'),
+                  _buildSummaryRow('Driver Allowance(Rs)', '400'),
+                  _buildSummaryRow('Luggage Cost(Rs)', '300'),
+                  _buildSummaryRow('Pet Cost(Rs)', '0'),
+                  _buildSummaryRow('Toll charge(Rs)', '430.00'),
+                  _buildSummaryRow('Night Allowance(Rs)', '200'),
+                  const SizedBox(height: 12),
+                  const Divider(thickness: 1, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        'Total Cost(Rs)',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '₹ 800.00',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                      Text(
+                        '8908',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           
@@ -413,9 +424,78 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
+  Widget _buildSummaryHeader(String col1, String col2, String col3) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            col1,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.black54,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            col2,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.black54,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            col3,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.black54,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, [String? value2, String? value3]) {
+    if (value2 != null && value3 != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              value2,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            Text(
+              value3,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -428,7 +508,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
             ),
           ),
           Text(
-            value,
+            value2 ?? '',
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,

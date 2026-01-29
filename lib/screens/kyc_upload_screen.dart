@@ -4,6 +4,7 @@ import '../constants/app_colors.dart';
 import '../constants/error_codes.dart';
 import '../services/api_service.dart';
 import '../widgets/widgets.dart';
+import '../screens/document_uploading_screen.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
@@ -32,7 +33,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   final Map<String, File?> _uploadedImages = {};
   Map<String, dynamic>? userData;
   bool _isEditing = false;
-  bool _isSubmitting = false;
   bool _isTestMode = false;
   List<String> _errorFields = [];
   Map<String, String> _errorMessages = {};
@@ -254,9 +254,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : () {
+                    onPressed: () {
                             bool allSelected =
                                 _uploadedDocuments.length == 10 &&
                                     _uploadedDocuments.values.every((v) => v);
@@ -282,17 +280,15 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: _isSubmitting
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            _isEditing
-                                ? 'Update Application'
-                                : 'Submit Documents',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    child: Text(
+                      _isEditing
+                          ? 'Update Application'
+                          : 'Submit Documents',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -429,9 +425,17 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   }
 
   Future<void> _submitAllDocuments() async {
-    setState(() {
-      _isSubmitting = true;
-    });
+    List<String> documentNames = _uploadedImages.keys.toList();
+    
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DocumentUploadingScreen(
+          documents: documentNames,
+        ),
+      ),
+    );
 
     try {
       String driverId = userData?['driverId']?.toString() ?? '';
@@ -577,13 +581,11 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       await prefs.setBool('isKycSubmitted', true);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All documents uploaded successfully!')),
-        );
         Navigator.pushReplacementNamed(context, '/approval-pending');
       }
     } catch (e) {
       if (mounted) {
+        Navigator.pop(context);
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -598,12 +600,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             ],
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
       }
     }
   }

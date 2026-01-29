@@ -35,20 +35,48 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   List<String> _errorFields = [];
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  void _loadData() {
     final args = ModalRoute.of(context)!.settings.arguments;
-    if (!_isDataLoaded && args is Map && args['isEditing'] == true) {
-      _loadSavedData();
+    debugPrint('DEBUG _loadData: args=$args');
+    if (args is Map && args['isEditing'] == true) {
+      debugPrint('DEBUG: Loading editing data');
+      debugPrint('DEBUG: name=${args['name']}');
+      _nameController.text = args['name'] ?? '';
+      _emailController.text = args['email'] ?? '';
+      _primaryLocationController.text = args['primaryLocation'] ?? '';
+      _licenseController.text = args['licenceNumber'] ?? '';
+      _aadharController.text = args['aadharNumber'] ?? '';
+      _vehicleMakeController.text = args['vehicleBrand'] ?? '';
+      _vehicleModelController.text = args['vehicleModel'] ?? '';
+      _vehicleNumberController.text = args['vehicleNumber'] ?? '';
+      _vehicleColorController.text = args['vehicleColor'] ?? '';
+      _selectedVehicleType = args['vehicleType'];
+      _selectedSeatingCapacity = args['seatingCapacity'];
+      _drivingLicenseExpiryController.text = _formatDateForDisplay(args['licenceExpiry']);
+      _rcExpiryController.text = _formatDateForDisplay(args['rcExpiryDate']);
+      _fcExpiryController.text = _formatDateForDisplay(args['fcExpiryDate']);
+      phoneNumber = args['phoneNumber'];
       if (args['errorFields'] != null) {
         _errorFields = List<String>.from(args['errorFields']);
       }
-      _isDataLoaded = true;
+      debugPrint('DEBUG: After loading - name=${_nameController.text}');
+      setState(() {});
     } else if (args is String) {
       phoneNumber = args;
     }
-
     _ensurePhoneNumber();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   Future<void> _ensurePhoneNumber() async {
@@ -537,96 +565,49 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     String cleanLabel = label.replaceAll('*', '').trim();
     bool hasError = _errorFields.contains(cleanLabel);
 
-    return ValueListenableBuilder(
-      valueListenable: controller,
-      builder: (context, value, child) {
-        bool isFilled = controller.text.isNotEmpty;
-        Color borderColor = hasError
-            ? Colors.red
-            : (isFilled ? AppColors.greenLight : Colors.grey);
-        Color labelColor = hasError
-            ? Colors.red
-            : (isFilled ? AppColors.greenLight : Colors.black87);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: cleanLabel,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: labelColor,
-                      fontWeight: (isFilled || hasError)
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  if (isRequired)
-                    TextSpan(
-                      text: ' *',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: hasError ? Colors.red : Colors.red,
-                      ),
-                    ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: cleanLabel,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: controller,
-              validator: isRequired
-                  ? (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'This field is required';
-                      }
-                      if (label.contains('Email') && value.isNotEmpty) {
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
-                          return 'Enter a valid email';
-                        }
-                      }
-                      if (label.contains('Aadhaar') && value.length != 12) {
-                        return 'Aadhaar number must be 12 digits';
-                      }
-                      return null;
-                    }
-                  : null,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: borderColor),
+              if (isRequired)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(fontSize: 14, color: Colors.red),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: borderColor),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                      color: hasError ? Colors.red : AppColors.greenLight),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.red),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.red),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                suffixIcon: hasError
-                    ? const Icon(Icons.error, color: Colors.red)
-                    : null,
-              ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          validator: isRequired
+              ? (value) {
+                  if (value == null || value.isEmpty) return 'Required';
+                  if (label.contains('Email') && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) return 'Invalid email';
+                  if (label.contains('Aadhaar') && value.length != 12) return 'Must be 12 digits';
+                  return null;
+                }
+              : null,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: hasError ? Colors.red : Colors.grey)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: hasError ? Colors.red : Colors.grey)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: hasError ? Colors.red : AppColors.greenLight)),
+            errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.red)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            suffixIcon: hasError ? const Icon(Icons.error, color: Colors.red) : null,
+          ),
+        ),
+      ],
     );
   }
 
@@ -636,102 +617,89 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     String cleanLabel = label.replaceAll('*', '').trim();
     bool hasError = _errorFields.contains(cleanLabel);
 
-    return ValueListenableBuilder(
-      valueListenable: controller,
-      builder: (context, value, child) {
-        bool isFilled = controller.text.isNotEmpty;
-        Color borderColor = hasError
-            ? Colors.red
-            : (isFilled ? AppColors.greenLight : Colors.grey);
-        Color labelColor = hasError
-            ? Colors.red
-            : (isFilled ? AppColors.greenLight : Colors.black87);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: cleanLabel,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: labelColor,
-                      fontWeight: (isFilled || hasError)
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: cleanLabel,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+              if (hasAsterisk)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.red,
                   ),
-                  if (hasAsterisk)
-                    const TextSpan(
-                      text: ' *',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.red,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: controller,
-              readOnly: true,
-              validator: isRequired
-                  ? (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'This field is required';
-                      }
-                      return null;
-                    }
-                  : null,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: borderColor),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: borderColor),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                      color: hasError ? Colors.red : AppColors.greenLight),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.red),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.red),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                suffixIcon: hasError
-                    ? const Icon(Icons.error, color: Colors.red)
-                    : Icon(Icons.calendar_today,
-                        size: 20,
-                        color: isFilled ? AppColors.greenLight : Colors.grey),
-              ),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2030),
-                );
-                if (date != null) {
-                  controller.text =
-                      '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          readOnly: true,
+          validator: isRequired
+              ? (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'This field is required';
+                  }
+                  return null;
                 }
-              },
+              : null,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                  color: hasError ? Colors.red : Colors.grey),
             ),
-          ],
-        );
-      },
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                  color: hasError ? Colors.red : Colors.grey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                  color: hasError ? Colors.red : AppColors.greenLight),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            suffixIcon: hasError
+                ? const Icon(Icons.error, color: Colors.red)
+                : const Icon(Icons.calendar_today,
+                    size: 20,
+                    color: Colors.grey),
+          ),
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime(2030),
+            );
+            if (date != null) {
+              controller.text =
+                  '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+            }
+          },
+        ),
+      ],
     );
   }
 

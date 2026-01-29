@@ -79,35 +79,28 @@ class _AppDrawerState extends State<AppDrawer> {
                     context,
                     Icons.notifications_outlined,
                     'Notifications',
-                    'View all received notifications',
+                    '/notifications',
                   ),
                   const SizedBox(height: 16),
                   _buildDrawerMenuItem(
                     context,
                     Icons.person_outline,
                     'Profile',
-                    'View and edit your personal details',
+                    '/profile',
                   ),
                   const SizedBox(height: 16),
                   _buildDrawerMenuItem(
                     context,
                     Icons.settings_outlined,
                     'Settings',
-                    'App preferences, notifications, and privacy',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDrawerMenuItem(
-                    context,
-                    Icons.help_outline,
-                    'Help',
-                    'Get help and contact the admin for support',
+                    '/settings',
                   ),
                   const SizedBox(height: 16),
                   _buildDrawerMenuItem(
                     context,
                     Icons.logout,
                     'Sign out',
-                    'Log out of your account safely',
+                    null,
                     isSignOut: true,
                   ),
                 ],
@@ -123,7 +116,7 @@ class _AppDrawerState extends State<AppDrawer> {
     BuildContext context,
     IconData icon,
     String title,
-    String subtitle, {
+    String? route, {
     bool isSignOut = false,
   }) {
     return Container(
@@ -142,17 +135,15 @@ class _AppDrawerState extends State<AppDrawer> {
       child: InkWell(
         onTap: () async {
           Navigator.pop(context);
-          if (title == 'Notifications') {
-            Navigator.pushNamed(context, '/notifications');
-          } else if (title == 'Profile') {
-            Navigator.pushNamed(context, '/profile');
-          } else if (title == 'Sign out') {
+          if (isSignOut) {
             final prefs = await SharedPreferences.getInstance();
             await prefs.clear();
             if (context.mounted) {
               Navigator.pushNamedAndRemoveUntil(
                   context, '/login', (route) => false);
             }
+          } else if (route != null) {
+            Navigator.pushNamed(context, route);
           }
         },
         child: Row(
@@ -170,27 +161,12 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
             ),
             const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isSignOut ? Colors.red : Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isSignOut ? Colors.red : Colors.black,
               ),
             ),
           ],
