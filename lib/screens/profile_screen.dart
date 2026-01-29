@@ -103,7 +103,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
       child: Scaffold(
         backgroundColor: AppColors.appGradientEnd,
-        appBar: const CustomAppBar(),
+        appBar: CustomAppBar(
+          showBackButton: true,
+          showProfileIcon: false,
+          showMenuIcon: false,
+          onBack: () => Navigator.pushNamedAndRemoveUntil(
+              context, '/dashboard', (route) => false),
+        ),
         endDrawer: const AppDrawer(),
         body: SingleChildScrollView(
           child: Column(

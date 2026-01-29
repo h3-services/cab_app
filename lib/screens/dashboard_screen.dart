@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'trip_start_screen.dart';
 import 'dart:math' as math;
 import '../widgets/common/custom_app_bar.dart';
 import '../widgets/common/app_drawer.dart';
 import '../widgets/bottom_navigation.dart';
+import '../widgets/dialogs/trip_details_dialog.dart';
 import '../services/trip_state_service.dart';
 import '../services/api_service.dart';
 import '../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -44,7 +47,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
-    _autoRefreshTimer.cancel();
+    if (_autoRefreshTimer.isActive) {
+      _autoRefreshTimer.cancel();
+    }
     super.dispose();
   }
 
@@ -295,21 +300,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                 
-                  const SizedBox(width: 80),
-                  const Expanded(
-                    child: Text(
-                      'Cancel Trip ',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ],
+              const Text(
+                'Cancel Trip',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -469,6 +466,197 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
+    if (!_tripStateService.isReadyForTrip) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFB0B0B0),
+        appBar: const CustomAppBar(),
+        endDrawer: const AppDrawer(),
+        body: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Ready For Trip',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF424242),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Inactive',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Transform.scale(
+                    scale: 1.2,
+                    child: Switch(
+                      value: false,
+                      onChanged: (value) async {
+                        if (_driverId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text(
+                                    'Driver ID not found. Please re-login.')),
+                          );
+                          return;
+                        }
+                        setState(() {
+                          _tripStateService.setReadyForTrip(value);
+                        });
+                        try {
+                          await ApiService.updateDriverAvailability(
+                              _driverId!, value);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(value
+                                  ? 'You are now Online'
+                                  : 'You are now Offline'),
+                              backgroundColor: value ? Colors.green : Colors.grey,
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        } catch (e) {
+                          setState(() {
+                            _tripStateService.setReadyForTrip(!value);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text('Failed to update status: $e')),
+                          );
+                        }
+                      },
+                      activeColor: Colors.white,
+                      activeTrackColor: Colors.green,
+                      inactiveThumbColor: Colors.grey.shade600,
+                      inactiveTrackColor: Colors.grey.shade400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: const Color(0xFFC0C0C0),
+              child: Row(
+                children: [
+                  _buildTabButton('Available (${_availableTrips.length})', 0,
+                      const Color(0xFF757575)),
+                  const SizedBox(width: 8),
+                  _buildTabButton(
+                      'Pending (${_driverRequests.where((r) => (r['status'] ?? '').toString().toUpperCase() == 'PENDING').length})',
+                      1,
+                      AppColors.orangeDark),
+                  const SizedBox(width: 8),
+                  _buildTabButton(
+                      'Approved (${_driverRequests.where((r) {
+                        final status = (r['status'] ?? '').toString().toUpperCase();
+                        final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
+                        return (status == 'APPROVED' ||
+                            status == 'ACCEPTED' ||
+                            status == 'STARTED' ||
+                            status == 'ON_TRIP' ||
+                            status == 'ON-TRIP' ||
+                            status == 'IN_PROGRESS' ||
+                            status == 'IN-PROGRESS' ||
+                            status == 'ONWAY' ||
+                            status == 'ASSIGNED' ||
+                            tripStatus == 'ASSIGNED' ||
+                            tripStatus == 'STARTED' ||
+                            tripStatus == 'ON_TRIP' ||
+                            tripStatus == 'ON-TRIP' ||
+                            tripStatus == 'IN_PROGRESS' ||
+                            tripStatus == 'IN-PROGRESS' ||
+                            tripStatus == 'ONWAY') &&
+                            tripStatus != 'COMPLETED' &&
+                            status != 'COMPLETED';
+                      }).length})',
+                      2,
+                      const Color(0xFF1E88E5)),
+                  const SizedBox(width: 8),
+                  _buildHistoryButton(),
+                ],
+              ),
+            ),
+            Expanded(
+              child: selectedTab == 0
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/images/chola_cabs_logo.png',
+                            width: 120,
+                            height: 120,
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Availability is turned off. You won\'t receive\nnew trip requests.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'You\'re currently offline.\nTurn on availability to see trips.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _buildTabContent(),
+            ),
+            const BottomNavigation(currentRoute: '/dashboard'),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
@@ -599,7 +787,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildTabButton(
                     'Pending (${_driverRequests.where((r) => (r['status'] ?? '').toString().toUpperCase() == 'PENDING').length})',
                     1,
-                    const Color(0xFFFFD700)),
+                    AppColors.orangeDark),
                 const SizedBox(width: 8),
                 _buildTabButton(
                     'Approved (${_driverRequests.where((r) {
@@ -667,7 +855,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     colors: index == 0
                         ? [AppColors.grayPrimary, AppColors.black]
                         : index == 1
-                            ? [const Color(0xFFFFD700), const Color(0xFFFFA500)]
+                            ? [AppColors.orangePrimary, AppColors.orangeDark]
                             : [AppColors.bluePrimary, AppColors.blueDark],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -773,7 +961,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTripCard(Map<String, dynamic> trip) {
-    return Container(
+    return GestureDetector(
+      onTap: () => showDialog(
+        context: context,
+        builder: (context) => TripDetailsDialog(trip: trip),
+      ),
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -876,6 +1069,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.pets, size: 16, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${trip['pet_count'] ?? 0} Pets',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Icon(Icons.luggage, size: 16, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${trip['luggage_count'] ?? 0} Luggage',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -923,6 +1140,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -1011,7 +1229,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
-    return Container(
+    return GestureDetector(
+      onTap: () => showDialog(
+        context: context,
+        builder: (context) => TripDetailsDialog(trip: request),
+      ),
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1151,13 +1374,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-    );
+      )
+      );
   }
 
   Widget _buildAssignedToOtherCard(Map<String, dynamic> request) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: () => showDialog(
+        context: context,
+        builder: (context) => TripDetailsDialog(trip: request),
+      ),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
         color: const Color(0xFFE0E0E0),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
@@ -1284,7 +1513,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ],
-      ),
+      ),)
     );
   }
 
@@ -1571,7 +1800,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _buildSquareActionButton(Icons.close, Colors.red,
                                 onTap: () {
                                   final tripStatus = (request?['trip_status'] ?? '').toString().toUpperCase();
-                                  if (tripStatus == 'ASSIGNED') {
+                                  if (tripStatus == 'ASSIGNED' && tripId != null) {
                                     _showApprovedCancelDialog(context, tripId);
                                   }
                                 }),
@@ -1581,7 +1810,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 onTap: () {}),
                             const SizedBox(width: 8),
                             _buildSquareActionButton(Icons.call, Colors.green,
-                                onTap: () {}),
+                                onTap: () => _makePhoneCall(phone)),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -1601,8 +1830,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   : tripStatus == 'COMPLETED'
                                       ? LinearGradient(
                                           colors: [
-                                            AppColors.bluePrimary,
-                                            AppColors.blueDark
+                                            AppColors.greenPrimary,
+                                            AppColors.greenDark
                                           ],
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
@@ -1610,16 +1839,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       : isTripStarted
                                           ? LinearGradient(
                                               colors: [
-                                                const Color(0xFFFFD700),
-                                                const Color(0xFFFFA500)
+                                                AppColors.greenPrimary,
+                                                AppColors.greenDark
                                               ],
                                               begin: Alignment.topCenter,
                                               end: Alignment.bottomCenter,
                                             )
                                           : LinearGradient(
                                               colors: [
-                                                AppColors.greenPrimary,
-                                                AppColors.greenDark
+                                                AppColors.bluePrimary,
+                                                AppColors.blueDark
                                               ],
                                               begin: Alignment.topCenter,
                                               end: Alignment.bottomCenter,
@@ -1728,6 +1957,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    if (phoneNumber.isEmpty || phoneNumber == 'No Phone') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Phone number not available'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber.replaceAll(RegExp(r'[^0-9+]'), ''),
+    );
+
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not launch phone call'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error making call: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildSquareActionButton(IconData icon, Color color,

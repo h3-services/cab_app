@@ -100,205 +100,198 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
           }
         },
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.appGradientStart,
-              AppColors.appGradientEnd,
-            ],
+      body: SingleChildScrollView(
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.appGradientStart,
+                AppColors.appGradientEnd,
+              ],
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 40),
-            Icon(
-              Icons.verified_user,
-              size: 60,
-              color: _allDocumentsUploaded
-                  ? AppColors.greenLight
-                  : const Color(0xFF424242),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Upload KYC Documents',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Upload your documents to activate your account',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Test Mode (Auto-Fill): "),
-                  Switch(
-                    value: _isTestMode,
-                    onChanged: (val) {
-                      setState(() {
-                        _isTestMode = val;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            const SizedBox(height: 30),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Required Documents',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildUploadItem(
-                              'Driving License',
-                              'Upload a clear photo of your driving license',
-                              Icons.credit_card),
-                          const SizedBox(height: 12),
-                          _buildUploadItem(
-                              'Aadhaar Card',
-                              'Upload a clear photo of your Aadhaar card',
-                              Icons.credit_card),
-                          const SizedBox(height: 12),
-                          _buildUploadItem('Profile Picture',
-                              'Upload a recent profile photo', Icons.person),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Vehicle Details',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildUploadItem(
-                              'RC Book',
-                              'Upload a clear photo of your vehicle RC',
-                              Icons.description),
-                          const SizedBox(height: 12),
-                          _buildUploadItem(
-                              'FC Certificate',
-                              'Upload valid vehicle fitness certificate',
-                              Icons.description),
-                          const SizedBox(height: 12),
-                          _buildUploadItem(
-                              'Front View',
-                              'Upload the front view of your car',
-                              Icons.directions_car),
-                          const SizedBox(height: 12),
-                          _buildUploadItem(
-                              'Back View',
-                              'Upload the rear side of your car',
-                              Icons.directions_car),
-                          const SizedBox(height: 12),
-                          _buildUploadItem(
-                              'Left Side View',
-                              'Upload the left side of your car',
-                              Icons.directions_car),
-                          const SizedBox(height: 12),
-                          _buildUploadItem(
-                              'Right Side View',
-                              'Upload the right side of your car',
-                              Icons.directions_car),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                  ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
+                Icon(
+                  Icons.verified_user,
+                  size: 60,
+                  color: _allDocumentsUploaded
+                      ? AppColors.greenLight
+                      : const Color(0xFF424242),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting
-                      ? null
-                      : () {
-                          bool allSelected = _uploadedDocuments.length == 9 &&
-                              _uploadedDocuments.values.every((v) => v);
-
-                          if (allSelected) {
-                            _submitAllDocuments();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Please upload all required documents'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          }
+                const SizedBox(height: 20),
+                const Text(
+                  'Upload KYC Documents',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Upload your documents to activate your account',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Test Mode (Auto-Fill): "),
+                      Switch(
+                        value: _isTestMode,
+                        onChanged: (val) {
+                          setState(() {
+                            _isTestMode = val;
+                          });
                         },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _allDocumentsUploaded
-                        ? AppColors.greenLight
-                        : Colors.grey,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                      ),
+                    ],
                   ),
-                  child: _isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          _isEditing
-                              ? 'Update Application'
-                              : 'Submit Documents',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                 ),
-              ),
+                const SizedBox(height: 30),
+                Container(
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Required Documents',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildUploadItem(
+                          'Driving License',
+                          'Upload a clear photo of your driving license',
+                          Icons.credit_card),
+                      const SizedBox(height: 12),
+                      _buildUploadItem(
+                          'Aadhaar Card',
+                          'Upload a clear photo of your Aadhaar card',
+                          Icons.credit_card),
+                      const SizedBox(height: 12),
+                      _buildUploadItem('Profile Picture',
+                          'Upload a recent profile photo', Icons.person),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Vehicle Details',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildUploadItem(
+                          'RC Book',
+                          'Upload a clear photo of your vehicle RC',
+                          Icons.description),
+                      const SizedBox(height: 12),
+                      _buildUploadItem(
+                          'FC Certificate',
+                          'Upload valid vehicle fitness certificate',
+                          Icons.description),
+                      const SizedBox(height: 12),
+                      _buildUploadItem(
+                          'Front View',
+                          'Upload the front view of your car',
+                          Icons.directions_car),
+                      const SizedBox(height: 12),
+                      _buildUploadItem(
+                          'Back View',
+                          'Upload the rear side of your car',
+                          Icons.directions_car),
+                      const SizedBox(height: 12),
+                      _buildUploadItem(
+                          'Left Side View',
+                          'Upload the left side of your car',
+                          Icons.directions_car),
+                      const SizedBox(height: 12),
+                      _buildUploadItem(
+                          'Right Side View',
+                          'Upload the right side of your car',
+                          Icons.directions_car),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting
+                        ? null
+                        : () {
+                            bool allSelected = _uploadedDocuments.length == 9 &&
+                                _uploadedDocuments.values.every((v) => v);
+
+                            if (allSelected) {
+                              _submitAllDocuments();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Please upload all required documents'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _allDocumentsUploaded
+                          ? AppColors.greenLight
+                          : Colors.grey,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: _isSubmitting
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            _isEditing
+                                ? 'Update Application'
+                                : 'Submit Documents',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

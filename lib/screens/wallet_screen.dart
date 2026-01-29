@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../widgets/widgets.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/common/custom_app_bar.dart';
+import '../widgets/dialogs/payment_success_dialog.dart';
 import '../services/razorpay_service.dart';
 import '../services/payment_service.dart';
 import '../services/api_service.dart';
@@ -249,11 +250,16 @@ class _WalletScreenState extends State<WalletScreen> {
       await prefs.setString('driver_data', jsonEncode(currentData));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Payment successful! New balance: ₹${newBalance.toStringAsFixed(2)}'),
-            backgroundColor: Colors.green,
+        final now = DateTime.now();
+        final paymentTime = '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+        
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => PaymentSuccessDialog(
+            amount: '₹${amount.toStringAsFixed(2)}',
+            paymentTime: paymentTime,
+            paymentMethod: 'Razorpay',
           ),
         );
       }

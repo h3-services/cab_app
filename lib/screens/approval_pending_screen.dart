@@ -3,6 +3,7 @@ import '../widgets/widgets.dart';
 import '../services/api_service.dart';
 import '../constants/error_codes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 class ApprovalPendingScreen extends StatefulWidget {
   const ApprovalPendingScreen({super.key});
@@ -16,6 +17,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   bool _isRejected = false;
   List<String> _errorMessages = [];
   List<String> _errorFields = [];
+  Timer? _autoReloadTimer;
 
   Future<void> _checkStatus() async {
     setState(() {
@@ -173,10 +175,30 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _startAutoReload();
+  }
+
+  @override
+  void dispose() {
+    _autoReloadTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startAutoReload() {
+    _autoReloadTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted && !_isLoading) {
+        _checkStatus();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppBar(
-          showBackButton: false, showMenuIcon: false, showProfileIcon: true),
+          showBackButton: false, showMenuIcon: false, showProfileIcon: false),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -292,37 +314,18 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                     ),
                   ),
                 const SizedBox(height: 30),
-                ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _checkStatus,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.refresh, color: Colors.white),
-                  label: Text(_isLoading ? 'Checking...' : 'Check Status',
-                      style: const TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 12),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
+                ElevatedButton(
                   onPressed: () {
                     Navigator.pushNamed(context, '/personal-details',
                         arguments: {'isEditing': true});
                   },
-                  child: const Text(
-                    'Update Application',
-                    style: TextStyle(
-                      color: Colors.black87,
-                      decoration: TextDecoration.underline,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black87,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 12),
                   ),
+                  child: const Text('Update Application'),
                 ),
               ],
             ),

@@ -6,8 +6,8 @@ class AppColors {
   static const Color blueDark = Color(0xFF053867);
   
   // Green colors
-  static const Color greenPrimary = Color(0xFF4AD926);
-  static const Color greenDark = Color(0xFF0A6705);
+  static const Color greenPrimary = Color(0xFF4F884F);
+  static const Color greenDark = Color(0xFF2B4E2B);
   
   // Orange/Gold colors
   static const Color orangePrimary = Color(0xFFD0911C);
