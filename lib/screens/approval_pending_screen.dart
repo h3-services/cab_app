@@ -43,105 +43,96 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
         if (kycVerified == 'rejected') {
           List<String> errorFields = [];
           List<String> errorMessages = [];
-          setState(() {
-            _isRejected = true;
-          });
-          if (driverData['errors'] != null &&
-              driverData['errors']['details'] != null) {
-            final Map<String, dynamic> details =
-                driverData['errors']['details'];
-            details.forEach((code, errorData) {
-              int codeInt = int.tryParse(code) ?? 0;
-              errorMessages.add(ErrorCodes.getMessage(codeInt));
+          setState(() => _isRejected = true);
 
-              if (codeInt >= 1001 && codeInt <= 1003) {
-                errorFields.add('Driving License');
-              } else if (codeInt >= 1004 && codeInt <= 1005) {
-                errorFields.add('Aadhaar Card');
-              } else if (codeInt == 1006) {
-                errorFields.add('Profile Picture');
-              } else if (codeInt >= 1007 && codeInt <= 1008) {
-                errorFields.add('RC Book');
-              } else if (codeInt >= 1009 && codeInt <= 1010) {
-                errorFields.add('FC Certificate');
-              } else if (codeInt == 1011 ||
-                  codeInt == 1013 ||
-                  codeInt == 1014 ||
-                  codeInt == 1015 ||
-                  codeInt == 1016) {
-                errorFields.addAll([
-                  'Front View',
-                  'Back View',
-                  'Left Side View',
-                  'Right Side View',
-                  'Inside View'
-                ]);
-              } else if (codeInt == 2002) {
-                errorFields.add('Email');
-              } else if (codeInt == 2003) {
-                errorFields.add('Name');
-              } else if (codeInt == 2004) {
-                errorFields.add('License Number');
-              } else if (codeInt == 2005) {
-                errorFields.add('Aadhaar Number');
-              } else if (codeInt == 2006) {
-                errorFields.add('Primary Location');
-              } else if (codeInt == 2008) {
-                errorFields.add('Driving License Expiry Date');
-              } else if (codeInt == 3001) {
-                errorFields.add('Vehicle Number');
-              } else if (codeInt == 3002) {
-                errorFields.add('Vehicle Type');
-              } else if (codeInt == 3003) {
-                errorFields.add('Vehicle model');
-              } else if (codeInt == 3004) {
-                errorFields.add('Vehicle Make');
-              } else if (codeInt == 3005) {
-                errorFields.add('Vehicle Color');
-              } else if (codeInt == 3006) {
-                errorFields.add('Seating Capacity');
-              } else if (codeInt == 3007) {
-                errorFields.add('RC Expiry Date');
-              } else if (codeInt == 3008) {
-                errorFields.add('FC Expiry Date');
+          final errors = driverData['errors'];
+          if (errors != null) {
+            Map<String, dynamic>? details;
+
+            if (errors is Map) {
+              if (errors['details'] != null && errors['details'] is Map) {
+                details = errors['details'];
+              } else {
+                details = Map<String, dynamic>.from(errors);
+                details
+                    .remove('details'); // Clean up if it was a nested structure
               }
-            });
+            }
+
+            if (details != null) {
+              details.forEach((code, errorData) {
+                int codeInt = int.tryParse(code.toString()) ?? 0;
+                if (codeInt > 0) {
+                  errorMessages.add(ErrorCodes.getMessage(codeInt));
+
+                  if (codeInt >= 1001 && codeInt <= 1003) {
+                    errorFields.add('Driving License');
+                  } else if (codeInt >= 1004 && codeInt <= 1005) {
+                    errorFields.add('Aadhaar Card');
+                  } else if (codeInt == 1006) {
+                    errorFields.add('Profile Picture');
+                  } else if (codeInt >= 1007 && codeInt <= 1008) {
+                    errorFields.add('RC Book');
+                  } else if (codeInt >= 1009 && codeInt <= 1010) {
+                    errorFields.add('FC Certificate');
+                  } else if (codeInt == 1011 ||
+                      codeInt == 1013 ||
+                      codeInt == 1014 ||
+                      codeInt == 1015 ||
+                      codeInt == 1016) {
+                    errorFields.addAll([
+                      'Front View',
+                      'Back View',
+                      'Left Side View',
+                      'Right Side View',
+                      'Inside View'
+                    ]);
+                  } else if (codeInt == 2002) {
+                    errorFields.add('Email');
+                  } else if (codeInt == 2003) {
+                    errorFields.add('Name');
+                  } else if (codeInt == 2004) {
+                    errorFields.add('License Number');
+                  } else if (codeInt == 2005) {
+                    errorFields.add('Aadhaar Number');
+                  } else if (codeInt == 2006) {
+                    errorFields.add('Primary Location');
+                  } else if (codeInt == 2008) {
+                    errorFields.add('Driving License Expiry Date');
+                  } else if (codeInt == 3001) {
+                    errorFields.add('Vehicle Number');
+                  } else if (codeInt == 3002) {
+                    errorFields.add('Vehicle Type');
+                  } else if (codeInt == 3003) {
+                    errorFields.add('Vehicle model');
+                  } else if (codeInt == 3004) {
+                    errorFields.add('Vehicle Make');
+                  } else if (codeInt == 3005) {
+                    errorFields.add('Vehicle Color');
+                  } else if (codeInt == 3006) {
+                    errorFields.add('Seating Capacity');
+                  } else if (codeInt == 3007) {
+                    errorFields.add('RC Expiry Date');
+                  } else if (codeInt == 3008) {
+                    errorFields.add('FC Expiry Date');
+                  }
+                }
+              });
+            }
           }
 
           if (mounted) {
-            final Map<String, dynamic> args = {
-              'isEditing': true,
-              'driverId': driverId,
-              'vehicleId': prefs.getString('vehicleId'),
-              'name': driverData['name'],
-              'email': driverData['email'],
-              'phoneNumber': driverData['phone_number'],
-              'primaryLocation': driverData['primary_location'],
-              'licenceNumber': driverData['licence_number'],
-              'aadharNumber': driverData['aadhar_number'],
-              'licenceExpiry': driverData['licence_expiry'],
-              'vehicleType': prefs.getString('vehicleType'),
-              'vehicleBrand': prefs.getString('vehicleBrand'),
-              'vehicleModel': prefs.getString('vehicleModel'),
-              'vehicleNumber': prefs.getString('vehicleNumber'),
-              'vehicleColor': prefs.getString('vehicleColor'),
-              'seatingCapacity': prefs.getString('seatingCapacity'),
-              'rcExpiryDate': prefs.getString('rcExpiryDate'),
-              'fcExpiryDate': prefs.getString('fcExpiryDate'),
-              'errorFields': errorFields,
-            };
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Application Rejected. Please fix errors.'),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 2),
-              ),
-            );
+            debugPrint("Rejection Errors Found: ${errorMessages.length}");
             setState(() {
               _errorFields = errorFields;
               _errorMessages = errorMessages;
             });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Application Rejected. Please fix errors.'),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
           return;
         } else if (isApproved &&
@@ -253,136 +244,152 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
             ],
           ),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              Image.asset(
-                'assets/images/chola_cabs_logo.png',
-                width: 120,
-                height: 120,
-                fit: BoxFit.contain,
-              ),
-              const SizedBox(height: 40),
-              if (_isRejected) ...[
-                const Icon(
-                  Icons.cancel_outlined,
-                  size: 80,
-                  color: Colors.red,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 48.0,
                 ),
-                const SizedBox(height: 10),
-              ],
-              if (!_isRejected) ...[
-                const Text(
-                  'Approval Pending',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  width: 200,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Image.asset(
-                    'assets/images/approved.png',
-                    width: 200,
-                    height: 200,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 20),
-              if (_isRejected) ...{
-                const Text(
-                  'Application Rejected',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Please fix the following issues to proceed:',
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
-                  ),
+                child: IntrinsicHeight(
                   child: Column(
-                    children: _errorMessages
-                        .map((msg) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.error_outline,
-                                      color: Colors.red, size: 16),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      msg,
-                                      style: const TextStyle(
-                                          color: Colors.red, fontSize: 13),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ))
-                        .toList(),
+                    children: [
+                      const SizedBox(height: 20),
+                      Image.asset(
+                        'assets/images/chola_cabs_logo.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 30),
+                      if (_isRejected) ...[
+                        const Icon(
+                          Icons.cancel_outlined,
+                          size: 70,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      if (!_isRejected) ...[
+                        const Text(
+                          'Approval Pending',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          width: 180,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Image.asset(
+                            'assets/images/approved.png',
+                            width: 180,
+                            height: 140,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      if (_isRejected) ...{
+                        const Text(
+                          'Application Rejected',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Please fix the following issues to proceed:',
+                          style: TextStyle(fontSize: 13, color: Colors.black87),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border:
+                                Border.all(color: Colors.red.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            children: _errorMessages
+                                .map((msg) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.error_outline,
+                                              color: Colors.red, size: 16),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              msg,
+                                              style: const TextStyle(
+                                                  color: Colors.red,
+                                                  fontSize: 12),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _handleFixErrors,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 30, vertical: 10),
+                          ),
+                          child: const Text('Fix Issues Now'),
+                        ),
+                        const SizedBox(height: 10),
+                      } else
+                        const Text(
+                          'Your documents have been submitted successfully.\nThey are currently under review by the admin.\nYou will be notified once your account is approved.\nPlease wait while the verification is completed.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.black87,
+                            height: 1.4,
+                          ),
+                        ),
+                      const Spacer(),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/personal-details',
+                              arguments: {
+                                'isEditing': true,
+                                'errorFields': _errorFields,
+                              });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black87,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30, vertical: 12),
+                        ),
+                        child: const Text('Update Application'),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _handleFixErrors,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 12),
-                  ),
-                  child: const Text('Fix Issues Now'),
-                ),
-                const SizedBox(height: 10),
-              } else
-                const Text(
-                  'Your documents have been submitted successfully.\nThey are currently under review by the admin.\nYou will be notified once your account is approved.\nPlease wait while the verification is completed.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    height: 1.5,
-                  ),
-                ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/personal-details', arguments: {
-                    'isEditing': true,
-                    'errorFields': _errorFields,
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black87,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                ),
-                child: const Text('Update Application'),
               ),
-              const SizedBox(height: 40),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
