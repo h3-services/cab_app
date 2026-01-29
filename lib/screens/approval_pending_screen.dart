@@ -42,13 +42,17 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
 
         if (kycVerified == 'rejected') {
           List<String> errorFields = [];
+          List<String> errorMessages = [];
+          setState(() {
+            _isRejected = true;
+          });
           if (driverData['errors'] != null &&
               driverData['errors']['details'] != null) {
             final Map<String, dynamic> details =
                 driverData['errors']['details'];
             details.forEach((code, errorData) {
               int codeInt = int.tryParse(code) ?? 0;
-              _errorMessages.add(ErrorCodes.getMessage(codeInt));
+              errorMessages.add(ErrorCodes.getMessage(codeInt));
 
               if (codeInt >= 1001 && codeInt <= 1003) {
                 errorFields.add('Driving License');
@@ -60,12 +64,46 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                 errorFields.add('RC Book');
               } else if (codeInt >= 1009 && codeInt <= 1010) {
                 errorFields.add('FC Certificate');
-              } else if (codeInt == 1011 || codeInt == 1013 || codeInt == 1014 || codeInt == 1015) {
-                errorFields.addAll(['Front View', 'Back View', 'Left Side View', 'Right Side View']);
-              } else if (codeInt >= 2001 && codeInt <= 2008) {
-                errorFields.add('Personal Details');
-              } else if (codeInt >= 3001 && codeInt <= 3008) {
-                errorFields.add('Vehicle Details');
+              } else if (codeInt == 1011 ||
+                  codeInt == 1013 ||
+                  codeInt == 1014 ||
+                  codeInt == 1015 ||
+                  codeInt == 1016) {
+                errorFields.addAll([
+                  'Front View',
+                  'Back View',
+                  'Left Side View',
+                  'Right Side View',
+                  'Inside View'
+                ]);
+              } else if (codeInt == 2002) {
+                errorFields.add('Email');
+              } else if (codeInt == 2003) {
+                errorFields.add('Name');
+              } else if (codeInt == 2004) {
+                errorFields.add('License Number');
+              } else if (codeInt == 2005) {
+                errorFields.add('Aadhaar Number');
+              } else if (codeInt == 2006) {
+                errorFields.add('Primary Location');
+              } else if (codeInt == 2008) {
+                errorFields.add('Driving License Expiry Date');
+              } else if (codeInt == 3001) {
+                errorFields.add('Vehicle Number');
+              } else if (codeInt == 3002) {
+                errorFields.add('Vehicle Type');
+              } else if (codeInt == 3003) {
+                errorFields.add('Vehicle model');
+              } else if (codeInt == 3004) {
+                errorFields.add('Vehicle Make');
+              } else if (codeInt == 3005) {
+                errorFields.add('Vehicle Color');
+              } else if (codeInt == 3006) {
+                errorFields.add('Seating Capacity');
+              } else if (codeInt == 3007) {
+                errorFields.add('RC Expiry Date');
+              } else if (codeInt == 3008) {
+                errorFields.add('FC Expiry Date');
               }
             });
           }
@@ -100,8 +138,10 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                 duration: Duration(seconds: 2),
               ),
             );
-            Navigator.pushReplacementNamed(context, '/kyc_upload',
-                arguments: args);
+            setState(() {
+              _errorFields = errorFields;
+              _errorMessages = errorMessages;
+            });
           }
           return;
         } else if (isApproved &&
@@ -177,6 +217,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   @override
   void initState() {
     super.initState();
+    _checkStatus();
     _startAutoReload();
   }
 
@@ -200,6 +241,8 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       appBar: const CustomAppBar(
           showBackButton: false, showMenuIcon: false, showProfileIcon: false),
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -210,19 +253,27 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
             ],
           ),
         ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/chola_cabs_logo.png',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.contain,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              Image.asset(
+                'assets/images/chola_cabs_logo.png',
+                width: 120,
+                height: 120,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 40),
+              if (_isRejected) ...[
+                const Icon(
+                  Icons.cancel_outlined,
+                  size: 80,
+                  color: Colors.red,
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 10),
+              ],
+              if (!_isRejected) ...[
                 const Text(
                   'Approval Pending',
                   style: TextStyle(
@@ -245,90 +296,92 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                     fit: BoxFit.contain,
                   ),
                 ),
-                const SizedBox(height: 20),
-                if (_isRejected) ...{
-                  const Text(
-                    'Application Rejected',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
+              ],
+              const SizedBox(height: 20),
+              if (_isRejected) ...{
+                const Text(
+                  'Application Rejected',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Please fix the following issues to proceed:',
-                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Please fix the following issues to proceed:',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
                   ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      children: _errorMessages
-                          .map((msg) => Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.error_outline,
-                                        color: Colors.red, size: 16),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        msg,
-                                        style: const TextStyle(
-                                            color: Colors.red, fontSize: 13),
-                                      ),
+                  child: Column(
+                    children: _errorMessages
+                        .map((msg) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.error_outline,
+                                      color: Colors.red, size: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      msg,
+                                      style: const TextStyle(
+                                          color: Colors.red, fontSize: 13),
                                     ),
-                                  ],
-                                ),
-                              ))
-                          .toList(),
-                    ),
+                                  ),
+                                ],
+                              ),
+                            ))
+                        .toList(),
                   ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _handleFixErrors,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 12),
-                    ),
-                    child: const Text('Fix Issues Now'),
-                  ),
-                  const SizedBox(height: 10),
-                } else
-                  const Text(
-                    'Your documents have been submitted successfully.\nThey are currently under review by the admin.\nYou will be notified once your account is approved.\nPlease wait while the verification is completed.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                      height: 1.5,
-                    ),
-                  ),
-                const SizedBox(height: 30),
+                ),
+                const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/personal-details',
-                        arguments: {'isEditing': true});
-                  },
+                  onPressed: _handleFixErrors,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
+                    backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 40, vertical: 12),
                   ),
-                  child: const Text('Update Application'),
+                  child: const Text('Fix Issues Now'),
                 ),
-              ],
-            ),
+                const SizedBox(height: 10),
+              } else
+                const Text(
+                  'Your documents have been submitted successfully.\nThey are currently under review by the admin.\nYou will be notified once your account is approved.\nPlease wait while the verification is completed.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/personal-details', arguments: {
+                    'isEditing': true,
+                    'errorFields': _errorFields,
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black87,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                ),
+                child: const Text('Update Application'),
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
         ),
       ),

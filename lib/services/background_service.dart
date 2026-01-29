@@ -7,8 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io' show Platform;
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+import 'notification_plugin.dart';
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
@@ -46,7 +45,10 @@ Future<void> _initializeNotifications() async {
     iOS: iosSettings,
   );
 
-  await flutterLocalNotificationsPlugin.initialize(initSettings);
+  await flutterLocalNotificationsPlugin.initialize(
+    initSettings,
+    onDidReceiveNotificationResponse: (details) {},
+  );
 
   if (Platform.isAndroid) {
     await flutterLocalNotificationsPlugin
@@ -71,18 +73,20 @@ void onStart(ServiceInstance service) async {
         desiredAccuracy: LocationAccuracy.high,
       ).timeout(
         const Duration(seconds: 30),
-        onTimeout: () async => await Geolocator.getLastKnownPosition() ?? Position(
-          latitude: 0,
-          longitude: 0,
-          timestamp: DateTime.now(),
-          accuracy: 0,
-          altitude: 0,
-          heading: 0,
-          speed: 0,
-          speedAccuracy: 0,
-          altitudeAccuracy: 0,
-          headingAccuracy: 0,
-        ),
+        onTimeout: () async =>
+            await Geolocator.getLastKnownPosition() ??
+            Position(
+              latitude: 0,
+              longitude: 0,
+              timestamp: DateTime.now(),
+              accuracy: 0,
+              altitude: 0,
+              heading: 0,
+              speed: 0,
+              speedAccuracy: 0,
+              altitudeAccuracy: 0,
+              headingAccuracy: 0,
+            ),
       );
 
       final timestamp = DateTime.now().toIso8601String();
@@ -114,18 +118,20 @@ Future<bool> onIosBackground(ServiceInstance service) async {
       desiredAccuracy: LocationAccuracy.high,
     ).timeout(
       const Duration(seconds: 30),
-      onTimeout: () async => await Geolocator.getLastKnownPosition() ?? Position(
-        latitude: 0,
-        longitude: 0,
-        timestamp: DateTime.now(),
-        accuracy: 0,
-        altitude: 0,
-        heading: 0,
-        speed: 0,
-        speedAccuracy: 0,
-        altitudeAccuracy: 0,
-        headingAccuracy: 0,
-      ),
+      onTimeout: () async =>
+          await Geolocator.getLastKnownPosition() ??
+          Position(
+            latitude: 0,
+            longitude: 0,
+            timestamp: DateTime.now(),
+            accuracy: 0,
+            altitude: 0,
+            heading: 0,
+            speed: 0,
+            speedAccuracy: 0,
+            altitudeAccuracy: 0,
+            headingAccuracy: 0,
+          ),
     );
 
     final timestamp = DateTime.now().toIso8601String();
@@ -154,7 +160,8 @@ Future<void> _sendLocationToBackend(double lat, double lng) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     final driverId = prefs.getString('driver_id');
-    final backendUrl = prefs.getString('backend_url') ?? 'https://your-backend.com';
+    final backendUrl =
+        prefs.getString('backend_url') ?? 'https://your-backend.com';
 
     if (token == null) {
       print('⚠️  No auth token found');
@@ -167,18 +174,20 @@ Future<void> _sendLocationToBackend(double lat, double lng) async {
     }
 
     print('📤 Sending location to backend...');
-    final response = await http.post(
-      Uri.parse('$backendUrl/api/v1/drivers/$driverId/location'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'latitude': lat,
-        'longitude': lng,
-        'timestamp': DateTime.now().toIso8601String(),
-      }),
-    ).timeout(const Duration(seconds: 15));
+    final response = await http
+        .post(
+          Uri.parse('$backendUrl/api/v1/drivers/$driverId/location'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'latitude': lat,
+            'longitude': lng,
+            'timestamp': DateTime.now().toIso8601String(),
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       print('✅ Location sent successfully to backend');

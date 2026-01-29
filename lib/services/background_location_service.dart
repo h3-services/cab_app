@@ -31,10 +31,10 @@ class BackgroundLocationService {
 
   static void onStart(ServiceInstance service) async {
     await dotenv.load();
-    
+
     // Update location immediately
     await _updateLocation();
-    
+
     // Update every 15 minutes
     service.on('update').listen((event) async {
       await _updateLocation();
@@ -84,14 +84,16 @@ class BackgroundLocationService {
         'timestamp': DateTime.now().toIso8601String(),
       };
 
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $authToken',
-        },
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $authToken',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
 
       print('[BG Location] Status: ${response.statusCode}');
     } catch (e) {
@@ -101,6 +103,6 @@ class BackgroundLocationService {
 
   static Future<void> stopBackgroundService() async {
     final service = FlutterBackgroundService();
-    await service.invoke('stop');
+    service.invoke('stop');
   }
 }

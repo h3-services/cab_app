@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'notification_service.dart';
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+import 'notification_plugin.dart';
 
 late BuildContext _appContext;
 
@@ -63,8 +62,7 @@ void _navigateToNotifications() {
 }
 
 Future<void> _showLocalNotification(RemoteMessage message) async {
-  const AndroidNotificationDetails androidDetails =
-      AndroidNotificationDetails(
+  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
     'high_importance_channel',
     'High Importance Notifications',
     channelDescription: 'Notifications from admin',

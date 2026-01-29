@@ -26,6 +26,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     'Back View': false,
     'Left Side View': false,
     'Right Side View': false,
+    'Inside View': false,
   };
 
   final Map<String, File?> _uploadedImages = {};
@@ -240,6 +241,11 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                           'Right Side View',
                           'Upload the right side of your car',
                           Icons.directions_car),
+                      const SizedBox(height: 12),
+                      _buildUploadItem(
+                          'Inside View',
+                          'Upload the interior view of your car',
+                          Icons.airline_seat_recline_extra),
                     ],
                   ),
                 ),
@@ -251,8 +257,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                     onPressed: _isSubmitting
                         ? null
                         : () {
-                            bool allSelected = _uploadedDocuments.length == 9 &&
-                                _uploadedDocuments.values.every((v) => v);
+                            bool allSelected =
+                                _uploadedDocuments.length == 10 &&
+                                    _uploadedDocuments.values.every((v) => v);
 
                             if (allSelected) {
                               _submitAllDocuments();
@@ -546,6 +553,14 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             else {
               if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
               await ApiService.uploadVehiclePhoto(vehicleId, 'right', file);
+            }
+            break;
+          case 'Inside View':
+            if (_isEditing)
+              await ApiService.reuploadVehiclePhoto(vehicleId, 'inside', file);
+            else {
+              if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
+              await ApiService.uploadVehiclePhoto(vehicleId, 'inside', file);
             }
             break;
         }

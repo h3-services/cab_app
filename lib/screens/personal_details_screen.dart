@@ -633,11 +633,20 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   Widget _buildDateField(String label, TextEditingController controller,
       [bool isRequired = false]) {
     bool hasAsterisk = label.contains('*');
+    String cleanLabel = label.replaceAll('*', '').trim();
+    bool hasError = _errorFields.contains(cleanLabel);
 
     return ValueListenableBuilder(
       valueListenable: controller,
       builder: (context, value, child) {
         bool isFilled = controller.text.isNotEmpty;
+        Color borderColor = hasError
+            ? Colors.red
+            : (isFilled ? AppColors.greenLight : Colors.grey);
+        Color labelColor = hasError
+            ? Colors.red
+            : (isFilled ? AppColors.greenLight : Colors.black87);
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -645,12 +654,13 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: label.replaceAll('*', ''),
+                    text: cleanLabel,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isFilled ? AppColors.greenLight : Colors.black87,
-                      fontWeight:
-                          isFilled ? FontWeight.bold : FontWeight.normal,
+                      color: labelColor,
+                      fontWeight: (isFilled || hasError)
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   if (hasAsterisk)
@@ -679,23 +689,32 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                      color: isFilled ? AppColors.greenLight : Colors.grey),
+                  borderSide: BorderSide(color: borderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                      color: isFilled ? AppColors.greenLight : Colors.grey),
+                  borderSide: BorderSide(color: borderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppColors.greenLight),
+                  borderSide: BorderSide(
+                      color: hasError ? Colors.red : AppColors.greenLight),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.red),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.red),
                 ),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                suffixIcon: Icon(Icons.calendar_today,
-                    size: 20,
-                    color: isFilled ? AppColors.greenLight : Colors.grey),
+                suffixIcon: hasError
+                    ? const Icon(Icons.error, color: Colors.red)
+                    : Icon(Icons.calendar_today,
+                        size: 20,
+                        color: isFilled ? AppColors.greenLight : Colors.grey),
               ),
               onTap: () async {
                 final date = await showDatePicker(
@@ -719,7 +738,15 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   Widget _buildDropdownField(String label, String? value, List<String> items,
       Function(String?) onChanged) {
     bool isRequired = label.contains('*');
+    String cleanLabel = label.replaceAll('*', '').trim();
     bool isFilled = value != null && value.isNotEmpty;
+    bool hasError = _errorFields.contains(cleanLabel);
+
+    Color borderColor =
+        hasError ? Colors.red : (isFilled ? AppColors.greenLight : Colors.grey);
+    Color labelColor = hasError
+        ? Colors.red
+        : (isFilled ? AppColors.greenLight : Colors.black87);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -728,11 +755,13 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           text: TextSpan(
             children: [
               TextSpan(
-                text: label.replaceAll('*', ''),
+                text: cleanLabel,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isFilled ? AppColors.greenLight : Colors.black87,
-                  fontWeight: isFilled ? FontWeight.bold : FontWeight.normal,
+                  color: labelColor,
+                  fontWeight: (isFilled || hasError)
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
               if (isRequired)
@@ -752,20 +781,21 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                  color: isFilled ? AppColors.greenLight : Colors.grey),
+              borderSide: BorderSide(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                  color: isFilled ? AppColors.greenLight : Colors.grey),
+              borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppColors.greenLight),
+              borderSide: BorderSide(
+                  color: hasError ? Colors.red : AppColors.greenLight),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            suffixIcon:
+                hasError ? const Icon(Icons.error, color: Colors.red) : null,
           ),
           items: items.map((String item) {
             return DropdownMenuItem<String>(
