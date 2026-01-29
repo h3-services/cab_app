@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'trip_start_screen.dart';
 import 'dart:math' as math;
@@ -196,7 +197,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 request['distance'] ??
                 request['distance_km'];
 
-            enhanced['customer_phone'] = tripDetails['customer_phone'] ?? request['customer_phone'] ?? request['trip']?['customer_phone'] ?? '';
+            enhanced['customer_phone'] = tripDetails['customer_phone'] ??
+                request['customer_phone'] ??
+                request['trip']?['customer_phone'] ??
+                '';
 
             return enhanced;
           } catch (e) {
@@ -297,7 +301,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                 
                   const SizedBox(width: 80),
                   const Expanded(
                     child: Text(
@@ -603,25 +606,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(width: 8),
                 _buildTabButton(
                     'Approved (${_driverRequests.where((r) {
-                      final status = (r['status'] ?? '').toString().toUpperCase();
-                      final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
+                      final status =
+                          (r['status'] ?? '').toString().toUpperCase();
+                      final tripStatus =
+                          (r['trip_status'] ?? '').toString().toUpperCase();
 
                       return (status == 'APPROVED' ||
-                          status == 'ACCEPTED' ||
-                          status == 'STARTED' ||
-                          status == 'ON_TRIP' ||
-                          status == 'ON-TRIP' ||
-                          status == 'IN_PROGRESS' ||
-                          status == 'IN-PROGRESS' ||
-                          status == 'ONWAY' ||
-                          status == 'ASSIGNED' ||
-                          tripStatus == 'ASSIGNED' ||
-                          tripStatus == 'STARTED' ||
-                          tripStatus == 'ON_TRIP' ||
-                          tripStatus == 'ON-TRIP' ||
-                          tripStatus == 'IN_PROGRESS' ||
-                          tripStatus == 'IN-PROGRESS' ||
-                          tripStatus == 'ONWAY') &&
+                              status == 'ACCEPTED' ||
+                              status == 'STARTED' ||
+                              status == 'ON_TRIP' ||
+                              status == 'ON-TRIP' ||
+                              status == 'IN_PROGRESS' ||
+                              status == 'IN-PROGRESS' ||
+                              status == 'ONWAY' ||
+                              status == 'ASSIGNED' ||
+                              tripStatus == 'ASSIGNED' ||
+                              tripStatus == 'STARTED' ||
+                              tripStatus == 'ON_TRIP' ||
+                              tripStatus == 'ON-TRIP' ||
+                              tripStatus == 'IN_PROGRESS' ||
+                              tripStatus == 'IN-PROGRESS' ||
+                              tripStatus == 'ONWAY') &&
                           tripStatus != 'COMPLETED' &&
                           status != 'COMPLETED';
                     }).length})',
@@ -906,7 +911,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1294,31 +1300,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
 
       return (status == 'APPROVED' ||
-          status == 'ACCEPTED' ||
-          status == 'STARTED' ||
-          status == 'ON_TRIP' ||
-          status == 'ON-TRIP' ||
-          status == 'IN_PROGRESS' ||
-          status == 'IN-PROGRESS' ||
-          status == 'ONWAY' ||
-          status == 'ASSIGNED' ||
-          tripStatus == 'ASSIGNED' ||
-          tripStatus == 'STARTED' ||
-          tripStatus == 'ON_TRIP' ||
-          tripStatus == 'ON-TRIP' ||
-          tripStatus == 'IN_PROGRESS' ||
-          tripStatus == 'IN-PROGRESS' ||
-          tripStatus == 'ONWAY') &&
+              status == 'ACCEPTED' ||
+              status == 'STARTED' ||
+              status == 'ON_TRIP' ||
+              status == 'ON-TRIP' ||
+              status == 'IN_PROGRESS' ||
+              status == 'IN-PROGRESS' ||
+              status == 'ONWAY' ||
+              status == 'ASSIGNED' ||
+              tripStatus == 'ASSIGNED' ||
+              tripStatus == 'STARTED' ||
+              tripStatus == 'ON_TRIP' ||
+              tripStatus == 'ON-TRIP' ||
+              tripStatus == 'IN_PROGRESS' ||
+              tripStatus == 'IN-PROGRESS' ||
+              tripStatus == 'ONWAY') &&
           tripStatus != 'COMPLETED' &&
           status != 'COMPLETED';
     }).toList();
 
     // Sort by trip status: ASSIGNED first, then STARTED, COMPLETED, CANCELLED
     approvedRequests.sort((a, b) {
-      final statusA = (a['trip_status'] ?? a['status'] ?? 'ASSIGNED').toString().toUpperCase();
-      final statusB = (b['trip_status'] ?? b['status'] ?? 'ASSIGNED').toString().toUpperCase();
+      final statusA = (a['trip_status'] ?? a['status'] ?? 'ASSIGNED')
+          .toString()
+          .toUpperCase();
+      final statusB = (b['trip_status'] ?? b['status'] ?? 'ASSIGNED')
+          .toString()
+          .toUpperCase();
 
-      const statusOrder = {'ASSIGNED': 0, 'STARTED': 1, 'COMPLETED': 2, 'CANCELLED': 3};
+      const statusOrder = {
+        'ASSIGNED': 0,
+        'STARTED': 1,
+        'COMPLETED': 2,
+        'CANCELLED': 3
+      };
       final orderA = statusOrder[statusA] ?? 4;
       final orderB = statusOrder[statusB] ?? 4;
 
@@ -1378,8 +1393,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               String tripStatus = (request['trip_status'] ?? 'ASSIGNED')
                   .toString()
                   .toUpperCase();
-              final customerPhone = (request['customer_phone'] ?? request['phone'] ?? request['trip']?['customer_phone'] ?? request['trip']?['phone'] ?? '').toString().trim();
-              final displayPhone = customerPhone.isEmpty ? 'No Phone' : customerPhone;
+              final customerPhone = (request['customer_phone'] ??
+                      request['phone'] ??
+                      request['trip']?['customer_phone'] ??
+                      request['trip']?['phone'] ??
+                      '')
+                  .toString()
+                  .trim();
+              final displayPhone =
+                  customerPhone.isEmpty ? 'No Phone' : customerPhone;
 
               return Column(
                 children: [
@@ -1481,7 +1503,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Stack(
         children: [
-
           Positioned(
             right: 0,
             top: 0,
@@ -1570,11 +1591,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             _buildSquareActionButton(Icons.close, Colors.red,
                                 onTap: () {
-                                  final tripStatus = (request?['trip_status'] ?? '').toString().toUpperCase();
-                                  if (tripStatus == 'ASSIGNED') {
-                                    _showApprovedCancelDialog(context, tripId);
-                                  }
-                                }),
+                              final tripStatus = (request?['trip_status'] ?? '')
+                                  .toString()
+                                  .toUpperCase();
+                              if (tripStatus == 'ASSIGNED') {
+                                _showApprovedCancelDialog(context, tripId);
+                              }
+                            }),
                             const SizedBox(width: 8),
                             _buildSquareActionButton(
                                 Icons.navigation, Colors.blue,
@@ -1820,7 +1843,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Navigator.pop(context);
                         if (tripId != null) {
                           try {
-                            await ApiService.updateTripStatus(tripId, 'CANCELLED');
+                            await ApiService.updateTripStatus(
+                                tripId, 'CANCELLED');
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('Trip cancelled successfully')),
