@@ -12,10 +12,13 @@ import 'screens/profile_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/trip_process_screen.dart';
 import 'screens/otp_verification_screen.dart';
+import 'screens/notifications_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
+import 'services/background_location_service.dart';
+import 'widgets/location_permission_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +26,7 @@ void main() async {
   
   // Initialize background location service
   await initializeService();
+  await BackgroundLocationService.initializeBackgroundService();
   
   // Initialize Firebase
   try {
@@ -33,10 +37,21 @@ void main() async {
   }
 
   runApp(const MyApp());
-}}
+}
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    setAppContext(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +71,7 @@ class MyApp extends StatelessWidget {
           '/wallet': (context) => const WalletScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/menu': (context) => const MenuScreen(),
+          '/notifications': (context) => const NotificationsScreen(),
           '/personal_details': (context) => const PersonalDetailsScreen(),
           '/kyc_upload': (context) => const KycUploadScreen(),
           '/approval-pending': (context) => const ApprovalPendingScreen(),
@@ -77,5 +93,5 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
       ),
     );
-}
+  }
 }

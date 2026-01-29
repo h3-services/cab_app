@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
-class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final bool showMenuIcon;
   final bool showProfileIcon;
@@ -16,17 +18,42 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       this.onBack});
 
   @override
+  State<CustomAppBar> createState() => _CustomAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(80);
+}
+
+class _CustomAppBarState extends State<CustomAppBar> {
+  String? _profilePhotoPath;
+  String? _profilePhotoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfilePhoto();
+  }
+
+  Future<void> _loadProfilePhoto() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _profilePhotoPath = prefs.getString('profile_photo_path');
+      _profilePhotoUrl = prefs.getString('profile_photo_url');
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: const Color(0xFF212121),
       elevation: 0,
       centerTitle: true,
-      leading: showBackButton
+      leading: widget.showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: onBack ?? () => Navigator.pop(context),
+              onPressed: widget.onBack ?? () => Navigator.pop(context),
             )
-          : (showProfileIcon
+          : (widget.showProfileIcon
               ? Padding(
                   padding: const EdgeInsets.only(left: 16.0),
                   child: GestureDetector(
@@ -36,7 +63,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     child: CircleAvatar(
                       radius: 20,
                       backgroundColor: Colors.grey.shade300,
-                      child: const Icon(Icons.person, color: Colors.grey),
+                      backgroundImage: _profilePhotoUrl != null
+                          ? NetworkImage(_profilePhotoUrl!)
+                          : (_profilePhotoPath != null
+                              ? FileImage(File(_profilePhotoPath!)) as ImageProvider
+                              : null),
+                      child: (_profilePhotoUrl == null && _profilePhotoPath == null)
+                          ? const Icon(Icons.person, color: Colors.grey)
+                          : null,
                     ),
                   ),
                 )
@@ -50,8 +84,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           letterSpacing: 1.5,
         ),
       ),
-      actions: actions ??
-          (showMenuIcon
+      actions: widget.actions ??
+          (widget.showMenuIcon
               ? [
                   Builder(
                     builder: (context) => GestureDetector(
@@ -65,7 +99,4 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               : null),
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

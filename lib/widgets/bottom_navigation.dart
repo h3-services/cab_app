@@ -31,6 +31,7 @@ class BottomNavigation extends StatelessWidget {
             currentRoute == '/dashboard',
             () => Navigator.pushReplacementNamed(context, '/dashboard'),
           ),
+          const SizedBox(width: 10),
           _buildNavItem(
             Icons.wallet, 
             'Wallet', 
