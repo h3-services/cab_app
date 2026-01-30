@@ -12,8 +12,13 @@ class BackgroundLocationService {
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: onStart,
-        isForegroundMode: false,
+        isForegroundMode: true,
         autoStart: true,
+        notificationChannelId: 'location_tracking',
+        initialNotificationTitle: 'Chola Cabs Tracking',
+        initialNotificationContent:
+            'Running in background to find nearby trips',
+        foregroundServiceNotificationId: 888,
       ),
       iosConfiguration: IosConfiguration(
         onForeground: onStart,
@@ -25,31 +30,44 @@ class BackgroundLocationService {
   }
 
   static Future<bool> onIosBackground(ServiceInstance service) async {
-    await _updateLocation();
+    await _updateLocation(service);
     return true;
   }
 
   static void onStart(ServiceInstance service) async {
     await dotenv.load();
 
+    if (service is AndroidServiceInstance) {
+      service.on('setAsForeground').listen((event) {
+        service.setAsForegroundService();
+      });
+      service.on('setAsBackground').listen((event) {
+        service.setAsBackgroundService();
+      });
+    }
+
+    service.on('stopService').listen((event) {
+      service.stopSelf();
+    });
+
     // Update location immediately
-    await _updateLocation();
+    await _updateLocation(service);
 
     // Update every 15 minutes
     service.on('update').listen((event) async {
-      await _updateLocation();
+      await _updateLocation(service);
     });
 
     // Periodic timer for 15 minutes
     Future.delayed(const Duration(minutes: 15), () async {
       while (true) {
-        await _updateLocation();
+        await _updateLocation(service);
         await Future.delayed(const Duration(minutes: 15));
       }
     });
   }
 
-  static Future<void> _updateLocation() async {
+  static Future<void> _updateLocation(ServiceInstance service) async {
     try {
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -57,10 +75,8 @@ class BackgroundLocationService {
 
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
-      final authToken = prefs.getString('auth_token');
-
-      if (driverId != null && authToken != null) {
-        await _sendLocationToBackend(driverId, position, authToken);
+      if (driverId != null) {
+        await _sendLocationToBackend(driverId, position, service);
       }
     } catch (e) {
       print('[BG Location Error] $e');
@@ -70,9 +86,10 @@ class BackgroundLocationService {
   static Future<void> _sendLocationToBackend(
     String driverId,
     Position position,
-    String authToken,
+    ServiceInstance service,
   ) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
       final baseUrl = dotenv.env['BASE_URL'];
       if (baseUrl == null) return;
 
@@ -80,8 +97,6 @@ class BackgroundLocationService {
       final body = {
         'latitude': position.latitude,
         'longitude': position.longitude,
-        'accuracy': position.accuracy,
-        'timestamp': DateTime.now().toIso8601String(),
       };
 
       final response = await http
@@ -89,15 +104,40 @@ class BackgroundLocationService {
             Uri.parse(url),
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer $authToken',
             },
             body: jsonEncode(body),
           )
           .timeout(const Duration(seconds: 10));
 
       print('[BG Location] Status: ${response.statusCode}');
+
+      if (service is AndroidServiceInstance) {
+        final isAvailable = prefs.getBool('is_available') ?? false;
+        final statusText = isAvailable ? "Online" : "Offline";
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          final now = DateTime.now();
+          final timeStr =
+              "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+          service.setForegroundNotificationInfo(
+            title: "Chola Cabs: $statusText",
+            content: "Last location update sent at $timeStr",
+          );
+        } else {
+          service.setForegroundNotificationInfo(
+            title: "Chola Cabs: Status Issue",
+            content: "Failed to send location update",
+          );
+        }
+      }
     } catch (e) {
       print('[BG Location API Error] $e');
+      if (service is AndroidServiceInstance) {
+        service.setForegroundNotificationInfo(
+          title: "Chola Cabs: Tracking Error",
+          content: "Please check your internet connection",
+        );
+      }
     }
   }
 

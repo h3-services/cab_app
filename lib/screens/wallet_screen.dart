@@ -503,7 +503,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
               ),
             ),
-            const BottomNavigation(currentRoute: '/wallet'),
+            BottomNavigation(currentRoute: '/wallet'),
           ],
         ),
       ),
