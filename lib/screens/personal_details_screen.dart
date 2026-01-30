@@ -33,22 +33,48 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   String? phoneNumber;
   bool _isDataLoaded = false;
   List<String> _errorFields = [];
+  // Logic from KYC screen: track which fields are valid/modified
+  // false = Error/Rejection, true = Correct/Modified
+  final Map<String, bool> _fieldStatuses = {};
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)!.settings.arguments;
-    if (!_isDataLoaded && args is Map && args['isEditing'] == true) {
-      _loadSavedData();
-      if (args['errorFields'] != null) {
-        _errorFields = List<String>.from(args['errorFields']);
+
+    debugPrint("\n=== PERSONAL DETAILS: didChangeDependencies ===");
+    debugPrint("Args Type: ${args.runtimeType}");
+    debugPrint("Args Content: $args");
+
+    if (args is Map && args['isEditing'] == true) {
+      if (!_isDataLoaded) {
+        debugPrint("First time load: Calling _loadSavedData");
+        _loadSavedData();
+        _isDataLoaded = true;
       }
-      _isDataLoaded = true;
+
+      if (args['errorFields'] != null) {
+        final List<String> incomingErrors =
+            List<String>.from(args['errorFields']);
+        debugPrint("Informing Error Fields to Highlight: $incomingErrors");
+
+        // Populate field statuses
+        for (var field in incomingErrors) {
+          final normalized = field.toLowerCase().trim();
+          // Only set to false if it hasn't been modified yet
+          if (!_fieldStatuses.containsKey(normalized) ||
+              _fieldStatuses[normalized] == false) {
+            _fieldStatuses[normalized] = false;
+            debugPrint("Marked for RED highlight: '$normalized'");
+          }
+        }
+      }
     } else if (args is String) {
       phoneNumber = args;
     }
 
     _ensurePhoneNumber();
+    debugPrint("==============================================\n");
   }
 
   Future<void> _ensurePhoneNumber() async {
@@ -65,29 +91,54 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   Future<void> _loadSavedData() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    final Map<String, dynamic> data =
+        (args is Map<String, dynamic>) ? args : {};
+
     setState(() {
-      phoneNumber = prefs.getString('phoneNumber');
-      _nameController.text = prefs.getString('name') ?? '';
-      _emailController.text = prefs.getString('email') ?? '';
+      // Prioritize args, then Prefs
+      phoneNumber = data['phoneNumber'] ?? prefs.getString('phoneNumber');
+      _nameController.text = data['name'] ?? prefs.getString('name') ?? '';
+      _emailController.text = data['email'] ?? prefs.getString('email') ?? '';
       _primaryLocationController.text =
-          prefs.getString('primaryLocation') ?? '';
-      _licenseController.text = prefs.getString('licenseNumber') ?? '';
-      _aadharController.text = prefs.getString('aadhaarNumber') ?? '';
+          data['primaryLocation'] ?? prefs.getString('primaryLocation') ?? '';
+      _licenseController.text =
+          data['licenceNumber'] ?? prefs.getString('licenseNumber') ?? '';
+      _aadharController.text =
+          data['aadharNumber'] ?? prefs.getString('aadhaarNumber') ?? '';
 
-      _vehicleMakeController.text = prefs.getString('vehicleBrand') ?? '';
-      _vehicleModelController.text = prefs.getString('vehicleModel') ?? '';
-      _vehicleNumberController.text = prefs.getString('vehicleNumber') ?? '';
-      _vehicleColorController.text = prefs.getString('vehicleColor') ?? '';
+      _vehicleMakeController.text =
+          data['vehicleBrand'] ?? prefs.getString('vehicleBrand') ?? '';
+      _vehicleModelController.text =
+          data['vehicleModel'] ?? prefs.getString('vehicleModel') ?? '';
+      _vehicleNumberController.text =
+          data['vehicleNumber'] ?? prefs.getString('vehicleNumber') ?? '';
+      _vehicleColorController.text =
+          data['vehicleColor'] ?? prefs.getString('vehicleColor') ?? '';
 
-      _selectedVehicleType = prefs.getString('vehicleType');
-      _selectedSeatingCapacity = prefs.getString('seatingCapacity');
+      String? rawVehicleType =
+          data['vehicleType'] ?? prefs.getString('vehicleType');
+      if (['SUV', 'Innova', 'Sedan'].contains(rawVehicleType)) {
+        _selectedVehicleType = rawVehicleType;
+      } else {
+        _selectedVehicleType = null;
+      }
 
-      _drivingLicenseExpiryController.text =
-          _formatDateForDisplay(prefs.getString('licenceExpiry'));
-      _rcExpiryController.text =
-          _formatDateForDisplay(prefs.getString('rcExpiryDate'));
-      _fcExpiryController.text =
-          _formatDateForDisplay(prefs.getString('fcExpiryDate'));
+      String? rawSeating =
+          data['seatingCapacity'] ?? prefs.getString('seatingCapacity');
+      if (['2', '4', '6', '8'].contains(rawSeating)) {
+        _selectedSeatingCapacity = rawSeating;
+      } else {
+        _selectedSeatingCapacity = '4'; // Default safe fallback
+      }
+
+      _drivingLicenseExpiryController.text = _formatDateForDisplay(
+          data['licenceExpiry'] ?? prefs.getString('licenceExpiry'));
+      _rcExpiryController.text = _formatDateForDisplay(
+          data['rcExpiryDate'] ?? prefs.getString('rcExpiryDate'));
+      _fcExpiryController.text = _formatDateForDisplay(
+          data['fcExpiryDate'] ?? prefs.getString('fcExpiryDate'));
     });
   }
 
@@ -309,6 +360,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                 // 2. PREPARE IDs
                                 final prefs =
                                     await SharedPreferences.getInstance();
+                                if (!context.mounted) return;
                                 String? driverId = prefs.getString('driverId');
                                 String? vehicleId =
                                     prefs.getString('vehicleId');
@@ -438,6 +490,36 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                       : null,
                                 };
 
+                                // Save ALL user data to SharedPreferences for persistence
+                                await prefs.setString(
+                                    'name', _nameController.text);
+                                await prefs.setString(
+                                    'email', _emailController.text);
+                                await prefs.setString('primaryLocation',
+                                    _primaryLocationController.text);
+                                await prefs.setString(
+                                    'licenseNumber', _licenseController.text);
+                                await prefs.setString(
+                                    'aadhaarNumber', _aadharController.text);
+                                await prefs.setString(
+                                    'licenceExpiry', licenseDate);
+                                await prefs.setString(
+                                    'vehicleType', _selectedVehicleType ?? '');
+                                await prefs.setString('vehicleBrand',
+                                    _vehicleMakeController.text);
+                                await prefs.setString('vehicleModel',
+                                    _vehicleModelController.text);
+                                await prefs.setString('vehicleNumber',
+                                    _vehicleNumberController.text);
+                                await prefs.setString('vehicleColor',
+                                    _vehicleColorController.text);
+                                await prefs.setString('seatingCapacity',
+                                    _selectedSeatingCapacity ?? '4');
+                                await prefs.setString('rcExpiryDate', rcDate);
+                                await prefs.setString('fcExpiryDate', fcDate);
+                                debugPrint(
+                                    "=== Saved all user data to SharedPreferences ===");
+
                                 // Hide loading before navigating
                                 if (context.mounted) {
                                   Navigator.pop(context);
@@ -535,7 +617,22 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   Widget _buildTextField(String label, TextEditingController controller) {
     bool isRequired = label.contains('*');
     String cleanLabel = label.replaceAll('*', '').trim();
-    bool hasError = _errorFields.contains(cleanLabel);
+
+    // Logic from KYC: Check if this specific field has an active error
+    final normalizedLabel = cleanLabel.toLowerCase().trim();
+    bool hasError = _fieldStatuses[normalizedLabel] == false;
+
+    // Fallback for slight naming inconsistencies
+    if (!hasError) {
+      if (normalizedLabel == 'license number')
+        hasError = _fieldStatuses['licence number'] == false;
+      if (normalizedLabel == 'licence number')
+        hasError = _fieldStatuses['license number'] == false;
+    }
+
+    if (hasError) {
+      debugPrint("BUILDING: '$normalizedLabel' is RED");
+    }
 
     return ValueListenableBuilder(
       valueListenable: controller,
@@ -567,9 +664,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                   if (isRequired)
                     TextSpan(
                       text: ' *',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
-                        color: hasError ? Colors.red : Colors.red,
+                        color: Colors.red,
                       ),
                     ),
                 ],
@@ -578,6 +675,13 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
             const SizedBox(height: 8),
             TextFormField(
               controller: controller,
+              onChanged: (val) {
+                if (_fieldStatuses[cleanLabel.toLowerCase()] == false) {
+                  setState(() {
+                    _fieldStatuses[cleanLabel.toLowerCase()] = true;
+                  });
+                }
+              },
               validator: isRequired
                   ? (value) {
                       if (value == null || value.isEmpty) {
@@ -634,7 +738,20 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       [bool isRequired = false]) {
     bool hasAsterisk = label.contains('*');
     String cleanLabel = label.replaceAll('*', '').trim();
-    bool hasError = _errorFields.contains(cleanLabel);
+
+    // Logic from KYC screen
+    final normalizedLabel = cleanLabel.toLowerCase().trim();
+    bool hasError = _fieldStatuses[normalizedLabel] == false;
+
+    // Fallback for common date label variations
+    if (!hasError) {
+      if (normalizedLabel.contains('license'))
+        hasError = _fieldStatuses['driving license expiry date'] == false;
+      if (normalizedLabel == 'rc expiry date')
+        hasError = _fieldStatuses['rc book'] == false;
+      if (normalizedLabel == 'fc expiry date')
+        hasError = _fieldStatuses['fc certificate'] == false;
+    }
 
     return ValueListenableBuilder(
       valueListenable: controller,
@@ -717,6 +834,11 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                         color: isFilled ? AppColors.greenLight : Colors.grey),
               ),
               onTap: () async {
+                if (_fieldStatuses[cleanLabel.toLowerCase()] == false) {
+                  setState(() {
+                    _fieldStatuses[cleanLabel.toLowerCase()] = true;
+                  });
+                }
                 final date = await showDatePicker(
                   context: context,
                   initialDate: DateTime.now(),
@@ -740,7 +862,17 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     bool isRequired = label.contains('*');
     String cleanLabel = label.replaceAll('*', '').trim();
     bool isFilled = value != null && value.isNotEmpty;
-    bool hasError = _errorFields.contains(cleanLabel);
+
+    // Logic from KYC Screen
+    final normalizedLabel = cleanLabel.toLowerCase().trim();
+    bool hasError = _fieldStatuses[normalizedLabel] == false;
+
+    if (!hasError) {
+      if (normalizedLabel.contains('vehicle type'))
+        hasError = _fieldStatuses['vehicle type'] == false;
+      if (normalizedLabel.contains('seating'))
+        hasError = _fieldStatuses['seating capacity'] == false;
+    }
 
     Color borderColor =
         hasError ? Colors.red : (isFilled ? AppColors.greenLight : Colors.grey);
@@ -803,7 +935,14 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
               child: Text(item),
             );
           }).toList(),
-          onChanged: onChanged,
+          onChanged: (val) {
+            if (_fieldStatuses[cleanLabel.toLowerCase()] == false) {
+              setState(() {
+                _fieldStatuses[cleanLabel.toLowerCase()] = true;
+              });
+            }
+            onChanged(val);
+          },
         ),
       ],
     );

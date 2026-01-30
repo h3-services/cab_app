@@ -174,6 +174,29 @@ class ApiService {
     }
   }
 
+  /// Get vehicle details by vehicle ID
+  static Future<Map<String, dynamic>?> getVehicleDetails(
+      String vehicleId) async {
+    final url = Uri.parse('$baseUrl/vehicles/$vehicleId');
+    try {
+      debugPrint('GET Request: $url');
+      final response = await http.get(url);
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        debugPrint('Failed to get vehicle details: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      return null;
+    }
+  }
+
   static Future<void> updateDriverAvailability(
       String driverId, bool isAvailable) async {
     final url = Uri.parse(
@@ -629,7 +652,8 @@ class ApiService {
   }
 
   static Future<void> updateOdometerStart(String tripId, num odoStart) async {
-    final url = Uri.parse('$baseUrl/trips/$tripId/odometer/start?odo_start=$odoStart');
+    final url =
+        Uri.parse('$baseUrl/trips/$tripId/odometer/start?odo_start=$odoStart');
     debugPrint('PATCH Request (Odometer Start): $url');
 
     try {

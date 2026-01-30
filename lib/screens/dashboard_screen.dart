@@ -475,7 +475,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!_tripStateService.isReadyForTrip) {
       return Scaffold(
         backgroundColor: const Color(0xFFB0B0B0),
-        appBar: const CustomAppBar(),
+        appBar: CustomAppBar(
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.white),
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+                if (mounted) {
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, '/login', (route) => false);
+                }
+              },
+            ),
+          ],
+        ),
         endDrawer: const AppDrawer(),
         body: Column(
           children: [
@@ -668,7 +682,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
-      appBar: const CustomAppBar(),
+      appBar: CustomAppBar(
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (mounted) {
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/login', (route) => false);
+              }
+            },
+          ),
+        ],
+      ),
       endDrawer: const AppDrawer(),
       body: Column(
         children: [
