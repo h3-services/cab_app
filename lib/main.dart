@@ -19,6 +19,8 @@ import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'widgets/location_permission_handler.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -51,15 +53,10 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    setAppContext(context);
-  }
-
-  @override
   Widget build(BuildContext context) {
     return LocationPermissionHandler(
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'Chola Cabs',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryBlue),
