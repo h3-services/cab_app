@@ -15,7 +15,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
   final List<TextEditingController> _controllers =
       List.generate(4, (index) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
-  bool _isLoading = false;
+  final bool _isLoading = false;
   String? phoneNumber;
 
   @override

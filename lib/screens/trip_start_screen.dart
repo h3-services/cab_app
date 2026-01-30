@@ -88,7 +88,10 @@ class _TripStartScreenState extends State<TripStartScreen> {
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       'Back to Trip page',
-                      style: TextStyle(color: Colors.white, fontSize: 16,fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),
@@ -127,7 +130,8 @@ class _TripStartScreenState extends State<TripStartScreen> {
                                   await ApiService.updateRequestStatus(
                                       requestId.toString(), "STARTED");
                                 } catch (e) {
-                                  debugPrint("Syncing request status failed: $e");
+                                  debugPrint(
+                                      "Syncing request status failed: $e");
                                 }
                               }
                             } else {
@@ -140,7 +144,8 @@ class _TripStartScreenState extends State<TripStartScreen> {
                               Navigator.pop(context, tripId?.toString());
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Trip started successfully!')),
+                                    content:
+                                        Text('Trip started successfully!')),
                               );
                             }
                           } catch (e) {
@@ -1042,7 +1047,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (dialogContext) => Dialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1106,7 +1111,10 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                       child: TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
                         child: const Text('Cancel',
-                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ),
@@ -1130,7 +1138,8 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                               await ApiService.completeTripStatus(
                                   tripId.toString());
                             } catch (e) {
-                              debugPrint('Failed to mark trip as completed: $e');
+                              debugPrint(
+                                  'Failed to mark trip as completed: $e');
                             }
                           }
                           Navigator.popUntil(

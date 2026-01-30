@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../widgets/widgets.dart';
 import '../widgets/bottom_navigation.dart';
-import '../widgets/common/custom_app_bar.dart';
+
 import '../widgets/dialogs/payment_success_dialog.dart';
 import '../services/razorpay_service.dart';
 import '../services/payment_service.dart';
@@ -172,7 +172,6 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-
         // Sort by date descending
         transactionHistory.sort((a, b) {
           final dateA = a['raw_date'].toString();
@@ -251,8 +250,9 @@ class _WalletScreenState extends State<WalletScreen> {
 
       if (mounted) {
         final now = DateTime.now();
-        final paymentTime = '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-        
+        final paymentTime =
+            '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -298,6 +298,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
+// ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushNamedAndRemoveUntil(
@@ -333,10 +334,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFF66BB6A),
-                              Color(0xFF388E3C)
-                            ],
+                            colors: [Color(0xFF66BB6A), Color(0xFF388E3C)],
                           ),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
@@ -516,7 +514,7 @@ class _WalletScreenState extends State<WalletScreen> {
       String title, String date, String tripId, String amount, String type) {
     bool isEarning = type == 'earning';
     String subtitle = tripId != 'N/A' ? 'Trip ID: $tripId' : '';
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -560,14 +558,16 @@ class _WalletScreenState extends State<WalletScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (subtitle.isNotEmpty) ...[const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
-                ),]
+                ]
               ],
             ),
           ),
@@ -666,7 +666,7 @@ class _WalletScreenState extends State<WalletScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

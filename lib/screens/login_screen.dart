@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
-import '../services/device_service.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,8 +18,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final padding = MediaQuery.of(context).padding;
     final viewInsets = MediaQuery.of(context).viewInsets;
-    
-    final availableHeight = screenHeight - padding.top - padding.bottom - viewInsets.bottom;
+
+    final availableHeight =
+        screenHeight - padding.top - padding.bottom - viewInsets.bottom;
     final logoSize = screenWidth * 0.5;
     final horizontalPadding = screenWidth * 0.08;
 
@@ -133,11 +132,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                           keyboardType: TextInputType.phone,
                                           maxLength: 10,
                                           inputFormatters: [
-                                            FilteringTextInputFormatter.digitsOnly
+                                            FilteringTextInputFormatter
+                                                .digitsOnly
                                           ],
                                           decoration: const InputDecoration(
                                             border: InputBorder.none,
-                                            contentPadding: EdgeInsets.symmetric(
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
                                               horizontal: 12,
                                               vertical: 14,
                                             ),
@@ -190,43 +191,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: ElevatedButton(
                               onPressed: () async {
                                 if (_phoneController.text.length == 10) {
-                                  try {
-                                    final combinedDeviceId =
-                                        await DeviceService.getDeviceId();
-                                    String? fcmToken;
-                                    try {
-                                      fcmToken = await FirebaseMessaging
-                                          .instance
-                                          .getToken();
-                                    } catch (e) {
-                                      debugPrint("FCM Token issue: $e");
-                                    }
+                                  // Navigate to OTP screen
+                                  if (!mounted) return;
 
-                                    debugPrint(
-                                        "\n##########################################");
-                                    debugPrint("LOGIN SCREEN - IDENTIFIERS:");
-                                    debugPrint(
-                                        "DEVICE ID (Hardware): $combinedDeviceId");
-                                    debugPrint(
-                                        "FCM TOKEN: ${fcmToken ?? 'NULL'}");
-                                    debugPrint(
-                                        "##########################################\n");
-
-                                    if (mounted) {
-                                      Navigator.pushNamed(context, '/otp',
-                                          arguments: _phoneController.text);
-                                    }
-                                  } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text('Error: $e'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  }
+                                  // ignore: use_build_context_synchronously
+                                  Navigator.pushNamed(context, '/otp',
+                                      arguments: _phoneController.text);
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(

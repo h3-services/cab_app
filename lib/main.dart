@@ -30,9 +30,8 @@ void main() async {
     debugPrint("Warning: .env file not found: $e");
   }
 
-  // Initialize services
-  initializeService()
-      .catchError((e) => debugPrint("Background service error: $e"));
+  // Background service should be initialized after login/permissions
+  // initializeService() moved to DashboardScreen
 
   try {
     await Firebase.initializeApp();

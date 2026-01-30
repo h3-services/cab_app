@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/image_picker_service.dart';
 import '../constants/app_colors.dart';
-import '../constants/error_codes.dart';
 import '../services/api_service.dart';
 import '../widgets/widgets.dart';
 import 'dart:io';
@@ -35,7 +34,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   bool _isSubmitting = false;
   bool _isTestMode = false;
   List<String> _errorFields = [];
-  Map<String, String> _errorMessages = {};
+  final Map<String, String> _errorMessages = {};
 
   bool get _allDocumentsUploaded =>
       _uploadedDocuments.values.every((uploaded) => uploaded);
@@ -438,40 +437,55 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       String vehicleId = userData?['vehicleId']?.toString() ?? '';
 
       if (_isEditing) {
-        if (driverId.isEmpty || vehicleId.isEmpty)
+        if (driverId.isEmpty || vehicleId.isEmpty) {
           throw Exception("Cannot update: Missing IDs");
+        }
 
-        await ApiService.updateDriver(
-          driverId: driverId,
-          name: userData?['name'] ?? '',
-          email: userData?['email'] ?? '',
-          primaryLocation: userData?['primaryLocation'] ?? '',
-          licenceNumber: userData?['licenceNumber'] ?? '',
-          aadharNumber: userData?['aadharNumber'] ?? '',
-          licenceExpiry: userData?['licenceExpiry'] ?? '',
-        );
+        // Only update driver text details if we have valid data to prevent wiping
+        if ((userData?['name']?.toString().isNotEmpty ?? false) &&
+            (userData?['email']?.toString().isNotEmpty ?? false)) {
+          await ApiService.updateDriver(
+            driverId: driverId,
+            name: userData?['name'] ?? '',
+            email: userData?['email'] ?? '',
+            primaryLocation: userData?['primaryLocation'] ?? '',
+            licenceNumber: userData?['licenceNumber'] ?? '',
+            aadharNumber: userData?['aadharNumber'] ?? '',
+            licenceExpiry: userData?['licenceExpiry'] ?? '',
+          );
+        }
 
-        await ApiService.updateVehicle(
-          vehicleId: vehicleId,
-          vehicleType: userData?['vehicleType'] ?? '',
-          vehicleBrand: userData?['vehicleBrand'] ?? '',
-          vehicleModel: userData?['vehicleModel'] ?? '',
-          vehicleColor: userData?['vehicleColor'] ?? '',
-          seatingCapacity:
-              int.parse((userData?['seatingCapacity'] ?? 4).toString()),
-          rcExpiryDate: userData?['rcExpiryDate'] ?? '',
-          fcExpiryDate: userData?['fcExpiryDate'] ?? '',
-        );
+        // Only update vehicle details if we have valid data
+        if ((userData?['vehicleType']?.toString().isNotEmpty ?? false)) {
+          await ApiService.updateVehicle(
+            vehicleId: vehicleId,
+            vehicleType: userData?['vehicleType'] ?? '',
+            vehicleBrand: userData?['vehicleBrand'] ?? '',
+            vehicleModel: userData?['vehicleModel'] ?? '',
+            vehicleColor: userData?['vehicleColor'] ?? '',
+            seatingCapacity:
+                int.tryParse((userData?['seatingCapacity'] ?? 4).toString()) ??
+                    4,
+            rcExpiryDate: userData?['rcExpiryDate'] ?? '',
+            fcExpiryDate: userData?['fcExpiryDate'] ?? '',
+          );
+        } else {
+          debugPrint("Skipping vehicle update: No vehicle data provided");
+        }
 
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('name', userData?['name'] ?? '');
-        await prefs.setString('email', userData?['email'] ?? '');
-        await prefs.setString(
-            'primaryLocation', userData?['primaryLocation'] ?? '');
-        await prefs.setString(
-            'licenceExpiry', userData?['licenceExpiry'] ?? '');
-        await prefs.setString('rcExpiryDate', userData?['rcExpiryDate'] ?? '');
-        await prefs.setString('fcExpiryDate', userData?['fcExpiryDate'] ?? '');
+        if ((userData?['name']?.toString().isNotEmpty ?? false)) {
+          await prefs.setString('name', userData?['name'] ?? '');
+          await prefs.setString('email', userData?['email'] ?? '');
+          await prefs.setString(
+              'primaryLocation', userData?['primaryLocation'] ?? '');
+          await prefs.setString(
+              'licenceExpiry', userData?['licenceExpiry'] ?? '');
+          await prefs.setString(
+              'rcExpiryDate', userData?['rcExpiryDate'] ?? '');
+          await prefs.setString(
+              'fcExpiryDate', userData?['fcExpiryDate'] ?? '');
+        }
       } else if (driverId.isEmpty) {
         debugPrint("ERROR: Driver ID missing in KYC screen flow.");
         throw Exception(
@@ -488,77 +502,80 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
         switch (title) {
           case 'Driving License':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadLicence(driverId, file);
-            else
+            } else {
               await ApiService.uploadLicence(driverId, file);
+            }
             break;
           case 'Aadhaar Card':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadAadhar(driverId, file);
-            else
+            } else {
               await ApiService.uploadAadhar(driverId, file);
+            }
             break;
           case 'Profile Picture':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadDriverPhoto(driverId, file);
-            else
+            } else {
               await ApiService.uploadDriverPhoto(driverId, file);
+            }
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('profile_photo_path', file.path);
             break;
           case 'RC Book':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadVehicleRC(vehicleId, file);
-            else {
+            } else {
               if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
               await ApiService.uploadVehicleRC(vehicleId, file);
             }
             break;
           case 'FC Certificate':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadVehicleFC(vehicleId, file);
-            else {
+            } else {
               if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
               await ApiService.uploadVehicleFC(vehicleId, file);
             }
             break;
           case 'Front View':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadVehiclePhoto(vehicleId, 'front', file);
-            else {
+            } else {
               if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
               await ApiService.uploadVehiclePhoto(vehicleId, 'front', file);
             }
             break;
           case 'Back View':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadVehiclePhoto(vehicleId, 'back', file);
-            else {
+            } else {
               if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
               await ApiService.uploadVehiclePhoto(vehicleId, 'back', file);
             }
             break;
           case 'Left Side View':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadVehiclePhoto(vehicleId, 'left', file);
-            else {
+            } else {
               if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
               await ApiService.uploadVehiclePhoto(vehicleId, 'left', file);
             }
             break;
           case 'Right Side View':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadVehiclePhoto(vehicleId, 'right', file);
-            else {
+            } else {
               if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
               await ApiService.uploadVehiclePhoto(vehicleId, 'right', file);
             }
             break;
           case 'Inside View':
-            if (_isEditing)
+            if (_isEditing) {
               await ApiService.reuploadVehiclePhoto(vehicleId, 'inside', file);
-            else {
+            } else {
               if (vehicleId.isEmpty) throw Exception('Vehicle ID missing');
               await ApiService.uploadVehiclePhoto(vehicleId, 'inside', file);
             }

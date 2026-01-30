@@ -1,7 +1,7 @@
+import '../services/background_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:async';
 import 'dart:math' as math;
 import 'trip_start_screen.dart';
 import '../widgets/common/custom_app_bar.dart';
@@ -38,6 +38,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDriverId();
     LocationTrackingService.startLocationTracking();
+    // Initialize background service now that we are logged in
+    initializeService()
+        .catchError((e) => debugPrint("Background init error: $e"));
   }
 
   void _startAutoRefresh() {
@@ -271,10 +274,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _isLoadingTrips = false);
       }
     }
-  }
-
-  Future<void> _cancelRequest(String requestId) async {
-    _showCancelTripDialog(requestId);
   }
 
   void _showCancelTripDialog(String requestId) {
@@ -557,7 +556,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               content: Text(value
                                   ? 'You are now Online'
                                   : 'You are now Offline'),
-                              backgroundColor: value ? Colors.green : Colors.grey,
+                              backgroundColor:
+                                  value ? Colors.green : Colors.grey,
                               duration: const Duration(seconds: 1),
                             ),
                           );
@@ -595,24 +595,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 8),
                   _buildTabButton(
                       'Approved (${_driverRequests.where((r) {
-                        final status = (r['status'] ?? '').toString().toUpperCase();
-                        final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
+                        final status =
+                            (r['status'] ?? '').toString().toUpperCase();
+                        final tripStatus =
+                            (r['trip_status'] ?? '').toString().toUpperCase();
                         return (status == 'APPROVED' ||
-                            status == 'ACCEPTED' ||
-                            status == 'STARTED' ||
-                            status == 'ON_TRIP' ||
-                            status == 'ON-TRIP' ||
-                            status == 'IN_PROGRESS' ||
-                            status == 'IN-PROGRESS' ||
-                            status == 'ONWAY' ||
-                            status == 'ASSIGNED' ||
-                            tripStatus == 'ASSIGNED' ||
-                            tripStatus == 'STARTED' ||
-                            tripStatus == 'ON_TRIP' ||
-                            tripStatus == 'ON-TRIP' ||
-                            tripStatus == 'IN_PROGRESS' ||
-                            tripStatus == 'IN-PROGRESS' ||
-                            tripStatus == 'ONWAY') &&
+                                status == 'ACCEPTED' ||
+                                status == 'STARTED' ||
+                                status == 'ON_TRIP' ||
+                                status == 'ON-TRIP' ||
+                                status == 'IN_PROGRESS' ||
+                                status == 'IN-PROGRESS' ||
+                                status == 'ONWAY' ||
+                                status == 'ASSIGNED' ||
+                                tripStatus == 'ASSIGNED' ||
+                                tripStatus == 'STARTED' ||
+                                tripStatus == 'ON_TRIP' ||
+                                tripStatus == 'ON-TRIP' ||
+                                tripStatus == 'IN_PROGRESS' ||
+                                tripStatus == 'IN-PROGRESS' ||
+                                tripStatus == 'ONWAY') &&
                             tripStatus != 'COMPLETED' &&
                             status != 'COMPLETED';
                       }).length})',
@@ -976,181 +978,183 @@ class _DashboardScreenState extends State<DashboardScreen> {
         builder: (context) => TripDetailsDialog(trip: trip),
       ),
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  trip['pickup_address'] ?? 'Unknown Pickup',
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    trip['pickup_address'] ?? 'Unknown Pickup',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+                Text(
+                  trip['trip_type'] ?? 'ONE WAY',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  trip['drop_address'] ?? 'Unknown Drop',
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
                   ),
                 ),
-              ),
-              Text(
-                trip['trip_type'] ?? 'ONE WAY',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                trip['drop_address'] ?? 'Unknown Drop',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pickup Date : ${_formatTripTime(trip['planned_start_at'])}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black54,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'customer : ${trip['customer_name'] ?? 'Unknown'}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black54,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.pets, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${trip['pet_count'] ?? 0} Pets',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Icon(Icons.luggage, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${trip['luggage_count'] ?? 0} Luggage',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () {
-                  if (trip['trip_id'] != null) {
-                    _requestTrip(trip['trip_id']);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Error: Trip ID missing")),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: EdgeInsets.zero,
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.greenPrimary, AppColors.greenDark],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check, color: Colors.white, size: 16),
-                      SizedBox(width: 4),
                       Text(
-                        'Request Ride',
-                        style: TextStyle(color: Colors.white),
+                        'Pickup Date : ${_formatTripTime(trip['planned_start_at'])}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'customer : ${trip['customer_name'] ?? 'Unknown'}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.pets,
+                              size: 16, color: Colors.grey.shade600),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${trip['pet_count'] ?? 0} Pets',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Icon(Icons.luggage,
+                              size: 16, color: Colors.grey.shade600),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${trip['luggage_count'] ?? 0} Luggage',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    if (trip['trip_id'] != null) {
+                      _requestTrip(trip['trip_id']);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Error: Trip ID missing")),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.greenPrimary, AppColors.greenDark],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          'Request Ride',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1240,291 +1244,296 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
     return GestureDetector(
-      onTap: () => showDialog(
-        context: context,
-        builder: (context) => TripDetailsDialog(trip: request),
-      ),
-      child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Request ID: ...${(request['request_id'] ?? '').toString().substring(0, math.min((request['request_id'] ?? '').toString().length, 6))}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+        onTap: () => showDialog(
+              context: context,
+              builder: (context) => TripDetailsDialog(trip: request),
+            ),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          child: Column(
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  request['pickup_address'] ?? 'Unknown Pickup',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  request['drop_address'] ?? 'Unknown Drop',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Customer: ${request['customer_name'] ?? 'Unknown'}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black54,
-                    ),
+                    'Request ID: ...${(request['request_id'] ?? '').toString().substring(0, math.min((request['request_id'] ?? '').toString().length, 6))}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-                  const SizedBox(height: 4),
-                  if (request['created_at'] != null)
-                    Text(
-                      'Requested: ${_formatTripTime(request['created_at'])}',
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
                 ],
               ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [const Color(0xFFFC4E4E), const Color(0xFF882A2A)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    if (request['request_id'] != null) {
-                      _showCancelTripDialog(request['request_id'].toString());
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      request['pickup_address'] ?? 'Unknown Pickup',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      request['drop_address'] ?? 'Unknown Drop',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Customer: ${request['customer_name'] ?? 'Unknown'}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (request['created_at'] != null)
+                        Text(
+                          'Requested: ${_formatTripTime(request['created_at'])}',
+                          style:
+                              const TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                    ],
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFFFC4E4E),
+                          const Color(0xFF882A2A)
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    shadowColor: Colors.transparent,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (request['request_id'] != null) {
+                          _showCancelTripDialog(
+                              request['request_id'].toString());
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        shadowColor: Colors.transparent,
+                      ),
+                      icon: const Icon(Icons.close, size: 16),
+                      label: const Text('Cancel',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
                   ),
-                  icon: const Icon(Icons.close, size: 16),
-                  label: const Text('Cancel',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-      )
-      );
+        ));
   }
 
   Widget _buildAssignedToOtherCard(Map<String, dynamic> request) {
     return GestureDetector(
-      onTap: () => showDialog(
-        context: context,
-        builder: (context) => TripDetailsDialog(trip: request),
-      ),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-        color: const Color(0xFFE0E0E0),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.2),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
+        onTap: () => showDialog(
+              context: context,
+              builder: (context) => TripDetailsDialog(trip: request),
             ),
-            child: const Text(
-              'The admin has assigned another driver',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.black87,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0E0E0),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
-            ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            children: [
+              // Header
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'The admin has assigned another driver',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                   children: [
-                    Column(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.location_on,
-                            color: Colors.green, size: 20),
-                        Container(
-                          width: 2,
-                          height: 20,
-                          color: Colors.grey,
-                          margin: const EdgeInsets.symmetric(vertical: 2),
+                        Column(
+                          children: [
+                            const Icon(Icons.location_on,
+                                color: Colors.green, size: 20),
+                            Container(
+                              width: 2,
+                              height: 20,
+                              color: Colors.grey,
+                              margin: const EdgeInsets.symmetric(vertical: 2),
+                            ),
+                            const Icon(Icons.location_on,
+                                color: Colors.red, size: 20),
+                          ],
                         ),
-                        const Icon(Icons.location_on,
-                            color: Colors.red, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                request['pickup_address'] ?? 'Unknown Pickup',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                request['drop_address'] ?? 'Unknown Drop',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          request['trip_type'] ?? 'One-way',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            request['pickup_address'] ?? 'Unknown Pickup',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Pickup at ${_formatTripTime((request['planned_start_at'] ?? request['created_at'])?.toString())}',
+                                style: const TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'customer : ${request['customer_name'] ?? 'Unknown'}',
+                                style: const TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 20),
-                          Text(
-                            request['drop_address'] ?? 'Unknown Drop',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      request['trip_type'] ?? 'One-way',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Pickup at ${_formatTripTime((request['planned_start_at'] ?? request['created_at'])?.toString())}',
-                            style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'customer : ${request['customer_name'] ?? 'Unknown'}',
-                            style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),)
-    );
+        ));
   }
 
   Widget _buildApprovedContent() {
@@ -1824,11 +1833,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           children: [
                             _buildSquareActionButton(Icons.close, Colors.red,
                                 onTap: () {
-                                  final tripStatus = (request?['trip_status'] ?? '').toString().toUpperCase();
-                                  if (tripStatus == 'ASSIGNED' && tripId != null) {
-                                    _showApprovedCancelDialog(context, tripId);
-                                  }
-                                }),
+                              final tripStatus = (request?['trip_status'] ?? '')
+                                  .toString()
+                                  .toUpperCase();
+                              if (tripStatus == 'ASSIGNED' && tripId != null) {
+                                _showApprovedCancelDialog(context, tripId);
+                              }
+                            }),
                             const SizedBox(width: 8),
                             _buildSquareActionButton(
                                 Icons.navigation, Colors.blue,

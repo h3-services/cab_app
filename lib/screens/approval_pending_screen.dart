@@ -17,6 +17,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   bool _isRejected = false;
   List<String> _errorMessages = [];
   List<String> _errorFields = [];
+  Map<String, dynamic>? _driverProfileData;
   Timer? _autoReloadTimer;
 
   Future<void> _checkStatus() async {
@@ -39,6 +40,8 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
 
         debugPrint(
             "Status Check: isApproved=$isApproved, kycStatus=$kycVerified");
+
+        _driverProfileData = driverData;
 
         if (kycVerified == 'rejected') {
           List<String> errorFields = [];
@@ -158,6 +161,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
         if (e.toString().contains('404')) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.clear();
+          if (!mounted) return;
           Navigator.pushNamedAndRemoveUntil(
               context, '/login', (route) => false);
           return;
@@ -178,25 +182,49 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   Future<void> _handleFixErrors() async {
     final prefs = await SharedPreferences.getInstance();
 
+    // Use fresh API data if available, otherwise fall back to Prefs
+    final driver = _driverProfileData ?? {};
+    final vehicle = driver['vehicle'] ?? {};
+
+    // Helper to get value from either source
+    String val(String key, String prefKey) {
+      return (driver[key] ?? driver[prefKey] ?? prefs.getString(prefKey))
+              ?.toString() ??
+          '';
+    }
+
+    // Vehicle helper
+    String vVal(String key, String prefKey) {
+      if (vehicle is Map) {
+        return (vehicle[key] ?? vehicle[prefKey] ?? prefs.getString(prefKey))
+                ?.toString() ??
+            '';
+      }
+      return (prefs.getString(prefKey))?.toString() ?? '';
+    }
+
     final Map<String, dynamic> args = {
       'isEditing': true,
-      'driverId': prefs.getString('driverId'),
-      'vehicleId': prefs.getString('vehicleId'),
-      'name': prefs.getString('name'),
-      'email': prefs.getString('email'),
-      'phoneNumber': prefs.getString('phoneNumber'),
-      'primaryLocation': prefs.getString('primaryLocation'),
-      'licenceNumber': prefs.getString('licenseNumber'),
-      'aadharNumber': prefs.getString('aadhaarNumber'),
-      'licenceExpiry': prefs.getString('licenceExpiry'),
-      'vehicleType': prefs.getString('vehicleType'),
-      'vehicleBrand': prefs.getString('vehicleBrand'),
-      'vehicleModel': prefs.getString('vehicleModel'),
-      'vehicleNumber': prefs.getString('vehicleNumber'),
-      'vehicleColor': prefs.getString('vehicleColor'),
-      'seatingCapacity': prefs.getString('seatingCapacity'),
-      'rcExpiryDate': prefs.getString('rcExpiryDate'),
-      'fcExpiryDate': prefs.getString('fcExpiryDate'),
+      'driverId': val('driver_id', 'driverId'),
+      'vehicleId': vVal('vehicle_id', 'vehicleId'),
+      'name': val('name', 'name'),
+      'email': val('email', 'email'),
+      'phoneNumber': val('phone_number', 'phoneNumber'),
+      'primaryLocation': val('primary_location', 'primaryLocation'),
+      'licenceNumber': val('licence_number', 'licenseNumber'),
+      'aadharNumber': val('aadhaar_number', 'aadhaarNumber'),
+      'licenceExpiry': val('licence_expiry_date', 'licenceExpiry'),
+
+      // Vehicle details
+      'vehicleType': vVal('vehicle_type', 'vehicleType'),
+      'vehicleBrand': vVal('brand', 'vehicleBrand'),
+      'vehicleModel': vVal('model', 'vehicleModel'),
+      'vehicleNumber': vVal('vehicle_number', 'vehicleNumber'),
+      'vehicleColor': vVal('color', 'vehicleColor'),
+      'seatingCapacity': vVal('seating_capacity', 'seatingCapacity'),
+      'rcExpiryDate': vVal('rc_expiry_date', 'rcExpiryDate'),
+      'fcExpiryDate': vVal('fc_expiry_date', 'fcExpiryDate'),
+
       'errorFields': _errorFields,
     };
 
@@ -296,7 +324,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                         ),
                       ],
                       const SizedBox(height: 20),
-                      if (_isRejected) ...{
+                      if (_isRejected) ...[
                         const Text(
                           'Application Rejected',
                           style: TextStyle(
@@ -314,10 +342,10 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
+                            color: Colors.red.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
-                            border:
-                                Border.all(color: Colors.red.withOpacity(0.3)),
+                            border: Border.all(
+                                color: Colors.red.withValues(alpha: 0.3)),
                           ),
                           child: Column(
                             children: _errorMessages
@@ -355,7 +383,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                           child: const Text('Fix Issues Now'),
                         ),
                         const SizedBox(height: 10),
-                      } else
+                      ] else
                         const Text(
                           'Your documents have been submitted successfully.\nThey are currently under review by the admin.\nYou will be notified once your account is approved.\nPlease wait while the verification is completed.',
                           textAlign: TextAlign.center,
