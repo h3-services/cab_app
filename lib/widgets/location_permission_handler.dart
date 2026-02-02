@@ -19,7 +19,9 @@ class _LocationPermissionHandlerState extends State<LocationPermissionHandler> {
   @override
   void initState() {
     super.initState();
-    _checkAndRequestPermissions();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndRequestPermissions();
+    });
   }
 
   Future<void> _checkAndRequestPermissions() async {
@@ -32,12 +34,46 @@ class _LocationPermissionHandlerState extends State<LocationPermissionHandler> {
     }
 
     final permission = await Geolocator.checkPermission();
+    
     if (permission == LocationPermission.denied) {
-      await requestLocationPermissions();
+      // Step 1: Request basic location permission
+      final result = await Geolocator.requestPermission();
+      
+      if (result == LocationPermission.whileInUse) {
+        // Step 2: Now request background permission
+        await _requestBackgroundPermission();
+      }
+    } else if (permission == LocationPermission.whileInUse) {
+      // Already have foreground, request background
+      await _requestBackgroundPermission();
     } else if (permission == LocationPermission.deniedForever) {
       if (mounted) {
         _showPermissionDialog();
       }
+    }
+  }
+
+  Future<void> _requestBackgroundPermission() async {
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Background Location Required'),
+          content: const Text(
+            'For driver safety and trip tracking, this app needs to access your location even when closed.\n\nPlease select "Allow all the time" in the next screen.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Geolocator.openAppSettings();
+              },
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
     }
   }
 

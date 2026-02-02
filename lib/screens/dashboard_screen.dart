@@ -14,6 +14,7 @@ import '../services/location_tracking_service.dart';
 import '../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -37,10 +38,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadDriverId();
+    _requestLocationPermissions();
     LocationTrackingService.startLocationTracking();
     // Initialize background service now that we are logged in
     initializeService()
         .catchError((e) => debugPrint("Background init error: $e"));
+  }
+
+  Future<void> _requestLocationPermissions() async {
+    final permission = await Geolocator.checkPermission();
+    
+    if (permission == LocationPermission.denied) {
+      final result = await Geolocator.requestPermission();
+      
+      if (result == LocationPermission.whileInUse) {
+        _showBackgroundPermissionDialog();
+      }
+    } else if (permission == LocationPermission.whileInUse) {
+      _showBackgroundPermissionDialog();
+    }
+  }
+
+  void _showBackgroundPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Background Location Required'),
+        content: const Text(
+          'For driver safety and trip tracking, this app needs to access your location even when closed.\n\nPlease select "Allow all the time" in the next screen.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openAppSettings();
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _startAutoRefresh() {

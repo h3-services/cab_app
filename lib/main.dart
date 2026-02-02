@@ -16,9 +16,9 @@ import 'screens/trip_process_screen.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/location_debug_screen.dart';
+import 'screens/permission_debug_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
-import 'widgets/location_permission_handler.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -63,7 +63,7 @@ class _MyAppState extends State<MyApp> {
       ),
       initialRoute: '/',
       builder: (context, child) {
-        return LocationPermissionHandler(child: child ?? const SizedBox());
+        return child ?? const SizedBox();
       },
       routes: {
         '/': (context) => const SplashScreen(),
@@ -78,6 +78,7 @@ class _MyAppState extends State<MyApp> {
         '/verification': (context) => const OTPVerificationScreen(),
         '/personal-details': (context) => const PersonalDetailsScreen(),
         '/kyc': (context) => const KycUploadScreen(),
+        '/permission-debug': (context) => const PermissionDebugScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/trip_process') {
