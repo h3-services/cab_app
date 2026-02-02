@@ -8,6 +8,40 @@ class ApiService {
   static String get baseUrl =>
       dotenv.env['BASE_URL'] ?? 'https://api.cholacabs.in/api/v1';
 
+  static Future<Map<String, dynamic>> checkPhoneExists(String phoneNumber) async {
+    final url = Uri.parse('$baseUrl/drivers/check-phone');
+    
+    final body = {
+      "phone_number": phoneNumber,
+    };
+
+    try {
+      debugPrint('POST Request: $url');
+      debugPrint('Body: ${jsonEncode(body)}');
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+            'Failed to check phone: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<Map<String, dynamic>> registerDriver({
     required String name,
     required String phoneNumber,

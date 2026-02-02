@@ -745,12 +745,15 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
     // Fallback for common date label variations
     if (!hasError) {
-      if (normalizedLabel.contains('license'))
-        hasError = _fieldStatuses['driving license expiry date'] == false;
+      if (normalizedLabel.contains('license') || normalizedLabel.contains('licence'))
+        hasError = _fieldStatuses['driving license expiry date'] == false ||
+                   _fieldStatuses['driving license'] == false;
       if (normalizedLabel == 'rc expiry date')
-        hasError = _fieldStatuses['rc book'] == false;
+        hasError = _fieldStatuses['rc book'] == false ||
+                   _fieldStatuses['rc expiry date'] == false;
       if (normalizedLabel == 'fc expiry date')
-        hasError = _fieldStatuses['fc certificate'] == false;
+        hasError = _fieldStatuses['fc certificate'] == false ||
+                   _fieldStatuses['fc expiry date'] == false;
     }
 
     return ValueListenableBuilder(
@@ -834,11 +837,30 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                         color: isFilled ? AppColors.greenLight : Colors.grey),
               ),
               onTap: () async {
-                if (_fieldStatuses[cleanLabel.toLowerCase()] == false) {
-                  setState(() {
-                    _fieldStatuses[cleanLabel.toLowerCase()] = true;
-                  });
+                // Clear error status for all possible field name variations
+                final possibleKeys = [
+                  cleanLabel.toLowerCase(),
+                  normalizedLabel,
+                  'rc book',
+                  'fc certificate',
+                  'driving license expiry date',
+                  'driving license',
+                  'licence expiry date',
+                  'license expiry date'
+                ];
+                
+                bool hadError = false;
+                for (String key in possibleKeys) {
+                  if (_fieldStatuses[key] == false) {
+                    hadError = true;
+                    _fieldStatuses[key] = true;
+                  }
                 }
+                
+                if (hadError) {
+                  setState(() {});
+                }
+                
                 final date = await showDatePicker(
                   context: context,
                   initialDate: DateTime.now(),
@@ -848,6 +870,13 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                 if (date != null) {
                   controller.text =
                       '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+                  
+                  // Ensure all possible field variations are marked as fixed
+                  setState(() {
+                    for (String key in possibleKeys) {
+                      _fieldStatuses[key] = true;
+                    }
+                  });
                 }
               },
             ),

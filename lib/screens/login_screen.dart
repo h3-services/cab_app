@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
+import '../services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +13,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -189,14 +192,43 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: ElevatedButton(
-                              onPressed: () async {
+                              onPressed: _isLoading ? null : () async {
                                 if (_phoneController.text.length == 10) {
-                                  // Navigate to OTP screen
-                                  if (!mounted) return;
+                                  setState(() {
+                                    _isLoading = true;
+                                  });
 
-                                  // ignore: use_build_context_synchronously
-                                  Navigator.pushNamed(context, '/otp',
-                                      arguments: _phoneController.text);
+                                  try {
+                                    final response = await ApiService.checkPhoneExists(_phoneController.text);
+                                    
+                                    if (response['exists'] == true) {
+                                      // Phone exists - go to dashboard
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setString('phoneNumber', _phoneController.text);
+                                      await prefs.setString('driverId', response['driver_id'].toString());
+                                      
+                                      if (!mounted) return;
+                                      Navigator.pushReplacementNamed(context, '/dashboard');
+                                    } else {
+                                      // Phone doesn't exist - go to registration flow
+                                      if (!mounted) return;
+                                      Navigator.pushNamed(context, '/otp', arguments: _phoneController.text);
+                                    }
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isLoading = false;
+                                      });
+                                    }
+                                  }
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
@@ -215,14 +247,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: const Text(
-                                'Continue',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                    )
+                                  : const Text(
+                                      'Continue',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
