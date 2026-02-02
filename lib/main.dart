@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'constants/app_colors.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
@@ -32,6 +33,21 @@ void main() async {
     debugPrint("Warning: .env file not found: $e");
   }
 
+  // Create notification channel first
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'location_tracking',
+    'Location Tracking',
+    description: 'Background location tracking for driver safety',
+    importance: Importance.low,
+  );
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+
   try {
     await Firebase.initializeApp();
     await initializeFirebaseMessaging();
@@ -39,7 +55,6 @@ void main() async {
     debugPrint("Firebase init error: $e");
   }
 
-  // Request permissions and initialize background service after Firebase
   try {
     await PermissionService.requestLocationPermissions();
     await initializeService();

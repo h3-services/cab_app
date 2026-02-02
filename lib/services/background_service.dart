@@ -40,22 +40,7 @@ void onStart(ServiceInstance service) async {
     debugPrint('[BG Service] dotenv load error: $e');
   }
 
-  // Create notification channel inside the service
   if (service is AndroidServiceInstance) {
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'location_tracking',
-      'Location Tracking',
-      description: 'Background location tracking for driver safety',
-      importance: Importance.low,
-    );
-
-    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-        FlutterLocalNotificationsPlugin();
-
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
     });
