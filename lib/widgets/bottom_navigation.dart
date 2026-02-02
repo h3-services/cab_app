@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class BottomNavigation extends StatelessWidget {
   final String currentRoute;
-  
+
   const BottomNavigation({
     super.key,
     required this.currentRoute,
@@ -26,35 +26,45 @@ class BottomNavigation extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildNavItem(
-            Icons.home, 
-            'Home', 
+            Icons.home,
+            'Home',
             currentRoute == '/dashboard',
             () => Navigator.pushReplacementNamed(context, '/dashboard'),
           ),
           const SizedBox(width: 10),
           _buildNavItem(
-            Icons.wallet, 
-            'Wallet', 
+            Icons.wallet,
+            'Wallet',
             currentRoute == '/wallet',
             () => Navigator.pushReplacementNamed(context, '/wallet'),
+          ),
+          const SizedBox(width: 10),
+          _buildNavItem(
+            Icons.location_history,
+            'Location',
+            currentRoute == '/location-debug',
+            () => Navigator.pushReplacementNamed(context, '/location-debug'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive, VoidCallback onTap) {
+  Widget _buildNavItem(
+      IconData icon, String label, bool isActive, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: isActive ? const Color(0xFF424242) : Colors.grey, size: 28),
+          Icon(icon,
+              color: isActive ? const Color(0xFF424242) : Colors.black54,
+              size: 28),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              color: isActive ? const Color(0xFF424242) : Colors.grey,
+              color: isActive ? const Color(0xFF424242) : Colors.black54,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),

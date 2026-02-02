@@ -116,6 +116,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final String kycVerified =
           (driverData['kyc_verified'] ?? '').toString().toLowerCase();
       final bool isAvailable = driverData['is_available'] == true;
+      final prefs_obj = await SharedPreferences.getInstance();
+      await prefs_obj.setBool('is_available', isAvailable);
 
       if (!isApproved ||
           (kycVerified != 'verified' && kycVerified != 'approved')) {
@@ -674,7 +676,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     )
                   : _buildTabContent(),
             ),
-            const BottomNavigation(currentRoute: '/dashboard'),
+            BottomNavigation(currentRoute: '/dashboard'),
           ],
         ),
       );
@@ -780,6 +782,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
 
                       try {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('is_available', value);
                         await ApiService.updateDriverAvailability(
                             _driverId!, value);
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -868,7 +872,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
 
           // Bottom Navigation
-          const BottomNavigation(currentRoute: '/dashboard'),
+          BottomNavigation(currentRoute: '/dashboard'),
         ],
       ),
     );
