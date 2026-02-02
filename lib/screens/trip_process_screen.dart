@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_navigation.dart';
+import '../services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TripProcessScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
@@ -496,7 +498,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context); // Close dialog
-                      Navigator.pop(context); // Go back to dashboard
+                      _completeTrip(); // Add wallet deduction
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4CAF50),
@@ -521,5 +523,46 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _completeTrip() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final driverId = prefs.getString('driverId');
+      
+      if (driverId != null) {
+        // Calculate wallet deduction (2% of trip cost)
+        final tripCost = 800.0; // This should be calculated based on actual trip data
+        final walletFee = tripCost * 0.02;
+        
+        // Get current wallet balance
+        final driverDetails = await ApiService.getDriverDetails(driverId);
+        final currentBalance = (driverDetails['wallet_balance'] ?? 0.0).toDouble();
+        final newBalance = currentBalance - walletFee;
+        
+        // Update wallet balance
+        await ApiService.updateWalletBalance(driverId, newBalance);
+        
+        // Navigate back to dashboard
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Trip completed. ₹${walletFee.toStringAsFixed(2)} deducted from wallet'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error completing trip: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

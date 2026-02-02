@@ -6,7 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
   static String get baseUrl =>
-      dotenv.env['BASE_URL'] ?? 'https://api.cholacabs.in/api/v1';
+      dotenv.env['BASE_URL'] ?? 'https://api.cholacabs.in/api';
 
   static Future<Map<String, dynamic>> checkPhoneExists(String phoneNumber) async {
     final url = Uri.parse('$baseUrl/drivers/check-phone');
