@@ -13,7 +13,7 @@ class LocationTrackingService {
   static Future<void> startLocationTracking() async {
     // Start background service
     await BackgroundLocationService.initializeBackgroundService();
-
+    
     await _captureAndStoreLocation();
     _locationTimer = Timer.periodic(const Duration(minutes: 15), (_) async {
       await _captureAndStoreLocation();
@@ -28,7 +28,8 @@ class LocationTrackingService {
 
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
-
+      final authToken = prefs.getString('auth_token');
+      
       final locationData = {
         'latitude': position.latitude,
         'longitude': position.longitude,
@@ -37,9 +38,8 @@ class LocationTrackingService {
       };
 
       await prefs.setString('last_location', jsonEncode(locationData));
-
-      debugPrint(
-          '\n═══════════════════════════════════════════════════════════');
+      
+      debugPrint('\n═══════════════════════════════════════════════════════════');
       debugPrint('📍 LOCATION CAPTURED');
       debugPrint('═══════════════════════════════════════════════════════════');
       debugPrint('⏰ Time: ${DateTime.now().toIso8601String()}');
@@ -47,19 +47,19 @@ class LocationTrackingService {
       debugPrint('📌 Longitude: ${position.longitude}');
       debugPrint('🎯 Accuracy: ${position.accuracy.toStringAsFixed(1)}m');
       debugPrint('═══════════════════════════════════════════════════════════');
-
-      if (driverId != null) {
-        await _sendLocationToBackend(driverId, position);
+      
+      if (driverId != null && authToken != null) {
+        await _sendLocationToBackend(driverId, position, authToken);
       } else {
-        debugPrint('! Driver ID not found, skipping location update');
+        if (driverId == null) debugPrint('! Driver ID not found');
+        if (authToken == null) debugPrint('! No auth token found');
       }
     } catch (e) {
       debugPrint('[Location Error] $e');
     }
   }
 
-  static Future<void> _sendLocationToBackend(
-      String driverId, Position position) async {
+  static Future<void> _sendLocationToBackend(String driverId, Position position, String authToken) async {
     try {
       final baseUrl = dotenv.env['BASE_URL'];
       if (baseUrl == null) {
@@ -71,23 +71,24 @@ class LocationTrackingService {
       final body = {
         'latitude': position.latitude,
         'longitude': position.longitude,
+        'accuracy': position.accuracy,
+        'timestamp': DateTime.now().toIso8601String(),
       };
 
       debugPrint('[API] POST: $url');
       debugPrint('[API] Body: ${jsonEncode(body)}');
 
-      final response = await http
-          .post(
-            Uri.parse(url),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => throw Exception('Request timeout'),
-          );
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: jsonEncode(body),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
 
       debugPrint('[API] Status: ${response.statusCode}');
       debugPrint('[API] Response: ${response.body}');

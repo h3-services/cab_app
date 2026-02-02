@@ -134,17 +134,6 @@ class MenuScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 12),
                               _buildMenuItem(
-                                icon: Icons.gps_fixed,
-                                title: 'Location Debug',
-                                subtitle: 'Check background location status',
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                      context, '/location-debug');
-                                },
-                              ),
-                              const SizedBox(height: 12),
-                              _buildMenuItem(
                                 icon: Icons.help_outline,
                                 title: 'Help',
                                 subtitle:

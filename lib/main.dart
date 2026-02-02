@@ -15,7 +15,6 @@ import 'screens/menu_screen.dart';
 import 'screens/trip_process_screen.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/notifications_screen.dart';
-import 'screens/location_debug_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'widgets/location_permission_handler.dart';
@@ -54,49 +53,44 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Chola Cabs',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryBlue),
-        useMaterial3: true,
+    return LocationPermissionHandler(
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        title: 'Chola Cabs',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryBlue),
+          useMaterial3: true,
+        ),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const SplashScreen(),
+          '/login': (context) => const LoginScreen(),
+          '/otp': (context) => const VerificationScreen(),
+          '/dashboard': (context) => const DashboardScreen(),
+          '/wallet': (context) => const WalletScreen(),
+          '/profile': (context) => const ProfileScreen(),
+          '/menu': (context) => const MenuScreen(),
+          '/notifications': (context) => const NotificationsScreen(),
+          '/personal_details': (context) => const PersonalDetailsScreen(),
+          '/kyc_upload': (context) => const KycUploadScreen(),
+          '/approval-pending': (context) => const ApprovalPendingScreen(),
+          '/verification': (context) => const OTPVerificationScreen(),
+          '/personal-details': (context) => const PersonalDetailsScreen(),
+          '/kyc': (context) => const KycUploadScreen(),
+        },
+        onGenerateRoute: (settings) {
+          if (settings.name == '/trip_process') {
+            final args = settings.arguments as Map<String, dynamic>?;
+            return MaterialPageRoute(
+              builder: (context) => TripProcessScreen(
+                tripData: args ?? {},
+              ),
+            );
+          }
+          return null;
+        },
+        debugShowCheckedModeBanner: false,
       ),
-      initialRoute: '/',
-      builder: (context, child) {
-        return LocationPermissionHandler(child: child ?? const SizedBox());
-      },
-      routes: {
-        '/': (context) => const SplashScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/otp': (context) => const VerificationScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
-        '/wallet': (context) => const WalletScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/menu': (context) => const MenuScreen(),
-        '/notifications': (context) => const NotificationsScreen(),
-        '/approval-pending': (context) => const ApprovalPendingScreen(),
-        '/verification': (context) => const OTPVerificationScreen(),
-        '/personal-details': (context) => const PersonalDetailsScreen(),
-        '/kyc': (context) => const KycUploadScreen(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/trip_process') {
-          final args = settings.arguments as Map<String, dynamic>?;
-          return MaterialPageRoute(
-            builder: (context) => TripProcessScreen(
-              tripData: args ?? {},
-            ),
-          );
-        }
-        // Fallback for location-debug if routes table misses it
-        if (settings.name == '/location-debug') {
-          return MaterialPageRoute(
-            builder: (context) => const LocationDebugScreen(),
-          );
-        }
-        return null;
-      },
-      debugShowCheckedModeBanner: false,
     );
   }
 }
