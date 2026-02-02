@@ -1,28 +1,57 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PermissionService {
   static Future<bool> requestLocationPermissions() async {
+    print('\n═══════════════════════════════════════════════════════════');
+    print('🔐 REQUESTING LOCATION PERMISSIONS');
+    print('═══════════════════════════════════════════════════════════');
+    
     // Request basic location permission first
     PermissionStatus locationStatus = await Permission.location.request();
+    print('📍 Location Permission: $locationStatus');
     
     if (locationStatus != PermissionStatus.granted) {
+      print('❌ Location permission denied');
       throw 'Location permission required for driver tracking';
     }
 
+    // Small delay before requesting background permission
+    await Future.delayed(const Duration(milliseconds: 500));
+
     // Request background location permission
+    print('🌍 Requesting background location permission...');
     PermissionStatus backgroundStatus = await Permission.locationAlways.request();
+    print('🌍 Background Location Permission: $backgroundStatus');
     
     if (backgroundStatus != PermissionStatus.granted) {
-      throw 'Background location permission required for continuous tracking';
+      print('⚠️ Background location permission denied - will work only when app is open');
+      // Don't throw error, allow app to continue with limited functionality
     }
 
-    return true;
+    // Store permission status
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('location_permission_granted', locationStatus == PermissionStatus.granted);
+    await prefs.setBool('background_location_granted', backgroundStatus == PermissionStatus.granted);
+    await prefs.setString('permission_granted_at', DateTime.now().toIso8601String());
+    
+    if (backgroundStatus == PermissionStatus.granted) {
+      print('✅ ALL LOCATION PERMISSIONS GRANTED');
+    } else {
+      print('⚠️ PARTIAL PERMISSIONS - Background location denied');
+    }
+    print('💾 Permission status stored in SharedPreferences');
+    print('═══════════════════════════════════════════════════════════\n');
+
+    return locationStatus == PermissionStatus.granted;
   }
 
   static Future<bool> checkLocationPermissions() async {
     PermissionStatus locationStatus = await Permission.location.status;
     PermissionStatus backgroundStatus = await Permission.locationAlways.status;
+    
+    print('🔍 Checking permissions - Location: $locationStatus, Background: $backgroundStatus');
     
     return locationStatus == PermissionStatus.granted && 
            backgroundStatus == PermissionStatus.granted;
@@ -48,6 +77,7 @@ class PermissionService {
               try {
                 await requestLocationPermissions();
               } catch (e) {
+                print('❌ Permission request failed: $e');
                 // Show settings if permission denied
                 await openAppSettings();
               }

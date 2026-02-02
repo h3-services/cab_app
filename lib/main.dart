@@ -32,19 +32,19 @@ void main() async {
     debugPrint("Warning: .env file not found: $e");
   }
 
-  // Request permissions before initializing background service
-  try {
-    await PermissionService.requestLocationPermissions();
-    await initializeService();
-  } catch (e) {
-    debugPrint("Permission/Service init error: $e");
-  }
-
   try {
     await Firebase.initializeApp();
     await initializeFirebaseMessaging();
   } catch (e) {
     debugPrint("Firebase init error: $e");
+  }
+
+  // Request permissions and initialize background service after Firebase
+  try {
+    await PermissionService.requestLocationPermissions();
+    await initializeService();
+  } catch (e) {
+    debugPrint("Permission/Service init error: $e");
   }
 
   runApp(const MyApp());
