@@ -202,10 +202,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     final response = await ApiService.checkPhoneExists(_phoneController.text);
                                     
                                     if (response['exists'] == true) {
-                                      // Phone exists - go to dashboard
+                                      // Phone exists - save login state and go to dashboard
                                       final prefs = await SharedPreferences.getInstance();
                                       await prefs.setString('phoneNumber', _phoneController.text);
                                       await prefs.setString('driverId', response['driver_id'].toString());
+                                      await prefs.setBool('isLoggedIn', true);
+                                      await prefs.setBool('isKycSubmitted', true);
                                       
                                       if (!mounted) return;
                                       Navigator.pushReplacementNamed(context, '/dashboard');

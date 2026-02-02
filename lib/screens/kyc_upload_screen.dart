@@ -592,6 +592,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isKycSubmitted', true);
+      await prefs.setBool('isLoggedIn', true);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

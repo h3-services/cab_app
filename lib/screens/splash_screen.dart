@@ -24,47 +24,52 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final prefs = await SharedPreferences.getInstance();
+    final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     final String? driverId = prefs.getString('driverId');
     final bool isKycSubmitted = prefs.getBool('isKycSubmitted') ?? false;
 
-    if (driverId != null && driverId.isNotEmpty) {
-      if (isKycSubmitted) {
-        try {
-          // Check Status from API
-          final driverData = await ApiService.getDriverDetails(driverId);
-          final bool isApproved = driverData['is_approved'] == true;
-          final String kycVerified =
-              (driverData['kyc_verified'] ?? '').toString().toLowerCase();
+    // If user is not logged in, go to login screen
+    if (!isLoggedIn || driverId == null || driverId.isEmpty) {
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
 
-          debugPrint(
-              "Status Check: isApproved=$isApproved, kycStatus=$kycVerified");
+    // User is logged in, check their status
+    if (isKycSubmitted) {
+      try {
+        // Check Status from API
+        final driverData = await ApiService.getDriverDetails(driverId);
+        final bool isApproved = driverData['is_approved'] == true;
+        final String kycVerified =
+            (driverData['kyc_verified'] ?? '').toString().toLowerCase();
 
-          if (isApproved &&
-              (kycVerified == 'verified' || kycVerified == 'approved')) {
-            if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
-          } else {
-            if (mounted)
-              Navigator.pushReplacementNamed(context, '/approval-pending');
-          }
-        } catch (e) {
-          debugPrint('Status Check Failed: $e');
+        debugPrint(
+            "Status Check: isApproved=$isApproved, kycStatus=$kycVerified");
 
-          if (e.toString().contains('404')) {
-            debugPrint(
-                'Driver not found (404). Clearing session and going to Login.');
-            await prefs.clear();
-            if (mounted) Navigator.pushReplacementNamed(context, '/login');
-            return;
-          }
-
+        if (isApproved &&
+            (kycVerified == 'verified' || kycVerified == 'approved')) {
+          if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
+        } else {
           if (mounted)
             Navigator.pushReplacementNamed(context, '/approval-pending');
         }
-      } else {
-        if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      } catch (e) {
+        debugPrint('Status Check Failed: $e');
+
+        if (e.toString().contains('404')) {
+          debugPrint(
+              'Driver not found (404). Clearing session and going to Login.');
+          await prefs.clear();
+          if (mounted) Navigator.pushReplacementNamed(context, '/login');
+          return;
+        }
+
+        if (mounted)
+          Navigator.pushReplacementNamed(context, '/approval-pending');
       }
     } else {
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+      // User is logged in but hasn't completed KYC
+      if (mounted) Navigator.pushReplacementNamed(context, '/personal-details');
     }
   }
 

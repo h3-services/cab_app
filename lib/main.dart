@@ -19,6 +19,7 @@ import 'screens/location_debug_screen.dart';
 import 'screens/permission_debug_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
+import 'services/permission_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -31,8 +32,13 @@ void main() async {
     debugPrint("Warning: .env file not found: $e");
   }
 
-  // Background service should be initialized after login/permissions
-  // initializeService() moved to DashboardScreen
+  // Request permissions before initializing background service
+  try {
+    await PermissionService.requestLocationPermissions();
+    await initializeService();
+  } catch (e) {
+    debugPrint("Permission/Service init error: $e");
+  }
 
   try {
     await Firebase.initializeApp();

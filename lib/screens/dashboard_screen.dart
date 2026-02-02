@@ -1,4 +1,5 @@
 import '../services/background_service.dart';
+import '../services/permission_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -40,23 +41,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadDriverId();
     _requestLocationPermissions();
     LocationTrackingService.startLocationTracking();
-    // Initialize background service now that we are logged in
-    initializeService()
-        .catchError((e) => debugPrint("Background init error: $e"));
   }
 
   Future<void> _requestLocationPermissions() async {
-    final permission = await Geolocator.checkPermission();
-    
-    if (permission == LocationPermission.denied) {
-      final result = await Geolocator.requestPermission();
-      
-      if (result == LocationPermission.whileInUse) {
-        _showBackgroundPermissionDialog();
+    try {
+      bool hasPermissions = await PermissionService.checkLocationPermissions();
+      if (!hasPermissions) {
+        await PermissionService.showPermissionDialog(context);
       }
-    } else if (permission == LocationPermission.whileInUse) {
-      _showBackgroundPermissionDialog();
+    } catch (e) {
+      debugPrint('Permission error: $e');
     }
+    
+    // Request battery optimization exemption for reliable background execution
+    _requestBatteryOptimizationExemption();
+  }
+  
+  void _requestBatteryOptimizationExemption() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        title: const Text('Battery Optimization'),
+        content: const Text(
+          'For reliable location tracking when the app is closed, please disable battery optimization for this app.\n\nThis ensures continuous driver tracking for safety and trip management.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Later'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Geolocator.openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showBackgroundPermissionDialog() {
@@ -66,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Background Location Required'),
         content: const Text(
-          'For driver safety and trip tracking, this app needs to access your location even when closed.\n\nPlease select "Allow all the time" in the next screen.',
+          'For driver safety and continuous trip tracking, this app needs to access your location even when closed or minimized.\n\nPlease select "Allow all the time" in the next screen to enable background location tracking.',
         ),
         actions: [
           TextButton(
@@ -74,7 +98,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.pop(context);
               Geolocator.openAppSettings();
             },
-            child: const Text('Continue'),
+            child: const Text('Open Settings'),
           ),
         ],
       ),

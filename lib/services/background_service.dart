@@ -1,18 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'dart:io' show Platform;
-
-import 'notification_plugin.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
-
-  await _initializeNotifications();
 
   await service.configure(
     androidConfiguration: AndroidConfiguration(
@@ -20,93 +17,71 @@ Future<void> initializeService() async {
       isForegroundMode: true,
       autoStart: true,
       notificationChannelId: 'location_tracking',
-      initialNotificationTitle: 'Location Tracking Active',
-      initialNotificationContent: 'Tracking location every 15 minutes',
+      initialNotificationTitle: 'Chola Cabs Driver',
+      initialNotificationContent: 'Location tracking active for trip assignments',
       foregroundServiceNotificationId: 888,
     ),
     iosConfiguration: IosConfiguration(
-      autoStart: true,
       onForeground: onStart,
       onBackground: onIosBackground,
+      autoStart: true,
     ),
   );
 
-  service.startService();
-}
-
-Future<void> _initializeNotifications() async {
-  const AndroidInitializationSettings androidSettings =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-  const DarwinInitializationSettings iosSettings =
-      DarwinInitializationSettings();
-
-  const InitializationSettings initSettings = InitializationSettings(
-    android: androidSettings,
-    iOS: iosSettings,
-  );
-
-  await flutterLocalNotificationsPlugin.initialize(
-    initSettings,
-    onDidReceiveNotificationResponse: (details) {},
-  );
-
-  if (Platform.isAndroid) {
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(
-          const AndroidNotificationChannel(
-            'location_tracking',
-            'Location Tracking',
-            description: 'Notification for background location tracking',
-            importance: Importance.low,
-          ),
-        );
-  }
+  await service.startService();
 }
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  // DartPluginRegistrant.ensureInitialized(); // Not needed in newer Flutter versions
+  
+  try {
+    await dotenv.load();
+  } catch (e) {
+    debugPrint('[BG Service] dotenv load error: $e');
+  }
+
+  if (service is AndroidServiceInstance) {
+    service.on('setAsForeground').listen((event) {
+      service.setAsForegroundService();
+    });
+    service.on('setAsBackground').listen((event) {
+      service.setAsBackgroundService();
+    });
+  }
+
+  service.on('stopService').listen((event) {
+    service.stopSelf();
+  });
+
+  // Update location every 15 minutes
   Timer.periodic(const Duration(minutes: 15), (timer) async {
     try {
-      final position = await Geolocator.getCurrentPosition(
+      Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () async =>
-            await Geolocator.getLastKnownPosition() ??
-            Position(
-              latitude: 0,
-              longitude: 0,
-              timestamp: DateTime.now(),
-              accuracy: 0,
-              altitude: 0,
-              heading: 0,
-              speed: 0,
-              speedAccuracy: 0,
-              altitudeAccuracy: 0,
-              headingAccuracy: 0,
-            ),
+        timeLimit: const Duration(seconds: 30),
       );
 
-      final timestamp = DateTime.now().toIso8601String();
-      print('\n═══════════════════════════════════════════════════════════');
-      print('📍 LOCATION CAPTURED');
-      print('═══════════════════════════════════════════════════════════');
-      print('⏰ Time: $timestamp');
-      print('📌 Latitude: ${position.latitude}');
-      print('📌 Longitude: ${position.longitude}');
-      print('🎯 Accuracy: ${position.accuracy}m');
-      print('═══════════════════════════════════════════════════════════\n');
-
-      await _sendLocationToBackend(
+      await sendLocationToServer(
         position.latitude,
         position.longitude,
+        service,
       );
-
-      _showNotification(position.latitude, position.longitude);
     } catch (e) {
-      print('❌ Error fetching location: $e');
+      debugPrint('[BG Location Error] $e');
+      // Try last known position as fallback
+      try {
+        Position? lastPosition = await Geolocator.getLastKnownPosition();
+        if (lastPosition != null) {
+          await sendLocationToServer(
+            lastPosition.latitude,
+            lastPosition.longitude,
+            service,
+          );
+        }
+      } catch (fallbackError) {
+        debugPrint('[BG Fallback Error] $fallbackError');
+      }
     }
   });
 }
@@ -114,128 +89,75 @@ void onStart(ServiceInstance service) async {
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
   try {
-    final position = await Geolocator.getCurrentPosition(
+    Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
-    ).timeout(
-      const Duration(seconds: 30),
-      onTimeout: () async =>
-          await Geolocator.getLastKnownPosition() ??
-          Position(
-            latitude: 0,
-            longitude: 0,
-            timestamp: DateTime.now(),
-            accuracy: 0,
-            altitude: 0,
-            heading: 0,
-            speed: 0,
-            speedAccuracy: 0,
-            altitudeAccuracy: 0,
-            headingAccuracy: 0,
-          ),
+      timeLimit: const Duration(seconds: 30),
     );
 
-    final timestamp = DateTime.now().toIso8601String();
-    print('\n═══════════════════════════════════════════════════════════');
-    print('📍 LOCATION CAPTURED (iOS Background)');
-    print('═══════════════════════════════════════════════════════════');
-    print('⏰ Time: $timestamp');
-    print('📌 Latitude: ${position.latitude}');
-    print('📌 Longitude: ${position.longitude}');
-    print('🎯 Accuracy: ${position.accuracy}m');
-    print('═══════════════════════════════════════════════════════════\n');
-
-    await _sendLocationToBackend(
+    await sendLocationToServer(
       position.latitude,
       position.longitude,
+      service,
     );
   } catch (e) {
-    print('❌ iOS background location error: $e');
+    debugPrint('[iOS BG Location Error] $e');
   }
-
   return true;
 }
 
-Future<void> _sendLocationToBackend(double lat, double lng) async {
+Future<void> sendLocationToServer(
+  double lat,
+  double lng,
+  ServiceInstance service,
+) async {
   try {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    final driverId = prefs.getString('driver_id');
-    final backendUrl =
-        prefs.getString('backend_url') ?? 'https://your-backend.com';
-
-    if (token == null) {
-      print('⚠️  No auth token found');
+    final driverId = prefs.getString('driverId');
+    
+    if (driverId == null || driverId.isEmpty) {
+      debugPrint('[BG Location] No driver ID found');
       return;
     }
 
-    if (driverId == null) {
-      print('⚠️  No driver_id found');
-      return;
-    }
+    final baseUrl = dotenv.env['BASE_URL'] ?? 'https://api.cholacabs.in/api';
+    final url = '$baseUrl/drivers/$driverId/location';
+    
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'latitude': lat,
+        'longitude': lng,
+        'timestamp': DateTime.now().toIso8601String(),
+      }),
+    ).timeout(const Duration(seconds: 15));
 
-    print('📤 Sending location to backend...');
-    final response = await http
-        .post(
-          Uri.parse('$backendUrl/api/v1/drivers/$driverId/location'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'latitude': lat,
-            'longitude': lng,
-            'timestamp': DateTime.now().toIso8601String(),
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
+    debugPrint('[BG Location] Response: ${response.statusCode}');
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      print('✅ Location sent successfully to backend');
-      await _saveLastLocationTime();
-    } else {
-      print('❌ Backend error: ${response.statusCode}');
+    // Update notification
+    if (service is AndroidServiceInstance) {
+      final now = DateTime.now();
+      final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        service.setForegroundNotificationInfo(
+          title: "Chola Cabs Driver - Online",
+          content: "Location updated at $timeStr",
+        );
+      } else {
+        service.setForegroundNotificationInfo(
+          title: "Chola Cabs Driver - Connection Issue",
+          content: "Failed to update location",
+        );
+      }
     }
   } catch (e) {
-    print('❌ Error sending location: $e');
+    debugPrint('[BG Location API Error] $e');
+    if (service is AndroidServiceInstance) {
+      service.setForegroundNotificationInfo(
+        title: "Chola Cabs Driver - Network Error",
+        content: "Check internet connection",
+      );
+    }
   }
-}
-
-Future<void> _saveLastLocationTime() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(
-    'last_location_time',
-    DateTime.now().toIso8601String(),
-  );
-}
-
-void _showNotification(double lat, double lng) {
-  flutterLocalNotificationsPlugin.show(
-    888,
-    'Location Updated',
-    'Lat: ${lat.toStringAsFixed(4)}, Lng: ${lng.toStringAsFixed(4)}',
-    const NotificationDetails(
-      android: AndroidNotificationDetails(
-        'location_tracking',
-        'Location Tracking',
-        channelDescription: 'Notification for background location tracking',
-        importance: Importance.low,
-        priority: Priority.low,
-      ),
-      iOS: DarwinNotificationDetails(),
-    ),
-  );
-}
-
-Future<void> requestLocationPermissions() async {
-  final permission = await Geolocator.checkPermission();
-
-  if (permission == LocationPermission.denied) {
-    await Geolocator.requestPermission();
-  } else if (permission == LocationPermission.deniedForever) {
-    await Geolocator.openLocationSettings();
-  }
-}
-
-Future<bool> isLocationServiceEnabled() async {
-  return await Geolocator.isLocationServiceEnabled();
 }

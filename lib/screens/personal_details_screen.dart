@@ -517,6 +517,12 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     _selectedSeatingCapacity ?? '4');
                                 await prefs.setString('rcExpiryDate', rcDate);
                                 await prefs.setString('fcExpiryDate', fcDate);
+                                
+                                // Set login state for new registrations
+                                if (!isEditing) {
+                                  await prefs.setBool('isLoggedIn', true);
+                                }
+                                
                                 debugPrint(
                                     "=== Saved all user data to SharedPreferences ===");
 

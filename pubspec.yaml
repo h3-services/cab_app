@@ -22,8 +22,10 @@ dependencies:
   firebase_messaging: ^14.7.9
   geolocator: ^10.1.0
   flutter_background_service: ^5.0.5
+  flutter_background_service_android: ^6.2.2
   flutter_local_notifications: ^17.1.2
   url_launcher: ^6.2.0
+  permission_handler: ^11.3.0
 
 dev_dependencies:
   flutter_test:
