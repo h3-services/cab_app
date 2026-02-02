@@ -250,6 +250,9 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
 
   /// Navigate directly to personal details to fix rejected issues
   Future<void> _navigateToFixIssues(List<String> errorFields) async {
+    // Stop auto-reload timer before navigating
+    _autoReloadTimer?.cancel();
+    
     final prefs = await SharedPreferences.getInstance();
 
     // Use fresh API data if available, otherwise fall back to Prefs
@@ -443,6 +446,9 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
 
   /// Navigate to Personal Details screen to review/update all AI-entered data
   Future<void> _handleUpdateApplication() async {
+    // Stop auto-reload timer before navigating
+    _autoReloadTimer?.cancel();
+    
     final prefs = await SharedPreferences.getInstance();
 
     // Use fresh API data if available, otherwise fall back to Prefs

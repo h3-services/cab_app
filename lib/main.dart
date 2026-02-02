@@ -78,6 +78,7 @@ class _MyAppState extends State<MyApp> {
         '/verification': (context) => const OTPVerificationScreen(),
         '/personal-details': (context) => const PersonalDetailsScreen(),
         '/kyc': (context) => const KycUploadScreen(),
+        '/kyc_upload': (context) => const KycUploadScreen(),
         '/permission-debug': (context) => const PermissionDebugScreen(),
       },
       onGenerateRoute: (settings) {
