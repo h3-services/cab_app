@@ -3,6 +3,7 @@ import '../widgets/common/custom_app_bar.dart';
 import '../widgets/bottom_navigation.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
+import 'trip_details_input_screen.dart';
 
 class TripStartScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
@@ -472,18 +473,10 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => TripSummaryScreen(
+                                  builder: (context) => TripDetailsInputScreen(
                                     tripData: widget.tripData,
                                     startingKm: widget.startingKm,
                                     endingKm: _endingKmController.text,
-                                    distance: result['distance_km'] ??
-                                        result['distance'] ??
-                                        0,
-                                    fare: result['fare'] ??
-                                        result['total_fare'] ??
-                                        result['total_cost'] ??
-                                        result['amount'] ??
-                                        500,
                                   ),
                                 ),
                               );
@@ -494,12 +487,10 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => TripSummaryScreen(
+                                  builder: (context) => TripDetailsInputScreen(
                                     tripData: widget.tripData,
                                     startingKm: widget.startingKm,
                                     endingKm: _endingKmController.text,
-                                    distance: null,
-                                    fare: null,
                                   ),
                                 ),
                               );
@@ -691,6 +682,7 @@ class TripSummaryScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
   final String endingKm;
+  final Map<String, dynamic>? tripDetails;
   final num? distance;
   final num? fare;
 
@@ -699,6 +691,7 @@ class TripSummaryScreen extends StatefulWidget {
     required this.tripData,
     required this.startingKm,
     required this.endingKm,
+    this.tripDetails,
     this.distance,
     this.fare,
   });
@@ -803,80 +796,110 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                       fontWeight: FontWeight.w600,
                       color: Colors.black),
                 ),
-                const SizedBox(height: 20),
-                _buildSummaryRow('Distance Traveled', '$dist km'),
-                _buildSummaryRow('Vehicle Type', 'Sedan'),
-                if (actualFare == null || actualFare == 0)
-                  _buildSummaryRow(
-                      'Rate per KM', '₹ ${ratePerKm.toStringAsFixed(2)}'),
-                if (actualFare == null || actualFare == 0)
-                  _buildSummaryRow(
-                      'Service Fee (10%)', '₹ ${walletFee.toStringAsFixed(2)}'),
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Total Trip Cost',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black),
+                const SizedBox(height: 16),
+                _buildSummaryRow('Distance Traveled', '${widget.tripDetails?['distance'] ?? dist} km'),
+                _buildSummaryRow('Time Taken in Hrs', widget.tripDetails?['time'] ?? '10.7900'),
+                _buildSummaryRow('Tariff Type', widget.tripDetails?['tariffType'] ?? 'MUV-Innova'),
+                const SizedBox(height: 8),
+                _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${widget.tripDetails?['actualFare'] ?? '7353'}'),
+                _buildSummaryRow('Waiting Charges(Rs)', '₹ ${widget.tripDetails?['waitingCharges'] ?? '225'}'),
+                _buildSummaryRow('Inter State Permit(Rs)', '₹ ${widget.tripDetails?['interStatePermit'] ?? '0'}'),
+                _buildSummaryRow('Driver Allowance(Rs)', '₹ ${widget.tripDetails?['driverAllowance'] ?? '400'}'),
+                _buildSummaryRow('Luggage Cost(Rs)', '₹ ${widget.tripDetails?['luggageCost'] ?? '300'}'),
+                _buildSummaryRow('Pet Cost(Rs)', '₹ ${widget.tripDetails?['petCost'] ?? '0'}'),
+                _buildSummaryRow('Toll charge(Rs)', '₹ ${widget.tripDetails?['tollCharge'] ?? '430.00'}'),
+                _buildSummaryRow('Night Allowance(Rs)', '₹ ${widget.tripDetails?['nightAllowance'] ?? '200'}'),
+                const SizedBox(height: 12),
+                const Divider(thickness: 1, color: Colors.grey),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Total Cost(Rs)',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
-                      Text(
-                        '₹ ${totalCost.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black),
+                    ),
+                    Text(
+                      '₹ ${_calculateTotalCost()}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.greenPrimary, AppColors.greenDark],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TripDetailsInputScreen(
+                            tripData: widget.tripData,
+                            startingKm: widget.startingKm,
+                            endingKm: widget.endingKm,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Back to Calculate',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ElevatedButton(
-                onPressed: () => _showCloseTripDialog(context, totalCost),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.greenPrimary, AppColors.greenDark],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () => _showCloseTripDialog(context, _calculateTotalCost()),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text('Close Trip',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16)),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check, color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text('Close Trip',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16)),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
         ],
@@ -885,18 +908,45 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     );
   }
 
+  double _calculateTotalCost() {
+    if (widget.tripDetails != null) {
+      final actualFare = double.tryParse(widget.tripDetails!['actualFare'] ?? '0') ?? 0;
+      final waitingCharges = double.tryParse(widget.tripDetails!['waitingCharges'] ?? '0') ?? 0;
+      final interStatePermit = double.tryParse(widget.tripDetails!['interStatePermit'] ?? '0') ?? 0;
+      final driverAllowance = double.tryParse(widget.tripDetails!['driverAllowance'] ?? '0') ?? 0;
+      final luggageCost = double.tryParse(widget.tripDetails!['luggageCost'] ?? '0') ?? 0;
+      final petCost = double.tryParse(widget.tripDetails!['petCost'] ?? '0') ?? 0;
+      final tollCharge = double.tryParse(widget.tripDetails!['tollCharge'] ?? '0') ?? 0;
+      final nightAllowance = double.tryParse(widget.tripDetails!['nightAllowance'] ?? '0') ?? 0;
+      
+      return actualFare + waitingCharges + interStatePermit + driverAllowance + 
+             luggageCost + petCost + tollCharge + nightAllowance;
+    }
+    return 8908.0; // Default total
+  }
+
   Widget _buildSummaryRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-          Text(value,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: Colors.black)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black54,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
         ],
       ),
     );

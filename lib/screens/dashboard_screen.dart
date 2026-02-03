@@ -39,7 +39,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDriverId();
     _requestLocationPermissions();
-    LocationTrackingService.startLocationTracking();
+    _initializeLocationTrackingOnce();
+  }
+
+  Future<void> _initializeLocationTrackingOnce() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isTrackingInitialized = prefs.getBool('location_tracking_initialized') ?? false;
+    
+    if (!isTrackingInitialized) {
+      debugPrint('🚀 Initializing location tracking for the first time');
+      await LocationTrackingService.startLocationTracking();
+      await prefs.setBool('location_tracking_initialized', true);
+    } else {
+      debugPrint('✅ Location tracking already initialized, skipping');
+    }
   }
 
   Future<void> _requestLocationPermissions() async {
@@ -153,7 +166,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_autoRefreshTimer.isActive) {
       _autoRefreshTimer.cancel();
     }
-    LocationTrackingService.stopLocationTracking();
+    // Don't stop location tracking when leaving dashboard - it should run continuously
     super.dispose();
   }
 

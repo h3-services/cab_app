@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_colors.dart';
+import '../widgets/common/custom_app_bar.dart';
+import '../widgets/bottom_navigation.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -45,160 +47,120 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text(
-          'Settings',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: AppColors.primaryBlue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      backgroundColor: const Color(0xFFB0B0B0),
+      appBar: const CustomAppBar(),
+      body: Column(
         children: [
-          _buildSettingsSection(
-            'Notifications',
-            [
-              _buildSwitchTile(
-                'Push Notifications',
-                'Receive trip requests and updates',
-                _notificationsEnabled,
-                (value) {
-                  setState(() {
-                    _notificationsEnabled = value;
-                  });
-                  _saveSettings();
-                },
+          const SizedBox(height: 20),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Settings',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 20),
-          _buildSettingsSection(
-            'Location & Tracking',
-            [
-              _buildSwitchTile(
-                'Location Tracking',
-                'Allow app to track your location',
-                _locationTracking,
-                (value) {
-                  setState(() {
-                    _locationTracking = value;
-                  });
-                  _saveSettings();
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildSettingsSection(
-            'Trip Preferences',
-            [
-              _buildSwitchTile(
-                'Auto Accept Trips',
-                'Automatically accept incoming trip requests',
-                _autoAcceptTrips,
-                (value) {
-                  setState(() {
-                    _autoAcceptTrips = value;
-                  });
-                  _saveSettings();
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildSettingsSection(
-            'App Preferences',
-            [
-              _buildDropdownTile(
-                'Language',
-                'Select your preferred language',
-                _language,
-                ['English', 'Tamil', 'Hindi'],
-                (value) {
-                  setState(() {
-                    _language = value!;
-                  });
-                  _saveSettings();
-                },
-              ),
-              _buildDropdownTile(
-                'Theme',
-                'Choose app appearance',
-                _theme,
-                ['Light', 'Dark', 'System'],
-                (value) {
-                  setState(() {
-                    _theme = value!;
-                  });
-                  _saveSettings();
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildSettingsSection(
-            'Support',
-            [
-              _buildActionTile(
-                'Help & Support',
-                'Get help and contact support',
-                Icons.help_outline,
-                () {
-                  // Navigate to help screen or show dialog
-                  _showHelpDialog();
-                },
-              ),
-              _buildActionTile(
-                'Privacy Policy',
-                'Read our privacy policy',
-                Icons.privacy_tip_outlined,
-                () {
-                  // Navigate to privacy policy
-                  _showPrivacyDialog();
-                },
-              ),
-              _buildActionTile(
-                'Terms of Service',
-                'View terms and conditions',
-                Icons.description_outlined,
-                () {
-                  // Navigate to terms of service
-                  _showTermsDialog();
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildSettingsSection(
-            'Account',
-            [
-              _buildActionTile(
-                'Clear Cache',
-                'Clear app cache and temporary files',
-                Icons.cleaning_services_outlined,
-                () {
-                  _showClearCacheDialog();
-                },
-              ),
-              _buildActionTile(
-                'Sign Out',
-                'Log out of your account',
-                Icons.logout,
-                () {
-                  _showSignOutDialog();
-                },
-                isDestructive: true,
-              ),
-            ],
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              children: [
+                _buildSettingsSection(
+                  'Notifications',
+                  [
+                    _buildSwitchTile(
+                      'Push Notifications',
+                      'Receive trip requests and updates',
+                      _notificationsEnabled,
+                      (value) {
+                        setState(() {
+                          _notificationsEnabled = value;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildSettingsSection(
+                  'Location & Tracking',
+                  [
+                    _buildSwitchTile(
+                      'Location Tracking',
+                      'Allow app to track your location',
+                      _locationTracking,
+                      (value) {
+                        setState(() {
+                          _locationTracking = value;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildSettingsSection(
+                  'Trip Preferences',
+                  [
+                    _buildSwitchTile(
+                      'Auto Accept Trips',
+                      'Automatically accept incoming trip requests',
+                      _autoAcceptTrips,
+                      (value) {
+                        setState(() {
+                          _autoAcceptTrips = value;
+                        });
+                        _saveSettings();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildSettingsSection(
+                  'Support',
+                  [
+                    _buildActionTile(
+                      'Help & Support',
+                      'Get help and contact support',
+                      Icons.help_outline,
+                      () => _showHelpDialog(),
+                    ),
+                    _buildActionTile(
+                      'Privacy Policy',
+                      'Read our privacy policy',
+                      Icons.privacy_tip_outlined,
+                      () => _showPrivacyDialog(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _buildSettingsSection(
+                  'Account',
+                  [
+                    _buildActionTile(
+                      'Clear Cache',
+                      'Clear app cache and temporary files',
+                      Icons.cleaning_services_outlined,
+                      () => _showClearCacheDialog(),
+                    ),
+                    _buildActionTile(
+                      'Sign Out',
+                      'Log out of your account',
+                      Icons.logout,
+                      () => _showSignOutDialog(),
+                      isDestructive: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
+      bottomNavigationBar: const BottomNavigation(currentRoute: '/settings'),
     );
   }
 
@@ -210,10 +172,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title,
-            style: TextStyle(
-              fontSize: 16,
+            style: const TextStyle(
+              fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
+              color: Colors.black87,
             ),
           ),
         ),
@@ -223,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withOpacity(0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -241,60 +203,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool value,
     ValueChanged<bool> onChanged,
   ) {
-    return ListTile(
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey.shade600,
-        ),
-      ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: AppColors.primaryBlue,
-      ),
-    );
-  }
-
-  Widget _buildDropdownTile(
-    String title,
-    String subtitle,
-    String value,
-    List<String> options,
-    ValueChanged<String?> onChanged,
-  ) {
-    return ListTile(
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey.shade600,
-        ),
-      ),
-      trailing: DropdownButton<String>(
-        value: value,
-        onChanged: onChanged,
-        items: options.map((String option) {
-          return DropdownMenuItem<String>(
-            value: option,
-            child: Text(option),
-          );
-        }).toList(),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: AppColors.greenLight,
+            activeTrackColor: AppColors.greenLight.withOpacity(0.3),
+          ),
+        ],
       ),
     );
   }
@@ -306,31 +248,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback onTap, {
     bool isDestructive = false,
   }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? Colors.red : AppColors.primaryBlue,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: isDestructive ? Colors.red : Colors.black,
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade200,
+            width: 0.5,
+          ),
         ),
       ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey.shade600,
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isDestructive ? Colors.red.shade50 : AppColors.greenLight.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: isDestructive ? Colors.red : AppColors.greenLight,
+            size: 20,
+          ),
         ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: isDestructive ? Colors.red : Colors.black,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: Colors.grey.shade400,
+        ),
+        onTap: onTap,
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: Colors.grey.shade400,
-      ),
-      onTap: onTap,
     );
   }
 

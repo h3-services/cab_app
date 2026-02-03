@@ -6,11 +6,18 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'notification_plugin.dart';
+import 'package:flutter/foundation.dart';
 
 class BackgroundLocationService {
   static Timer? _locationTimer;
+  static bool _serviceInitialized = false;
   
   static Future<void> initializeBackgroundService() async {
+    if (_serviceInitialized) {
+      debugPrint('⚠️ Background service already initialized');
+      return;
+    }
+
     final service = FlutterBackgroundService();
 
     // Initialize notification plugin
@@ -35,6 +42,8 @@ class BackgroundLocationService {
     );
 
     await service.startService();
+    _serviceInitialized = true;
+    debugPrint('✅ Background location service initialized');
   }
 
   static Future<bool> onIosBackground(ServiceInstance service) async {
@@ -67,13 +76,22 @@ class BackgroundLocationService {
       service.stopSelf();
     });
 
+    // Prevent duplicate timers
+    if (_locationTimer != null && _locationTimer!.isActive) {
+      print('[BG Service] Timer already running, skipping initialization');
+      return;
+    }
+
     // Update location immediately
     await _updateLocation(service);
 
     // Use Timer.periodic for reliable background execution
     _locationTimer = Timer.periodic(const Duration(minutes: 15), (timer) async {
+      print('[BG Service] 🔄 15-minute timer triggered');
       await _updateLocation(service);
     });
+    
+    print('[BG Service] ✅ Background location tracking started with 15-minute intervals');
   }
 
   static Future<void> _updateLocation(ServiceInstance service) async {
@@ -122,11 +140,11 @@ class BackgroundLocationService {
       if (driverId != null && driverId.isNotEmpty) {
         await _sendLocationToBackend(driverId, position, service);
         
-        // Show notification when location is obtained in terminated state
+        // Show notification when app is in terminated state
         await NotificationPlugin.showNotification(
           id: 999,
-          title: 'Location Updated',
-          body: 'Current location: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}',
+          title: 'Chola Cabs - App Terminated',
+          body: 'Location updated while app was closed\nLat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}',
         );
       } else {
         print('[BG Location] No driver ID found');
@@ -201,7 +219,10 @@ class BackgroundLocationService {
   }
 
   static Future<void> stopBackgroundService() async {
+    debugPrint('🛑 Stopping background location service...');
     _locationTimer?.cancel();
+    _locationTimer = null;
+    _serviceInitialized = false;
     final service = FlutterBackgroundService();
     service.invoke('stopService');
   }

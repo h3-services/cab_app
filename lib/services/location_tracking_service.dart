@@ -9,15 +9,29 @@ import 'background_location_service.dart';
 
 class LocationTrackingService {
   static Timer? _locationTimer;
+  static bool _isInitialized = false;
 
   static Future<void> startLocationTracking() async {
+    if (_isInitialized) {
+      debugPrint('⚠️ Location tracking already running, skipping initialization');
+      return;
+    }
+
+    debugPrint('🚀 Starting location tracking service...');
+    
     // Start background service
     await BackgroundLocationService.initializeBackgroundService();
 
+    // Capture initial location
     await _captureAndStoreLocation();
+    
+    // Set up 15-minute timer
     _locationTimer = Timer.periodic(const Duration(minutes: 15), (_) async {
       await _captureAndStoreLocation();
     });
+    
+    _isInitialized = true;
+    debugPrint('✅ Location tracking initialized with 15-minute intervals');
   }
 
   static Future<void> _captureAndStoreLocation() async {
@@ -103,8 +117,10 @@ class LocationTrackingService {
   }
 
   static void stopLocationTracking() {
+    debugPrint('🛑 Stopping location tracking service...');
     _locationTimer?.cancel();
     _locationTimer = null;
+    _isInitialized = false;
   }
 
   static Future<Map<String, dynamic>?> getLastLocation() async {
@@ -114,5 +130,21 @@ class LocationTrackingService {
       return jsonDecode(locationStr);
     }
     return null;
+  }
+
+  /// Reset location tracking initialization (for testing/troubleshooting)
+  static Future<void> resetLocationTracking() async {
+    debugPrint('🔄 Resetting location tracking initialization...');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('location_tracking_initialized', false);
+    stopLocationTracking();
+  }
+
+  /// Check if location tracking is properly initialized
+  static Future<bool> isLocationTrackingActive() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isInitialized = prefs.getBool('location_tracking_initialized') ?? false;
+    final hasActiveTimer = _locationTimer != null && _locationTimer!.isActive;
+    return isInitialized && hasActiveTimer && _isInitialized;
   }
 }
