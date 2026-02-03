@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:io';
+import 'device_blocked_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +17,22 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
+
+  Future<String> _getDeviceId() async {
+    final deviceInfo = DeviceInfoPlugin();
+    try {
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        return androidInfo.id; // Android ID
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        return iosInfo.identifierForVendor ?? 'unknown';
+      }
+    } catch (e) {
+      debugPrint('Error getting device ID: $e');
+    }
+    return 'unknown';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,10 +221,30 @@ class _LoginScreenState extends State<LoginScreen> {
                                     final response = await ApiService.checkPhoneExists(_phoneController.text);
                                     
                                     if (response['exists'] == true) {
-                                      // Phone exists - save login state and go to dashboard
+                                      // Phone exists - check device ID
+                                      final currentDeviceId = await _getDeviceId();
+                                      final driverId = response['driver_id'].toString();
+                                      
+                                      // Get driver details to check device ID
+                                      final driverData = await ApiService.getDriverDetails(driverId);
+                                      final registeredDeviceId = driverData['device_id']?.toString();
+                                      
+                                      if (registeredDeviceId != null && registeredDeviceId != currentDeviceId) {
+                                        // Device ID mismatch - show blocked screen
+                                        if (!mounted) return;
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const DeviceBlockedScreen(),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      
+                                      // Device ID matches or not set - proceed with login
                                       final prefs = await SharedPreferences.getInstance();
                                       await prefs.setString('phoneNumber', _phoneController.text);
-                                      await prefs.setString('driverId', response['driver_id'].toString());
+                                      await prefs.setString('driverId', driverId);
                                       await prefs.setBool('isLoggedIn', true);
                                       await prefs.setBool('isKycSubmitted', true);
                                       

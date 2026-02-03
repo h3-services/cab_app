@@ -77,13 +77,6 @@ class _AppDrawerState extends State<AppDrawer> {
                 children: [
                   _buildDrawerMenuItem(
                     context,
-                    Icons.notifications_outlined,
-                    'Notifications',
-                    'View all received notifications',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDrawerMenuItem(
-                    context,
                     Icons.person_outline,
                     'Profile',
                     'View and edit your personal details',
@@ -142,10 +135,10 @@ class _AppDrawerState extends State<AppDrawer> {
       child: InkWell(
         onTap: () async {
           Navigator.pop(context);
-          if (title == 'Notifications') {
-            Navigator.pushNamed(context, '/notifications');
-          } else if (title == 'Profile') {
+          if (title == 'Profile') {
             Navigator.pushNamed(context, '/profile');
+          } else if (title == 'Settings') {
+            Navigator.pushNamed(context, '/settings');
           } else if (title == 'Sign out') {
             final prefs = await SharedPreferences.getInstance();
             await prefs.clear();

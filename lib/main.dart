@@ -15,7 +15,9 @@ import 'screens/menu_screen.dart';
 import 'screens/trip_process_screen.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/settings_screen.dart';
 import 'screens/location_debug_screen.dart';
+import 'screens/device_blocked_screen.dart';
 import 'screens/permission_debug_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
@@ -83,11 +85,13 @@ class _MyAppState extends State<MyApp> {
         '/profile': (context) => const ProfileScreen(),
         '/menu': (context) => const MenuScreen(),
         '/notifications': (context) => const NotificationsScreen(),
+        '/settings': (context) => const SettingsScreen(),
         '/approval-pending': (context) => const ApprovalPendingScreen(),
         '/verification': (context) => const OTPVerificationScreen(),
         '/personal-details': (context) => const PersonalDetailsScreen(),
         '/kyc': (context) => const KycUploadScreen(),
         '/kyc_upload': (context) => const KycUploadScreen(),
+        '/device-blocked': (context) => const DeviceBlockedScreen(),
         '/permission-debug': (context) => const PermissionDebugScreen(),
       },
       onGenerateRoute: (settings) {

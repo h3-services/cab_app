@@ -121,6 +121,13 @@ class BackgroundLocationService {
       
       if (driverId != null && driverId.isNotEmpty) {
         await _sendLocationToBackend(driverId, position, service);
+        
+        // Show notification when location is obtained in terminated state
+        await NotificationPlugin.showNotification(
+          id: 999,
+          title: 'Location Updated',
+          body: 'Current location: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}',
+        );
       } else {
         print('[BG Location] No driver ID found');
       }

@@ -1944,10 +1944,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               }
                             }),
                             const SizedBox(width: 8),
-                            _buildSquareActionButton(
-                                Icons.navigation, Colors.blue,
-                                onTap: () {}),
-                            const SizedBox(width: 8),
                             _buildSquareActionButton(Icons.call, Colors.green,
                                 onTap: () => _makePhoneCall(phone)),
                           ],
