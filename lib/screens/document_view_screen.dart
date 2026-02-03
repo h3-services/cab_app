@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../widgets/common/custom_app_bar.dart';
 import '../constants/app_colors.dart';
+import '../services/api_service.dart';
 
 class DocumentViewScreen extends StatefulWidget {
   const DocumentViewScreen({super.key});
@@ -24,6 +25,9 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
 
   Future<void> _loadAllData() async {
     final prefs = await SharedPreferences.getInstance();
+    final driverId = prefs.getString('driverId');
+    
+    // Load cached data first
     setState(() {
       _personalDetails = {
         'Name': prefs.getString('name') ?? 'Not provided',
@@ -45,15 +49,79 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
 
       _documentPaths = {
         'Profile Photo': prefs.getString('profile_photo_path') ?? '',
-        'License Front': prefs.getString('license_front_path') ?? '',
-        'License Back': prefs.getString('license_back_path') ?? '',
-        'Aadhaar Front': prefs.getString('aadhaar_front_path') ?? '',
-        'Aadhaar Back': prefs.getString('aadhaar_back_path') ?? '',
         'Vehicle Photo': prefs.getString('vehicle_photo_path') ?? '',
-        'RC Front': prefs.getString('rc_front_path') ?? '',
-        'RC Back': prefs.getString('rc_back_path') ?? '',
       };
     });
+    
+    // Fetch fresh data from API if driver ID exists
+    if (driverId != null) {
+      try {
+        final driverData = await ApiService.getDriverDetails(driverId);
+        
+        // Update personal details from API
+        setState(() {
+          _personalDetails = {
+            'Name': driverData['name'] ?? 'Not provided',
+            'Phone Number': driverData['phone_number'] ?? 'Not provided',
+            'Email': driverData['email'] ?? 'Not provided',
+            'Primary Location': driverData['primary_location'] ?? 'Not provided',
+            'License Number': driverData['licence_number'] ?? 'Not provided',
+            'Aadhaar Number': driverData['aadhar_number'] ?? 'Not provided',
+            'License Expiry': driverData['licence_expiry'] ?? 'Not provided',
+            'KYC Status': driverData['kyc_verified'] ?? 'Not verified',
+            'Approval Status': (driverData['is_approved'] == true) ? 'Approved' : 'Pending',
+          };
+        });
+        
+        // Update vehicle details from cached data
+        final vehicleData = await ApiService.getVehicleByDriverId(driverId);
+        if (vehicleData != null) {
+          setState(() {
+            _vehicleDetails = {
+              'Vehicle Type': vehicleData['vehicle_type'] ?? 'Not provided',
+              'Vehicle Brand': vehicleData['vehicle_brand'] ?? 'Not provided',
+              'Vehicle Model': vehicleData['vehicle_model'] ?? 'Not provided',
+              'Vehicle Number': vehicleData['vehicle_number'] ?? 'Not provided',
+              'Vehicle Color': vehicleData['vehicle_color'] ?? 'Not provided',
+              'Seating Capacity': (vehicleData['seating_capacity'] ?? 'Not provided').toString(),
+              'RC Expiry': vehicleData['rc_expiry_date'] ?? 'Not provided',
+              'FC Expiry': vehicleData['fc_expiry_date'] ?? 'Not provided',
+            };
+          });
+        }
+        
+        // Update document URLs from cached vehicle data
+        Map<String, String> apiDocuments = {
+          'Profile Photo': driverData['photo_url'] ?? '',
+          'License Document': driverData['licence_url'] ?? '',
+          'Aadhaar Document': driverData['aadhar_url'] ?? '',
+        };
+        
+        if (vehicleData != null) {
+          apiDocuments.addAll({
+            'Vehicle Photo': vehicleData['vehicle_front_url'] ?? '',
+            'RC Document': vehicleData['rc_book_url'] ?? '',
+            'FC Document': vehicleData['fc_certificate_url'] ?? '',
+            'Vehicle Back': vehicleData['vehicle_back_url'] ?? '',
+            'Vehicle Left': vehicleData['vehicle_left_url'] ?? '',
+            'Vehicle Right': vehicleData['vehicle_right_url'] ?? '',
+            'Vehicle Inside': vehicleData['vehicle_inside_url'] ?? '',
+          });
+        }
+        
+        // Merge with local paths, prioritizing API URLs
+        setState(() {
+          _documentPaths = {
+            ..._documentPaths,
+            ...apiDocuments,
+          };
+        });
+        
+      } catch (e) {
+        debugPrint('Error fetching driver details: $e');
+        // Continue with cached data if API fails
+      }
+    }
   }
 
   @override
@@ -198,6 +266,7 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
 
   Widget _buildDocumentCard(String title, String imagePath) {
     final bool hasImage = imagePath.isNotEmpty;
+    final bool isNetworkImage = imagePath.startsWith('http');
     
     return GestureDetector(
       onTap: hasImage ? () => _showFullScreenImage(imagePath, title) : null,
@@ -214,16 +283,33 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
               child: hasImage
                   ? ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                      child: Image.file(
-                        File(imagePath),
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.broken_image,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      ),
+                      child: isNetworkImage
+                          ? Image.network(
+                              imagePath,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.broken_image,
+                                size: 40,
+                                color: Colors.grey,
+                              ),
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              },
+                            )
+                          : Image.file(
+                              File(imagePath),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.broken_image,
+                                size: 40,
+                                color: Colors.grey,
+                              ),
+                            ),
                     )
                   : const Icon(
                       Icons.image_not_supported,
@@ -268,6 +354,8 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
   }
 
   void _showFullScreenImage(String imagePath, String title) {
+    final bool isNetworkImage = imagePath.startsWith('http');
+    
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -276,16 +364,33 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
           children: [
             Center(
               child: InteractiveViewer(
-                child: Image.file(
-                  File(imagePath),
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Text(
-                      'Error loading image',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
+                child: isNetworkImage
+                    ? Image.network(
+                        imagePath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Center(
+                          child: Text(
+                            'Error loading image',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          );
+                        },
+                      )
+                    : Image.file(
+                        File(imagePath),
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Center(
+                          child: Text(
+                            'Error loading image',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
               ),
             ),
             Positioned(

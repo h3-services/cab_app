@@ -61,6 +61,10 @@ class PermissionService {
     
     print('🔍 Checking permissions - Location: $locationStatus, Background: $backgroundStatus');
     
+    // Store current status
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('background_location_granted', backgroundStatus == PermissionStatus.granted);
+    
     return locationStatus == PermissionStatus.granted && 
            backgroundStatus == PermissionStatus.granted;
   }
@@ -82,8 +86,22 @@ class PermissionService {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('dont_show_permission_dialog', true);
+            },
+            child: const Text('Don\'t ask again'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
               try {
                 await requestLocationPermissions();
+                // If successful, mark as granted
+                final prefs = await SharedPreferences.getInstance();
+                final backgroundStatus = await Permission.locationAlways.status;
+                if (backgroundStatus == PermissionStatus.granted) {
+                  await prefs.setBool('dont_show_permission_dialog', true);
+                }
               } catch (e) {
                 print('❌ Permission request failed: $e');
                 // Show settings if permission denied

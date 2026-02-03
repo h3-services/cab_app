@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static String get baseUrl =>
@@ -208,10 +209,25 @@ class ApiService {
     }
   }
 
-  /// Get vehicle details by vehicle ID
-  static Future<Map<String, dynamic>?> getVehicleDetails(
-      String vehicleId) async {
-    final url = Uri.parse('$baseUrl/vehicles/$vehicleId');
+  /// Get all vehicles and cache them
+  static Future<List<Map<String, dynamic>>> getAllVehicles({bool forceRefresh = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Return cached data if available and not forcing refresh
+    if (!forceRefresh) {
+      final cachedData = prefs.getString('all_vehicles_data');
+      if (cachedData != null) {
+        try {
+          final List<dynamic> vehicles = jsonDecode(cachedData);
+          return vehicles.cast<Map<String, dynamic>>();
+        } catch (e) {
+          debugPrint('Error parsing cached vehicles: $e');
+        }
+      }
+    }
+    
+    // Fetch from API
+    final url = Uri.parse('$baseUrl/vehicles/');
     try {
       debugPrint('GET Request: $url');
       final response = await http.get(url);
@@ -220,13 +236,30 @@ class ApiService {
       debugPrint('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final List<dynamic> vehicles = jsonDecode(response.body);
+        final vehiclesList = vehicles.cast<Map<String, dynamic>>();
+        
+        // Cache the data
+        await prefs.setString('all_vehicles_data', jsonEncode(vehicles));
+        await prefs.setString('vehicles_last_updated', DateTime.now().toIso8601String());
+        
+        return vehiclesList;
       } else {
-        debugPrint('Failed to get vehicle details: ${response.statusCode}');
-        return null;
+        debugPrint('Failed to get vehicles: ${response.statusCode}');
+        return [];
       }
     } catch (e) {
       debugPrint('API Error: $e');
+      return [];
+    }
+  }
+
+  /// Get vehicle by driver ID from cached data
+  static Future<Map<String, dynamic>?> getVehicleByDriverId(String driverId) async {
+    final vehicles = await getAllVehicles();
+    try {
+      return vehicles.firstWhere((vehicle) => vehicle['driver_id'] == driverId);
+    } catch (e) {
       return null;
     }
   }

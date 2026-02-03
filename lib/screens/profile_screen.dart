@@ -73,8 +73,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
+    final driverId = prefs.getString('driverId');
+    
+    // Load cached data first
     setState(() {
-      // Personal
       _name = prefs.getString('name') ?? 'Driver';
       _phoneNumber = prefs.getString('phoneNumber') ?? '';
       _email = prefs.getString('email') ?? '';
@@ -83,15 +85,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _aadhaarNumber = prefs.getString('aadhaarNumber') ?? '';
       _profilePhotoPath = prefs.getString('profile_photo_path');
       _profilePhotoUrl = prefs.getString('profile_photo_url');
-
-      // Vehicle
-      _vehicleType = prefs.getString('vehicleType') ?? '';
-      _vehicleBrand = prefs.getString('vehicleBrand') ?? '';
-      _vehicleModel = prefs.getString('vehicleModel') ?? '';
-      _vehicleNumber = prefs.getString('vehicleNumber') ?? '';
-      _vehicleColor = prefs.getString('vehicleColor') ?? '';
-      _seatingCapacity = prefs.getString('seatingCapacity') ?? '';
     });
+    
+    // Fetch fresh data from API if driver ID exists
+    if (driverId != null) {
+      try {
+        final driverData = await ApiService.getDriverDetails(driverId);
+        
+        // Update personal details
+        setState(() {
+          _name = driverData['name'] ?? 'Driver';
+          _phoneNumber = driverData['phone_number'] ?? '';
+          _email = driverData['email'] ?? '';
+          _primaryLocation = driverData['primary_location'] ?? '';
+          _licenseNumber = driverData['licence_number'] ?? '';
+          _aadhaarNumber = driverData['aadhar_number'] ?? '';
+          _profilePhotoUrl = driverData['photo_url'];
+        });
+        
+        // Get vehicle details from cached data
+        final vehicleData = await ApiService.getVehicleByDriverId(driverId);
+        
+        // Update vehicle details from cached data
+        if (vehicleData != null) {
+          setState(() {
+            _vehicleType = vehicleData['vehicle_type'] ?? '';
+            _vehicleBrand = vehicleData['vehicle_brand'] ?? '';
+            _vehicleModel = vehicleData['vehicle_model'] ?? '';
+            _vehicleNumber = vehicleData['vehicle_number'] ?? '';
+            _vehicleColor = vehicleData['vehicle_color'] ?? '';
+            _seatingCapacity = (vehicleData['seating_capacity'] ?? '').toString();
+          });
+          
+          // Store vehicle details in SharedPreferences
+          await prefs.setString('vehicleType', _vehicleType);
+          await prefs.setString('vehicleBrand', _vehicleBrand);
+          await prefs.setString('vehicleModel', _vehicleModel);
+          await prefs.setString('vehicleNumber', _vehicleNumber);
+          await prefs.setString('vehicleColor', _vehicleColor);
+          await prefs.setString('seatingCapacity', _seatingCapacity);
+        }
+        
+        // Store updated personal details
+        await prefs.setString('name', _name);
+        await prefs.setString('phoneNumber', _phoneNumber);
+        await prefs.setString('email', _email);
+        await prefs.setString('primaryLocation', _primaryLocation);
+        await prefs.setString('licenseNumber', _licenseNumber);
+        await prefs.setString('aadhaarNumber', _aadhaarNumber);
+        if (_profilePhotoUrl != null) {
+          await prefs.setString('profile_photo_url', _profilePhotoUrl!);
+        }
+      } catch (e) {
+        debugPrint('Error fetching driver details: $e');
+        // Continue with cached data if API fails
+      }
+    } else {
+      // Load from SharedPreferences if no driver ID
+      setState(() {
+        _vehicleType = prefs.getString('vehicleType') ?? '';
+        _vehicleBrand = prefs.getString('vehicleBrand') ?? '';
+        _vehicleModel = prefs.getString('vehicleModel') ?? '';
+        _vehicleNumber = prefs.getString('vehicleNumber') ?? '';
+        _vehicleColor = prefs.getString('vehicleColor') ?? '';
+        _seatingCapacity = prefs.getString('seatingCapacity') ?? '';
+      });
+    }
   }
 
   @override

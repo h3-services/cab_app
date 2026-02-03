@@ -8,6 +8,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final bool showProfileIcon;
   final List<Widget>? actions;
   final VoidCallback? onBack;
+  final String? title;
 
   const CustomAppBar(
       {super.key,
@@ -15,7 +16,8 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
       this.showMenuIcon = true,
       this.showProfileIcon = true,
       this.actions,
-      this.onBack});
+      this.onBack,
+      this.title});
 
   @override
   State<CustomAppBar> createState() => _CustomAppBarState();
@@ -75,9 +77,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   ),
                 )
               : null),
-      title: const Text(
-        'CHOLA CABS',
-        style: TextStyle(
+      title: Text(
+        widget.title ?? 'CHOLA CABS',
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 22,
           fontWeight: FontWeight.bold,

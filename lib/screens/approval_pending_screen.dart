@@ -99,7 +99,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
           final String? vehicleId = prefs.getString('vehicleId');
           if (vehicleId != null && vehicleId.isNotEmpty) {
             debugPrint("Fetching vehicle details for vehicleId: $vehicleId");
-            final vehicleData = await ApiService.getVehicleDetails(vehicleId);
+            final vehicleData = await ApiService.getVehicleByDriverId(driverId);
             if (vehicleData != null) {
               driverData['vehicle'] = vehicleData;
               debugPrint("Vehicle data fetched and merged: $vehicleData");

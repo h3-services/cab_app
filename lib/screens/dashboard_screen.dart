@@ -44,16 +44,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _requestLocationPermissions() async {
     try {
+      // Check if we already have permissions and user preference
+      final prefs = await SharedPreferences.getInstance();
+      final backgroundGranted = prefs.getBool('background_location_granted') ?? false;
+      final permissionGrantedAt = prefs.getString('permission_granted_at');
+      final dontShowAgain = prefs.getBool('dont_show_permission_dialog') ?? false;
+      
+      // If background permission was granted and user chose not to see dialog again, skip
+      if (backgroundGranted && dontShowAgain) {
+        debugPrint('Background permission already granted, skipping dialog');
+        return;
+      }
+      
+      // Check current permission status
       bool hasPermissions = await PermissionService.checkLocationPermissions();
-      if (!hasPermissions) {
+      if (hasPermissions) {
+        // Update stored status and skip dialog
+        await prefs.setBool('background_location_granted', true);
+        await prefs.setBool('dont_show_permission_dialog', true);
+        debugPrint('All permissions already granted');
+        return;
+      }
+      
+      // Only show dialog if we don't have permissions and user hasn't opted out
+      if (!dontShowAgain) {
         await PermissionService.showPermissionDialog(context);
       }
     } catch (e) {
       debugPrint('Permission error: $e');
     }
     
-    // Request battery optimization exemption for reliable background execution
-    _requestBatteryOptimizationExemption();
+    // Request battery optimization exemption only once
+    final prefs = await SharedPreferences.getInstance();
+    final batteryDialogShown = prefs.getBool('battery_dialog_shown') ?? false;
+    if (!batteryDialogShown) {
+      _requestBatteryOptimizationExemption();
+      await prefs.setBool('battery_dialog_shown', true);
+    }
   }
   
   void _requestBatteryOptimizationExemption() {
@@ -142,6 +169,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final driverData = await ApiService.getDriverDetails(driverId);
 
+      // Cache all vehicles data on app start
+      await ApiService.getAllVehicles(forceRefresh: true);
+
       // Store driver data for immediate access in other screens (like Wallet)
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('driver_data', jsonEncode(driverData));
@@ -156,16 +186,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'licenseNumber', driverData['licence_number'] ?? '');
       await prefs.setString('aadhaarNumber', driverData['aadhar_number'] ?? '');
 
-      // Store vehicle details if available
-      final vehicle = driverData['vehicle'];
-      if (vehicle != null) {
-        await prefs.setString('vehicleType', vehicle['vehicle_type'] ?? '');
-        await prefs.setString('vehicleBrand', vehicle['vehicle_brand'] ?? '');
-        await prefs.setString('vehicleModel', vehicle['vehicle_model'] ?? '');
-        await prefs.setString('vehicleNumber', vehicle['vehicle_number'] ?? '');
-        await prefs.setString('vehicleColor', vehicle['vehicle_color'] ?? '');
+      // Store vehicle details from cached data
+      final vehicleData = await ApiService.getVehicleByDriverId(driverId);
+      if (vehicleData != null) {
+        await prefs.setString('vehicleType', vehicleData['vehicle_type'] ?? '');
+        await prefs.setString('vehicleBrand', vehicleData['vehicle_brand'] ?? '');
+        await prefs.setString('vehicleModel', vehicleData['vehicle_model'] ?? '');
+        await prefs.setString('vehicleNumber', vehicleData['vehicle_number'] ?? '');
+        await prefs.setString('vehicleColor', vehicleData['vehicle_color'] ?? '');
         await prefs.setString(
-            'seatingCapacity', (vehicle['seating_capacity'] ?? '').toString());
+            'seatingCapacity', (vehicleData['seating_capacity'] ?? '').toString());
       }
 
       // Photo handling fallback (if needed)
@@ -537,21 +567,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (!_tripStateService.isReadyForTrip) {
       return Scaffold(
         backgroundColor: const Color(0xFFB0B0B0),
-        appBar: CustomAppBar(
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white),
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.clear();
-                if (mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, '/login', (route) => false);
-                }
-              },
-            ),
-          ],
-        ),
+        appBar: const CustomAppBar(),
         endDrawer: const AppDrawer(),
         body: Column(
           children: [
@@ -744,21 +760,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
-      appBar: CustomAppBar(
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
-              if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                    context, '/login', (route) => false);
-              }
-            },
-          ),
-        ],
-      ),
+      appBar: const CustomAppBar(),
       endDrawer: const AppDrawer(),
       body: Column(
         children: [
