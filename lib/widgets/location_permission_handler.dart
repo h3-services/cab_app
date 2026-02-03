@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import '../services/background_service.dart';
 
 class LocationPermissionHandler extends StatefulWidget {
   final Widget child;
@@ -25,7 +24,7 @@ class _LocationPermissionHandlerState extends State<LocationPermissionHandler> {
   }
 
   Future<void> _checkAndRequestPermissions() async {
-    final isServiceEnabled = await isLocationServiceEnabled();
+    final isServiceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!isServiceEnabled) {
       if (mounted) {
         _showLocationServiceDialog();

@@ -1,10 +1,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'notification_service.dart';
-import '../main.dart'; // To access navigatorKey
-
+import '../main.dart';
 import 'notification_plugin.dart';
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -100,23 +97,10 @@ void _handleNotificationClick(Map<String, dynamic> data) {
 }
 
 Future<void> _showLocalNotification(RemoteMessage message) async {
-  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-    'high_importance_channel',
-    'High Importance Notifications',
-    channelDescription: 'Notifications from admin',
-    importance: Importance.max,
-    priority: Priority.high,
-    showWhen: true,
-  );
-
-  const NotificationDetails details =
-      NotificationDetails(android: androidDetails);
-
-  await flutterLocalNotificationsPlugin.show(
-    message.hashCode,
-    message.notification?.title ?? 'Notification',
-    message.notification?.body ?? '',
-    details,
+  await NotificationPlugin.showNotification(
+    id: message.hashCode,
+    title: message.notification?.title ?? 'Notification',
+    body: message.notification?.body ?? '',
     payload: jsonEncode(message.data),
   );
 }

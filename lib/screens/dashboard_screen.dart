@@ -1,4 +1,3 @@
-import '../services/background_service.dart';
 import '../services/permission_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -178,8 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final String kycVerified =
           (driverData['kyc_verified'] ?? '').toString().toLowerCase();
       final bool isAvailable = driverData['is_available'] == true;
-      final prefs_obj = await SharedPreferences.getInstance();
-      await prefs_obj.setBool('is_available', isAvailable);
+      await prefs.setBool('is_available', isAvailable);
 
       if (!isApproved ||
           (kycVerified != 'verified' && kycVerified != 'approved')) {

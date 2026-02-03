@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'notification_plugin.dart';
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
+
+  await NotificationPlugin.initialize();
 
   await service.configure(
     androidConfiguration: AndroidConfiguration(
@@ -21,6 +22,7 @@ Future<void> initializeService() async {
       initialNotificationTitle: 'Chola Cabs Driver',
       initialNotificationContent: 'Location tracking active',
       foregroundServiceNotificationId: 888,
+      autoStartOnBoot: true,
     ),
     iosConfiguration: IosConfiguration(
       onForeground: onStart,
@@ -29,7 +31,11 @@ Future<void> initializeService() async {
     ),
   );
 
-  await service.startService();
+  try {
+    await service.startService();
+  } catch (e) {
+    debugPrint('[Service Start Error] $e');
+  }
 }
 
 @pragma('vm:entry-point')
@@ -39,6 +45,8 @@ void onStart(ServiceInstance service) async {
   } catch (e) {
     debugPrint('[BG Service] dotenv load error: $e');
   }
+
+  await NotificationPlugin.initialize();
 
   if (service is AndroidServiceInstance) {
     service.on('setAsForeground').listen((event) {
@@ -53,25 +61,15 @@ void onStart(ServiceInstance service) async {
     service.stopSelf();
   });
 
-  // Update location every 15 minutes
   Timer.periodic(const Duration(minutes: 15), (timer) async {
     try {
-      print('\n═══════════════════════════════════════════════════════════');
-      print('📍 BACKGROUND LOCATION CAPTURE (APP TERMINATED)');
-      print('═══════════════════════════════════════════════════════════');
-      print('⏰ Time: ${DateTime.now().toIso8601String()}');
+      debugPrint('📍 Background location update');
       
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 30),
       );
 
-      print('📌 Latitude: ${position.latitude}');
-      print('📌 Longitude: ${position.longitude}');
-      print('🎯 Accuracy: ${position.accuracy}m');
-      print('🔋 App State: TERMINATED/BACKGROUND');
-      
-      // Store location locally
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('last_bg_location', jsonEncode({
         'latitude': position.latitude,
@@ -80,34 +78,17 @@ void onStart(ServiceInstance service) async {
         'accuracy': position.accuracy,
         'app_state': 'terminated'
       }));
-      
-      print('💾 Location stored locally');
 
-      await sendLocationToServer(
-        position.latitude,
-        position.longitude,
-        service,
-      );
-      
-      print('═══════════════════════════════════════════════════════════\n');
+      await sendLocationToServer(position.latitude, position.longitude, service);
     } catch (e) {
-      print('❌ [BG Location Error] $e');
-      // Try last known position as fallback
+      debugPrint('[BG Location Error] $e');
       try {
         Position? lastPosition = await Geolocator.getLastKnownPosition();
         if (lastPosition != null) {
-          print('🔄 Using last known position as fallback');
-          print('📌 Fallback Lat: ${lastPosition.latitude}');
-          print('📌 Fallback Lng: ${lastPosition.longitude}');
-          
-          await sendLocationToServer(
-            lastPosition.latitude,
-            lastPosition.longitude,
-            service,
-          );
+          await sendLocationToServer(lastPosition.latitude, lastPosition.longitude, service);
         }
       } catch (fallbackError) {
-        print('❌ [BG Fallback Error] $fallbackError');
+        debugPrint('[BG Fallback Error] $fallbackError');
       }
     }
   });
@@ -120,38 +101,22 @@ Future<bool> onIosBackground(ServiceInstance service) async {
       desiredAccuracy: LocationAccuracy.high,
       timeLimit: const Duration(seconds: 30),
     );
-
-    await sendLocationToServer(
-      position.latitude,
-      position.longitude,
-      service,
-    );
+    await sendLocationToServer(position.latitude, position.longitude, service);
   } catch (e) {
     debugPrint('[iOS BG Location Error] $e');
   }
   return true;
 }
 
-Future<void> sendLocationToServer(
-  double lat,
-  double lng,
-  ServiceInstance service,
-) async {
+Future<void> sendLocationToServer(double lat, double lng, ServiceInstance service) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final driverId = prefs.getString('driverId');
     
-    if (driverId == null || driverId.isEmpty) {
-      print('⚠️ No driver ID found - cannot store in DB');
-      return;
-    }
+    if (driverId == null || driverId.isEmpty) return;
 
     final baseUrl = dotenv.env['BASE_URL'] ?? 'https://api.cholacabs.in/api';
     final url = '$baseUrl/drivers/$driverId/location';
-    
-    print('📤 STORING LOCATION IN DATABASE');
-    print('🔗 URL: $url');
-    print('👤 Driver ID: $driverId');
     
     final response = await http.post(
       Uri.parse(url),
@@ -160,45 +125,37 @@ Future<void> sendLocationToServer(
         'latitude': lat,
         'longitude': lng,
         'timestamp': DateTime.now().toIso8601String(),
-        'accuracy': 0, // Will be updated if available
+        'accuracy': 0,
         'source': 'background_service',
         'app_state': 'terminated'
       }),
     ).timeout(const Duration(seconds: 15));
 
-    print('📊 Response Status: ${response.statusCode}');
-    print('📋 Response Body: ${response.body}');
-
-    // Update notification
     if (service is AndroidServiceInstance) {
       final now = DateTime.now();
       final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
       
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ LOCATION SUCCESSFULLY STORED IN DATABASE');
-        
-        // Store success in local prefs
         await prefs.setString('last_db_sync', DateTime.now().toIso8601String());
         await prefs.setInt('total_locations_sent', (prefs.getInt('total_locations_sent') ?? 0) + 1);
         
         service.setForegroundNotificationInfo(
           title: "Chola Cabs Driver - Online",
-          content: "Location synced to DB at $timeStr",
+          content: "Location synced at $timeStr",
         );
       } else {
-        print('❌ FAILED TO STORE IN DATABASE - Status: ${response.statusCode}');
         service.setForegroundNotificationInfo(
-          title: "Chola Cabs Driver - DB Error",
-          content: "Failed to sync location (${response.statusCode})",
+          title: "Chola Cabs Driver - Error",
+          content: "Failed to sync location",
         );
       }
     }
   } catch (e) {
-    print('❌ DATABASE STORAGE ERROR: $e');
+    debugPrint('[Location Sync Error] $e');
     if (service is AndroidServiceInstance) {
       service.setForegroundNotificationInfo(
         title: "Chola Cabs Driver - Network Error",
-        content: "Cannot reach database server",
+        content: "Cannot reach server",
       );
     }
   }

@@ -8,6 +8,14 @@ class PermissionService {
     print('🔐 REQUESTING LOCATION PERMISSIONS');
     print('═══════════════════════════════════════════════════════════');
     
+    // Request notification permission first (Android 13+)
+    try {
+      PermissionStatus notificationStatus = await Permission.notification.request();
+      print('🔔 Notification Permission: $notificationStatus');
+    } catch (e) {
+      print('⚠️ Notification permission request failed: $e');
+    }
+    
     // Request basic location permission first
     PermissionStatus locationStatus = await Permission.location.request();
     print('📍 Location Permission: $locationStatus');

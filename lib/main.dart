@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'constants/app_colors.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
@@ -21,6 +20,7 @@ import 'screens/permission_debug_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/permission_service.dart';
+import 'services/notification_plugin.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -33,20 +33,8 @@ void main() async {
     debugPrint("Warning: .env file not found: $e");
   }
 
-  // Create notification channel first
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'location_tracking',
-    'Location Tracking',
-    description: 'Background location tracking for driver safety',
-    importance: Importance.low,
-  );
-
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
+  // Initialize notification plugin first
+  await NotificationPlugin.initialize();
 
   try {
     await Firebase.initializeApp();

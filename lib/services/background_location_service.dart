@@ -5,12 +5,16 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'notification_plugin.dart';
 
 class BackgroundLocationService {
   static Timer? _locationTimer;
   
   static Future<void> initializeBackgroundService() async {
     final service = FlutterBackgroundService();
+
+    // Initialize notification plugin
+    await NotificationPlugin.initialize();
 
     await service.configure(
       androidConfiguration: AndroidConfiguration(
@@ -45,6 +49,9 @@ class BackgroundLocationService {
     } catch (e) {
       print('[BG Service] dotenv load error: $e');
     }
+
+    // Initialize notification plugin in background service
+    await NotificationPlugin.initialize();
 
     if (service is AndroidServiceInstance) {
       service.on('setAsForeground').listen((event) {
