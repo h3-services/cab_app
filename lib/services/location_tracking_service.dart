@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'background_location_service.dart';
+import 'notification_plugin.dart';
 
 class LocationTrackingService {
   static Timer? _locationTimer;
@@ -48,18 +49,20 @@ class LocationTrackingService {
         'longitude': position.longitude,
         'timestamp': DateTime.now().toIso8601String(),
         'accuracy': position.accuracy,
+        'app_state': 'foreground', // App is running when this service captures
       };
 
       await prefs.setString('last_location', jsonEncode(locationData));
 
       debugPrint(
           '\n═══════════════════════════════════════════════════════════');
-      debugPrint('📍 LOCATION CAPTURED');
+      debugPrint('📍 LOCATION CAPTURED (FOREGROUND)');
       debugPrint('═══════════════════════════════════════════════════════════');
       debugPrint('⏰ Time: ${DateTime.now().toIso8601String()}');
       debugPrint('📌 Latitude: ${position.latitude}');
       debugPrint('📌 Longitude: ${position.longitude}');
       debugPrint('🎯 Accuracy: ${position.accuracy.toStringAsFixed(1)}m');
+      debugPrint('📱 App State: FOREGROUND');
       debugPrint('═══════════════════════════════════════════════════════════');
 
       if (driverId != null) {

@@ -74,6 +74,48 @@ class _LocationDebugScreenState extends State<LocationDebugScreen> {
     }
   }
 
+  String _getAppStateDisplay() {
+    final appState = _lastLocation?['app_state']?.toString();
+    switch (appState) {
+      case 'foreground':
+        return 'Foreground (App Active)';
+      case 'background':
+        return 'Background (App Minimized)';
+      case 'terminated':
+        return 'Terminated (App Closed)';
+      default:
+        return 'Unknown State';
+    }
+  }
+
+  IconData _getAppStateIcon() {
+    final appState = _lastLocation?['app_state']?.toString();
+    switch (appState) {
+      case 'foreground':
+        return Icons.smartphone;
+      case 'background':
+        return Icons.minimize;
+      case 'terminated':
+        return Icons.power_off;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  Color _getAppStateColor() {
+    final appState = _lastLocation?['app_state']?.toString();
+    switch (appState) {
+      case 'foreground':
+        return Colors.green;
+      case 'background':
+        return Colors.orange;
+      case 'terminated':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,11 +164,19 @@ class _LocationDebugScreenState extends State<LocationDebugScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildInfoCard(
-                    title: "Raw Data",
-                    content: _lastLocation.toString(),
-                    icon: Icons.data_object,
-                    color: Colors.grey,
-                    isSmall: true,
+                    title: "App State",
+                    content: _getAppStateDisplay(),
+                    icon: _getAppStateIcon(),
+                    color: _getAppStateColor(),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(
+                    title: "Accuracy",
+                    content: _lastLocation?['accuracy'] != null 
+                        ? "${_lastLocation!['accuracy'].toStringAsFixed(1)}m"
+                        : "Unknown",
+                    icon: Icons.gps_fixed,
+                    color: Colors.green,
                   ),
                   const Spacer(),
                   ElevatedButton.icon(

@@ -147,6 +147,16 @@ class BackgroundLocationService {
         print('[BG Location] 📤 Sending location to backend for driver: $driverId');
         await _sendLocationToBackend(driverId, position, service);
         
+        // Store location with terminated state
+        final locationData = {
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+          'timestamp': DateTime.now().toIso8601String(),
+          'accuracy': position.accuracy,
+          'app_state': 'terminated',
+        };
+        await prefs.setString('last_location', jsonEncode(locationData));
+        
         // Show terminated state notification
         print('[BG Location] 🔔 Showing terminated state notification');
         await NotificationPlugin.showTerminatedLocationNotification(
