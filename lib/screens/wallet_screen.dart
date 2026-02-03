@@ -46,6 +46,24 @@ class _WalletScreenState extends State<WalletScreen> {
     super.dispose();
   }
 
+  Future<List<Map<String, dynamic>>> _safeGetAllPayments() async {
+    try {
+      return await PaymentService.getAllPayments();
+    } catch (e) {
+      debugPrint('Payments API failed (404 expected): $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _safeGetWalletTransactions(String driverId) async {
+    try {
+      return await PaymentService.getWalletTransactions(driverId);
+    } catch (e) {
+      debugPrint('Wallet transactions API failed: $e');
+      return [];
+    }
+  }
+
   Future<void> _loadWalletData() async {
     setState(() => isLoading = true);
     try {
@@ -64,9 +82,9 @@ class _WalletScreenState extends State<WalletScreen> {
         }
 
         final results = await Future.wait([
-          PaymentService.getAllPayments(),
+          _safeGetAllPayments(),
           ApiService.getAllTrips(),
-          PaymentService.getWalletTransactions(driverId),
+          _safeGetWalletTransactions(driverId),
         ]);
 
         final List payments = results[0];
@@ -173,6 +191,17 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
+        // Load local transactions from SharedPreferences
+        final localTxns = prefs.getStringList('local_transactions') ?? [];
+        for (String txnStr in localTxns) {
+          try {
+            final txn = json.decode(txnStr) as Map<String, dynamic>;
+            transactionHistory.add(txn);
+          } catch (e) {
+            debugPrint('Error parsing local transaction: $e');
+          }
+        }
+
         // Sort by date descending
         transactionHistory.sort((a, b) {
           final dateA = a['raw_date'].toString();
@@ -271,6 +300,13 @@ class _WalletScreenState extends State<WalletScreen> {
           'type': 'earning',
           'raw_date': now.toIso8601String(),
         };
+        
+        // Save to SharedPreferences for persistence
+        final prefs = await SharedPreferences.getInstance();
+        final existingTxns = prefs.getStringList('local_transactions') ?? [];
+        existingTxns.insert(0, jsonEncode(localTransaction));
+        await prefs.setStringList('local_transactions', existingTxns);
+        
         setState(() {
           transactions.insert(0, localTransaction);
         });

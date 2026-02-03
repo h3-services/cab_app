@@ -44,10 +44,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _requestLocationPermissions() async {
     try {
-      // Check if we already have permissions and user preference
       final prefs = await SharedPreferences.getInstance();
+      final lastPermissionCheck = prefs.getInt('last_permission_check') ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      
+      // Only check permissions once per day to avoid repeated prompts
+      if (now - lastPermissionCheck < 86400000) { // 24 hours in milliseconds
+        debugPrint('Permission check skipped - checked recently');
+        return;
+      }
+      
       final backgroundGranted = prefs.getBool('background_location_granted') ?? false;
-      final permissionGrantedAt = prefs.getString('permission_granted_at');
       final dontShowAgain = prefs.getBool('dont_show_permission_dialog') ?? false;
       
       // If background permission was granted and user chose not to see dialog again, skip
@@ -62,12 +69,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Update stored status and skip dialog
         await prefs.setBool('background_location_granted', true);
         await prefs.setBool('dont_show_permission_dialog', true);
+        await prefs.setInt('last_permission_check', now);
         debugPrint('All permissions already granted');
         return;
       }
       
       // Only show dialog if we don't have permissions and user hasn't opted out
       if (!dontShowAgain) {
+        await prefs.setInt('last_permission_check', now);
         await PermissionService.showPermissionDialog(context);
       }
     } catch (e) {

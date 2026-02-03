@@ -330,10 +330,18 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildSummaryRow('Distance Traveled', '50 km'),
-                _buildSummaryRow('Vehicle Type', 'Sedan'),
-                _buildSummaryRow('Rate per KM', '₹ 12.00'),
-                _buildSummaryRow('Wallet fee ( 2% of KM cost )', '₹ 12.00'),
+                _buildSummaryRow('Distance Traveled', '387 km'),
+                _buildSummaryRow('Time Taken in Hrs', '10.7900'),
+                _buildSummaryRow('Tariff Type', 'MUV-Innova'),
+                const SizedBox(height: 8),
+                _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ 7353'),
+                _buildSummaryRow('Waiting Charges(Rs)', '₹ 225'),
+                _buildSummaryRow('Inter State Permit(Rs)', '₹ 0'),
+                _buildSummaryRow('Driver Allowance(Rs)', '₹ 400'),
+                _buildSummaryRow('Luggage Cost(Rs)', '₹ 300'),
+                _buildSummaryRow('Pet Cost(Rs)', '₹ 0'),
+                _buildSummaryRow('Toll charge(Rs)', '₹ 430.00'),
+                _buildSummaryRow('Night Allowance(Rs)', '₹ 200'),
                 const SizedBox(height: 12),
                 const Divider(thickness: 1, color: Colors.grey),
                 const SizedBox(height: 12),
@@ -341,7 +349,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
                     Text(
-                      'Total Cost',
+                      'Total Cost(Rs)',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -349,7 +357,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
                       ),
                     ),
                     Text(
-                      '₹ 800.00',
+                      '₹ 8908',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -473,7 +481,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Final Amount: ₹800.00',
+                'Final Amount: ₹8908.00',
                 style: TextStyle(
                   fontSize: 14, 
                   fontWeight: FontWeight.bold, 
@@ -532,7 +540,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
       
       if (driverId != null) {
         // Calculate wallet deduction (2% of trip cost)
-        final tripCost = 800.0; // This should be calculated based on actual trip data
+        final tripCost = 8908.0; // Updated total cost
         final walletFee = tripCost * 0.02;
         
         // Get current wallet balance
