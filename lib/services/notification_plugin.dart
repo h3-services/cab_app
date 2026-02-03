@@ -7,8 +7,8 @@ class NotificationPlugin {
 
   static Future<void> initialize() async {
     try {
-      // Create notification channel
-      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      // Create notification channels
+      const AndroidNotificationChannel locationChannel = AndroidNotificationChannel(
         'location_tracking',
         'Location Tracking',
         description: 'Background location tracking for driver safety',
@@ -16,10 +16,21 @@ class NotificationPlugin {
         playSound: false,
         enableVibration: false,
       );
+      
+      const AndroidNotificationChannel terminatedChannel = AndroidNotificationChannel(
+        'terminated_location',
+        'Terminated State Location',
+        description: 'Location updates when app is closed',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
 
-      await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(channel);
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      
+      await androidPlugin?.createNotificationChannel(locationChannel);
+      await androidPlugin?.createNotificationChannel(terminatedChannel);
 
       // Initialize plugin
       const AndroidInitializationSettings initializationSettingsAndroid =
@@ -42,6 +53,45 @@ class NotificationPlugin {
     }
   }
 
+  static Future<void> showTerminatedLocationNotification({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'terminated_location',
+        'Terminated State Location',
+        channelDescription: 'Location updates when app is closed',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        ongoing: false,
+        autoCancel: true,
+        showWhen: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const NotificationDetails platformChannelSpecifics =
+          NotificationDetails(android: androidPlatformChannelSpecifics);
+
+      final now = DateTime.now();
+      final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      
+      await _notificationsPlugin.show(
+        999,
+        'Chola Cabs - App Terminated',
+        'Location captured at $timeStr\nLat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
+        platformChannelSpecifics,
+      );
+      
+      print('[NotificationPlugin] Terminated state notification shown');
+    } catch (e) {
+      print('[NotificationPlugin] Terminated notification error: $e');
+    }
+  }
+
   static Future<void> showNotification({
     required int id,
     required String title,
@@ -54,12 +104,13 @@ class NotificationPlugin {
         'location_tracking',
         'Location Tracking',
         channelDescription: 'Background location tracking for driver safety',
-        importance: Importance.low,
-        priority: Priority.low,
-        playSound: false,
-        enableVibration: false,
-        ongoing: true,
-        autoCancel: false,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        ongoing: false,
+        autoCancel: true,
+        showWhen: true,
       );
 
       const NotificationDetails platformChannelSpecifics =
@@ -72,6 +123,8 @@ class NotificationPlugin {
         platformChannelSpecifics,
         payload: payload,
       );
+      
+      debugPrint('[NotificationPlugin] Notification shown: $title');
     } catch (e) {
       debugPrint('[NotificationPlugin] Show notification error: $e');
     }

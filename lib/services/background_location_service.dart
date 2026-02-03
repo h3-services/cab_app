@@ -85,21 +85,23 @@ class BackgroundLocationService {
     // Update location immediately
     await _updateLocation(service);
 
-    // Use Timer.periodic for reliable background execution
-    _locationTimer = Timer.periodic(const Duration(minutes: 15), (timer) async {
-      print('[BG Service] 🔄 15-minute timer triggered');
+    // Use Timer.periodic for reliable background execution (2 minutes for testing)
+    _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
+      print('[BG Service] 🔄 2-minute timer triggered (testing mode)');
       await _updateLocation(service);
     });
     
-    print('[BG Service] ✅ Background location tracking started with 15-minute intervals');
+    print('[BG Service] ✅ Background location tracking started with 2-minute intervals (testing)');
   }
 
   static Future<void> _updateLocation(ServiceInstance service) async {
     try {
+      print('[BG Location] 🔄 Starting location update...');
+      
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('[BG Location] Location services disabled');
+        print('[BG Location] ❌ Location services disabled');
         return;
       }
 
@@ -107,9 +109,11 @@ class BackgroundLocationService {
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied || 
           permission == LocationPermission.deniedForever) {
-        print('[BG Location] Location permission denied');
+        print('[BG Location] ❌ Location permission denied: $permission');
         return;
       }
+      
+      print('[BG Location] ✅ Permissions OK, getting position...');
 
       Position position;
       try {
@@ -117,7 +121,9 @@ class BackgroundLocationService {
           desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 30),
         );
+        print('[BG Location] 📍 Position obtained: ${position.latitude}, ${position.longitude}');
       } catch (e) {
+        print('[BG Location] ⚠️ Failed to get current position: $e, trying last known...');
         // Fallback to last known position
         position = await Geolocator.getLastKnownPosition() ?? 
           Position(
@@ -138,19 +144,22 @@ class BackgroundLocationService {
       final driverId = prefs.getString('driverId');
       
       if (driverId != null && driverId.isNotEmpty) {
+        print('[BG Location] 📤 Sending location to backend for driver: $driverId');
         await _sendLocationToBackend(driverId, position, service);
         
-        // Show notification when app is in terminated state
-        await NotificationPlugin.showNotification(
-          id: 999,
-          title: 'Chola Cabs - App Terminated',
-          body: 'Location updated while app was closed\nLat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}',
+        // Show terminated state notification
+        print('[BG Location] 🔔 Showing terminated state notification');
+        await NotificationPlugin.showTerminatedLocationNotification(
+          latitude: position.latitude,
+          longitude: position.longitude,
         );
+        
+        print('[BG Location] ✅ Location update completed successfully');
       } else {
-        print('[BG Location] No driver ID found');
+        print('[BG Location] ❌ No driver ID found');
       }
     } catch (e) {
-      print('[BG Location Error] $e');
+      print('[BG Location Error] ❌ $e');
     }
   }
 

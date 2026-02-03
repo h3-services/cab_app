@@ -25,13 +25,13 @@ class LocationTrackingService {
     // Capture initial location
     await _captureAndStoreLocation();
     
-    // Set up 15-minute timer
-    _locationTimer = Timer.periodic(const Duration(minutes: 15), (_) async {
+    // Set up 2-minute timer for testing
+    _locationTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
       await _captureAndStoreLocation();
     });
     
     _isInitialized = true;
-    debugPrint('✅ Location tracking initialized with 15-minute intervals');
+    debugPrint('✅ Location tracking initialized with 2-minute intervals (testing)');
   }
 
   static Future<void> _captureAndStoreLocation() async {
@@ -146,5 +146,14 @@ class LocationTrackingService {
     final isInitialized = prefs.getBool('location_tracking_initialized') ?? false;
     final hasActiveTimer = _locationTimer != null && _locationTimer!.isActive;
     return isInitialized && hasActiveTimer && _isInitialized;
+  }
+
+  /// Test notification immediately (for debugging)
+  static Future<void> testTerminatedNotification() async {
+    debugPrint('📢 Testing terminated state notification...');
+    await NotificationPlugin.showTerminatedLocationNotification(
+      latitude: 10.0817618,
+      longitude: 78.7463452,
+    );
   }
 }
