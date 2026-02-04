@@ -156,9 +156,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _startAutoRefresh() {
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted && !_isLoadingTrips) {
-        _fetchAvailableTrips();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        _fetchAvailableTrips(showLoading: false);
       }
     });
   }
@@ -267,9 +267,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _fetchAvailableTrips() async {
+  Future<void> _fetchAvailableTrips({bool showLoading = true}) async {
     if (!mounted) return;
-    setState(() => _isLoadingTrips = true);
+    if (showLoading) {
+      setState(() => _isLoadingTrips = true);
+    }
 
     try {
       // 1. Fetch data in parallel
@@ -1145,9 +1147,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildAvailableContent() {
-    if (_isLoadingTrips) {
-      return const Center(child: CircularProgressIndicator());
-    }
     return RefreshIndicator(
       onRefresh: _fetchAvailableTrips,
       child: _availableTrips.isEmpty

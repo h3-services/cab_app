@@ -50,17 +50,12 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
-          child: Column(
-            children: [
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
               const SizedBox(height: 20),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
@@ -140,12 +135,11 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: const BottomNavigation(currentRoute: '/dashboard'),
     );
