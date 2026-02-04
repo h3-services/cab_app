@@ -17,7 +17,6 @@ import 'screens/otp_verification_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/device_blocked_screen.dart';
-import 'screens/permission_debug_screen.dart';
 import 'screens/contact_admin_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
@@ -93,7 +92,6 @@ class _MyAppState extends State<MyApp> {
         '/kyc_upload': (context) => const KycUploadScreen(),
         '/contact-admin': (context) => const ContactAdminScreen(),
         '/device-blocked': (context) => const DeviceBlockedScreen(),
-        '/permission-debug': (context) => const PermissionDebugScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/trip_process') {

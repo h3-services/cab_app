@@ -26,6 +26,7 @@ dependencies:
   flutter_local_notifications: ^17.1.2
   url_launcher: ^6.2.0
   permission_handler: ^11.3.0
+  audioplayers: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -38,5 +39,5 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/menu_icon.png
+    - assets/sounds/
     - .env

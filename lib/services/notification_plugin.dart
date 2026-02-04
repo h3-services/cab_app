@@ -26,11 +26,22 @@ class NotificationPlugin {
         enableVibration: true,
       );
 
+      const AndroidNotificationChannel tripChannel = AndroidNotificationChannel(
+        'trip_notifications',
+        'Trip Notifications',
+        description: 'Notifications for new trips and trip updates',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        enableLights: true,
+      );
+
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       
       await androidPlugin?.createNotificationChannel(locationChannel);
       await androidPlugin?.createNotificationChannel(terminatedChannel);
+      await androidPlugin?.createNotificationChannel(tripChannel);
 
       // Initialize plugin
       const AndroidInitializationSettings initializationSettingsAndroid =
@@ -107,13 +118,14 @@ class NotificationPlugin {
     try {
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-        'location_tracking',
-        'Location Tracking',
-        channelDescription: 'Background location tracking for driver safety',
-        importance: Importance.high,
-        priority: Priority.high,
+        'trip_notifications',
+        'Trip Notifications',
+        channelDescription: 'Notifications for new trips and trip updates',
+        importance: Importance.max,
+        priority: Priority.max,
         playSound: true,
         enableVibration: true,
+        enableLights: true,
         ongoing: false,
         autoCancel: true,
         showWhen: true,

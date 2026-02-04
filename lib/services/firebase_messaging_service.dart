@@ -3,15 +3,15 @@ import 'dart:convert';
 import 'notification_service.dart';
 import '../main.dart';
 import 'notification_plugin.dart';
+import 'audio_service.dart';
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("[FCM] Background message: ${message.messageId}");
   await NotificationService.saveNotification(
     message.notification?.title ?? 'Notification',
     message.notification?.body ?? '',
-    message.data,
   );
-  // We can't navigate from background isolate, but we can show notification
+  await AudioService.playNotificationSound();
   _showLocalNotification(message);
 }
 
@@ -41,8 +41,8 @@ Future<void> initializeFirebaseMessaging() async {
       NotificationService.saveNotification(
         message.notification!.title ?? 'Notification',
         message.notification!.body ?? '',
-        message.data,
       );
+      AudioService.playNotificationSound();
       _showLocalNotification(message);
     }
   });
