@@ -19,6 +19,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     'Driving License': false,
     'Aadhaar Card': false,
     'Profile Picture': false,
+    'Police Verification': false,
     'RC Book': false,
     'FC Certificate': false,
     'Front View': false,
@@ -189,6 +190,9 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                       const SizedBox(height: 12),
                       _buildUploadItem('Profile Picture',
                           'Upload a recent profile photo', Icons.person),
+                      const SizedBox(height: 12),
+                      _buildUploadItem('Police Verification',
+                          'Upload police verification certificate', Icons.verified_user),
                     ],
                   ),
                 ),
@@ -257,7 +261,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                         ? null
                         : () {
                             bool allSelected =
-                                _uploadedDocuments.length == 10 &&
+                                _uploadedDocuments.length == 11 &&
                                     _uploadedDocuments.values.every((v) => v);
 
                             if (allSelected) {
@@ -523,6 +527,13 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             }
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('profile_photo_path', file.path);
+            break;
+          case 'Police Verification':
+            if (_isEditing) {
+              await ApiService.reuploadPoliceVerification(driverId, file);
+            } else {
+              await ApiService.uploadPoliceVerification(driverId, file);
+            }
             break;
           case 'RC Book':
             if (_isEditing) {
