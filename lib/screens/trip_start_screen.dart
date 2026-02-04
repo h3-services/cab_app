@@ -910,18 +910,9 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
 
   double _calculateTotalCost() {
     if (widget.tripDetails != null) {
+      // Only show the actual fare as total cost - don't add other charges
       final actualFare = double.tryParse(widget.tripDetails!['actualFare'] ?? '0') ?? 0;
-      final waitingCharges = double.tryParse(widget.tripDetails!['waitingCharges'] ?? '0') ?? 0;
-      final interStatePermit = double.tryParse(widget.tripDetails!['interStatePermit'] ?? '0') ?? 0;
-      final driverAllowance = double.tryParse(widget.tripDetails!['driverAllowance'] ?? '0') ?? 0;
-      final luggageCost = double.tryParse(widget.tripDetails!['luggageCost'] ?? '0') ?? 0;
-      final petCost = double.tryParse(widget.tripDetails!['petCost'] ?? '0') ?? 0;
-      final tollCharge = double.tryParse(widget.tripDetails!['tollCharge'] ?? '0') ?? 0;
-      final nightAllowance = double.tryParse(widget.tripDetails!['nightAllowance'] ?? '0') ?? 0;
-      
-      // Just show all details - don't reduce anything from trip fare
-      return actualFare + waitingCharges + interStatePermit + driverAllowance + 
-             luggageCost + petCost + tollCharge + nightAllowance;
+      return actualFare;
     }
     return 8908.0; // Default total
   }

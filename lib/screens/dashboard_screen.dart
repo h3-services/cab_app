@@ -1301,7 +1301,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildPendingContent() {
     final pendingRequests = _driverRequests
-        .where((r) => (r['status'] ?? '').toString().toUpperCase() == 'PENDING')
+        .where((r) {
+          final status = (r['status'] ?? '').toString().toUpperCase();
+          final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
+          
+          // Only show truly pending requests, exclude completed trips
+          return status == 'PENDING' && 
+                 tripStatus != 'COMPLETED' && 
+                 tripStatus != 'CANCELLED';
+        })
         .toList();
 
     if (pendingRequests.isEmpty) {
@@ -1345,10 +1353,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           // Show "assigned to other" card if:
           // 1. Trip is not in available (OPEN) trips list, OR
-          // 2. Trip status is explicitly ASSIGNED, OR
+          // 2. Trip status is explicitly ASSIGNED to someone else, OR
           // 3. There's an assigned driver that's not the current driver
           if (!tripStillOpen ||
-              tripStatus == 'ASSIGNED' ||
+              (tripStatus == 'ASSIGNED' && assignedDriverId != _driverId) ||
               (assignedDriverId != null && assignedDriverId != _driverId)) {
             return _buildAssignedToOtherCard(request);
           }
