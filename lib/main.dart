@@ -19,6 +19,7 @@ import 'screens/settings_screen.dart';
 import 'screens/location_debug_screen.dart';
 import 'screens/device_blocked_screen.dart';
 import 'screens/permission_debug_screen.dart';
+import 'screens/contact_admin_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/permission_service.dart';
@@ -91,6 +92,7 @@ class _MyAppState extends State<MyApp> {
         '/personal-details': (context) => const PersonalDetailsScreen(),
         '/kyc': (context) => const KycUploadScreen(),
         '/kyc_upload': (context) => const KycUploadScreen(),
+        '/contact-admin': (context) => const ContactAdminScreen(),
         '/device-blocked': (context) => const DeviceBlockedScreen(),
         '/permission-debug': (context) => const PermissionDebugScreen(),
       },

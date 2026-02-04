@@ -139,6 +139,8 @@ class _AppDrawerState extends State<AppDrawer> {
             Navigator.pushNamed(context, '/profile');
           } else if (title == 'Settings') {
             Navigator.pushNamed(context, '/settings');
+          } else if (title == 'Help') {
+            Navigator.pushNamed(context, '/contact-admin');
           } else if (title == 'Sign out') {
             final prefs = await SharedPreferences.getInstance();
             await prefs.clear();
