@@ -57,7 +57,7 @@ class TripDetailsDialog extends StatelessWidget {
                     child: _buildCompactSection('Trip Info', [
                       _buildCompactRow('ID', trip['trip_id']?.toString() ?? '-'),
                       _buildCompactRow('Type', trip['trip_type']?.toString() ?? '-'),
-                      _buildCompactRow('Status', (trip['trip_status'] ?? trip['status'] ?? '-').toString().toUpperCase()),
+                      _buildCompactRow('Status', _getTripStatus()),
                     ]),
                   ),
                   const SizedBox(width: 12),
@@ -290,5 +290,15 @@ class TripDetailsDialog extends StatelessWidget {
     } catch (e) {
       return dateStr.toString();
     }
+  }
+
+  String _getTripStatus() {
+    final status = (trip['trip_status'] ?? trip['status'] ?? '').toString().toUpperCase();
+    if (status == 'APPROVED' || status == 'PENDING') {
+      return 'ASSIGNED';
+    } else if (status == 'STARTED' || status == 'IN_PROGRESS') {
+      return 'STARTED';
+    }
+    return status;
   }
 }

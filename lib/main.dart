@@ -16,7 +16,6 @@ import 'screens/trip_process_screen.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/location_debug_screen.dart';
 import 'screens/device_blocked_screen.dart';
 import 'screens/permission_debug_screen.dart';
 import 'screens/contact_admin_screen.dart';
@@ -103,12 +102,6 @@ class _MyAppState extends State<MyApp> {
             builder: (context) => TripProcessScreen(
               tripData: args ?? {},
             ),
-          );
-        }
-        // Fallback for location-debug if routes table misses it
-        if (settings.name == '/location-debug') {
-          return MaterialPageRoute(
-            builder: (context) => const LocationDebugScreen(),
           );
         }
         return null;

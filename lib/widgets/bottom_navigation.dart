@@ -38,13 +38,6 @@ class BottomNavigation extends StatelessWidget {
             currentRoute == '/wallet',
             () => Navigator.pushReplacementNamed(context, '/wallet'),
           ),
-          const SizedBox(width: 10),
-          _buildNavItem(
-            Icons.location_history,
-            'Location',
-            currentRoute == '/location-debug',
-            () => Navigator.pushReplacementNamed(context, '/location-debug'),
-          ),
         ],
       ),
     );
