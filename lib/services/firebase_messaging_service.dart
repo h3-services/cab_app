@@ -16,13 +16,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       message.notification?.title ?? 'Notification',
       message.notification?.body ?? '',
     );
-    await NotificationPlugin.showNotification(
-      id: message.hashCode,
-      title: message.notification?.title ?? 'Notification',
-      body: message.notification?.body ?? '',
-      payload: jsonEncode(message.data),
-    );
-    print("[FCM] Background notification processed with sound");
+    print("[FCM] Background notification saved");
   } catch (e) {
     print("[FCM] Background handler error: $e");
   }
@@ -48,15 +42,17 @@ Future<void> initializeFirebaseMessaging() async {
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Foreground - save and show, don't navigate automatically
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     print('[FCM] Foreground message: ${message.messageId}');
     if (message.notification != null) {
-      NotificationService.saveNotification(
+      await NotificationService.saveNotification(
         message.notification!.title ?? 'Notification',
         message.notification!.body ?? '',
       );
-      _showLocalNotification(message);
-      print('[FCM] Foreground notification shown with sound');
+      await _showLocalNotification(message);
+      // Play sound 4 times - don't await to avoid blocking
+      AudioService.playNotificationSound();
+      print('[FCM] Foreground notification shown, sound playing');
     }
   });
 
