@@ -767,73 +767,82 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
       endDrawer: _buildDrawer(context),
       body: Column(
         children: [
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: const Text(
-              'Trip Summary',
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Trip Summary',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
-                ),
-                const SizedBox(height: 16),
-                _buildSummaryRow('Distance Traveled', '${widget.tripDetails?['distance'] ?? dist} km'),
-                _buildSummaryRow('Time Taken in Hrs', widget.tripDetails?['time'] ?? '10.7900'),
-                _buildSummaryRow('Tariff Type', widget.tripDetails?['tariffType'] ?? 'MUV-Innova'),
-                const SizedBox(height: 8),
-                _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${widget.tripDetails?['actualFare'] ?? '7353'}'),
-                _buildSummaryRow('Waiting Charges(Rs)', '₹ ${widget.tripDetails?['waitingCharges'] ?? '225'}'),
-                _buildSummaryRow('Inter State Permit(Rs)', '₹ ${widget.tripDetails?['interStatePermit'] ?? '0'}'),
-                _buildSummaryRow('Driver Allowance(Rs)', '₹ ${widget.tripDetails?['driverAllowance'] ?? '400'}'),
-                _buildSummaryRow('Luggage Cost(Rs)', '₹ ${widget.tripDetails?['luggageCost'] ?? '300'}'),
-                _buildSummaryRow('Pet Cost(Rs)', '₹ ${widget.tripDetails?['petCost'] ?? '0'}'),
-                _buildSummaryRow('Toll charge(Rs)', '₹ ${widget.tripDetails?['tollCharge'] ?? '430.00'}'),
-                _buildSummaryRow('Night Allowance(Rs)', '₹ ${widget.tripDetails?['nightAllowance'] ?? '200'}'),
-                const SizedBox(height: 12),
-                const Divider(thickness: 1, color: Colors.grey),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total Cost(Rs)',
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: const Text(
+                      'Trip Summary',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
                     ),
-                    Text(
-                      '₹ ${_calculateTotalCost()}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
-              ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Trip Summary',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSummaryRow('Distance Traveled', '${widget.tripDetails?['distance'] ?? dist} km'),
+                        _buildSummaryRow('Time Taken in Hrs', widget.tripDetails?['time'] ?? '10.7900'),
+                        _buildSummaryRow('Tariff Type', widget.tripDetails?['tariffType'] ?? 'MUV-Innova'),
+                        const SizedBox(height: 8),
+                        _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${widget.tripDetails?['actualFare'] ?? '7353'}'),
+                        _buildSummaryRow('Waiting Charges(Rs)', '₹ ${widget.tripDetails?['waitingCharges'] ?? '225'}'),
+                        _buildSummaryRow('Inter State Permit(Rs)', '₹ ${widget.tripDetails?['interStatePermit'] ?? '0'}'),
+                        _buildSummaryRow('Driver Allowance(Rs)', '₹ ${widget.tripDetails?['driverAllowance'] ?? '400'}'),
+                        _buildSummaryRow('Luggage Cost(Rs)', '₹ ${widget.tripDetails?['luggageCost'] ?? '300'}'),
+                        _buildSummaryRow('Pet Cost(Rs)', '₹ ${widget.tripDetails?['petCost'] ?? '0'}'),
+                        _buildSummaryRow('Toll charge(Rs)', '₹ ${widget.tripDetails?['tollCharge'] ?? '430.00'}'),
+                        _buildSummaryRow('Night Allowance(Rs)', '₹ ${widget.tripDetails?['nightAllowance'] ?? '200'}'),
+                        const SizedBox(height: 12),
+                        const Divider(thickness: 1, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total Cost(Rs)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              '₹ ${_calculateTotalCost()}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
           Padding(

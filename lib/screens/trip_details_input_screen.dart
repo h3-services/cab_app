@@ -24,16 +24,17 @@ class TripDetailsInputScreen extends StatefulWidget {
 class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _distanceController;
-  final _timeController = TextEditingController(text: '0');
+  final _timeController = TextEditingController();
   final _tariffController = TextEditingController(text: 'MUV-Innova');
-  final _actualFareController = TextEditingController(text: '0');
-  final _waitingChargesController = TextEditingController(text: '0');
-  final _interStatePermitController = TextEditingController(text: '0');
-  final _driverAllowanceController = TextEditingController(text: '0');
-  final _luggageCostController = TextEditingController(text: '0');
-  final _petCostController = TextEditingController(text: '0');
-  final _tollChargeController = TextEditingController(text: '0');
-  final _nightAllowanceController = TextEditingController(text: '0');
+  final _actualFareController = TextEditingController();
+  final _waitingChargesController = TextEditingController();
+  final _interStatePermitController = TextEditingController();
+  final _driverAllowanceController = TextEditingController();
+  final _luggageCostController = TextEditingController();
+  final _petCostController = TextEditingController();
+  final _tollChargeController = TextEditingController();
+  final _nightAllowanceController = TextEditingController();
+  bool _isLoadingFare = true;
 
   @override
   void initState() {
@@ -43,6 +44,30 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
     final endKm = double.tryParse(widget.endingKm) ?? 0;
     final distance = (endKm - startKm).abs();
     _distanceController = TextEditingController(text: distance.toString());
+    _fetchTripFare();
+  }
+
+  Future<void> _fetchTripFare() async {
+    final tripId = widget.tripData['trip_id']?.toString() ?? widget.tripData['id']?.toString();
+    if (tripId == null || tripId.isEmpty) {
+      setState(() => _isLoadingFare = false);
+      return;
+    }
+
+    try {
+      final tripDetails = await ApiService.getTripDetails(tripId);
+      final fare = tripDetails['fare']?.toString() ?? tripDetails['total_fare']?.toString() ?? '';
+      if (fare.isNotEmpty && mounted) {
+        setState(() {
+          _actualFareController.text = fare;
+          _isLoadingFare = false;
+        });
+      } else {
+        setState(() => _isLoadingFare = false);
+      }
+    } catch (e) {
+      setState(() => _isLoadingFare = false);
+    }
   }
 
   @override
@@ -146,6 +171,7 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   }
 
   Widget _buildInputField(String label, TextEditingController controller) {
+    final isActualFare = label.contains('Actual Fare');
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -171,10 +197,23 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               filled: true,
               fillColor: Colors.grey.shade50,
+              suffixIcon: isActualFare && _isLoadingFare
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : null,
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'This field is required';
+              // Only distance and actual fare are required
+              if (label.contains('Distance') || label.contains('Actual Fare')) {
+                if (value == null || value.isEmpty) {
+                  return 'This field is required';
+                }
               }
               return null;
             },
@@ -209,16 +248,16 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
         
         final tripDetailsMap = {
           'distance': _distanceController.text,
-          'time': _timeController.text,
+          'time': _timeController.text.isEmpty ? '0' : _timeController.text,
           'tariffType': _tariffController.text,
           'actualFare': apiFare,
-          'waitingCharges': _waitingChargesController.text,
-          'interStatePermit': _interStatePermitController.text,
-          'driverAllowance': _driverAllowanceController.text,
-          'luggageCost': _luggageCostController.text,
-          'petCost': _petCostController.text,
-          'tollCharge': _tollChargeController.text,
-          'nightAllowance': _nightAllowanceController.text,
+          'waitingCharges': _waitingChargesController.text.isEmpty ? '0' : _waitingChargesController.text,
+          'interStatePermit': _interStatePermitController.text.isEmpty ? '0' : _interStatePermitController.text,
+          'driverAllowance': _driverAllowanceController.text.isEmpty ? '0' : _driverAllowanceController.text,
+          'luggageCost': _luggageCostController.text.isEmpty ? '0' : _luggageCostController.text,
+          'petCost': _petCostController.text.isEmpty ? '0' : _petCostController.text,
+          'tollCharge': _tollChargeController.text.isEmpty ? '0' : _tollChargeController.text,
+          'nightAllowance': _nightAllowanceController.text.isEmpty ? '0' : _nightAllowanceController.text,
         };
 
         if (mounted) {
@@ -241,16 +280,16 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
         // Use entered fare as fallback
         final tripDetailsMap = {
           'distance': _distanceController.text,
-          'time': _timeController.text,
+          'time': _timeController.text.isEmpty ? '0' : _timeController.text,
           'tariffType': _tariffController.text,
           'actualFare': _actualFareController.text,
-          'waitingCharges': _waitingChargesController.text,
-          'interStatePermit': _interStatePermitController.text,
-          'driverAllowance': _driverAllowanceController.text,
-          'luggageCost': _luggageCostController.text,
-          'petCost': _petCostController.text,
-          'tollCharge': _tollChargeController.text,
-          'nightAllowance': _nightAllowanceController.text,
+          'waitingCharges': _waitingChargesController.text.isEmpty ? '0' : _waitingChargesController.text,
+          'interStatePermit': _interStatePermitController.text.isEmpty ? '0' : _interStatePermitController.text,
+          'driverAllowance': _driverAllowanceController.text.isEmpty ? '0' : _driverAllowanceController.text,
+          'luggageCost': _luggageCostController.text.isEmpty ? '0' : _luggageCostController.text,
+          'petCost': _petCostController.text.isEmpty ? '0' : _petCostController.text,
+          'tollCharge': _tollChargeController.text.isEmpty ? '0' : _tollChargeController.text,
+          'nightAllowance': _nightAllowanceController.text.isEmpty ? '0' : _nightAllowanceController.text,
         };
 
         if (mounted) {

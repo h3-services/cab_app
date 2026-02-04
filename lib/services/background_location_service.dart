@@ -13,10 +13,8 @@ class BackgroundLocationService {
   static bool _serviceInitialized = false;
   
   static Future<void> initializeBackgroundService() async {
-    if (_serviceInitialized) {
-      debugPrint('⚠️ Background service already initialized');
-      return;
-    }
+    // Always reinitialize to ensure service is running
+    debugPrint('🚀 Initializing/Restarting background service');
 
     final service = FlutterBackgroundService();
 
@@ -81,20 +79,20 @@ class BackgroundLocationService {
 
     // Prevent duplicate timers
     if (_locationTimer != null && _locationTimer!.isActive) {
-      print('[BG Service] Timer already running, skipping initialization');
-      return;
+      print('[BG Service] Canceling existing timer before creating new one');
+      _locationTimer!.cancel();
     }
 
     // Update location immediately
     await _updateLocation(service);
 
-    // Use Timer.periodic for reliable background execution (2 minutes for testing)
+    // Use Timer.periodic for reliable background execution (2 minutes)
     _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
-      print('[BG Service] 🔄 2-minute timer triggered (testing mode)');
+      print('[BG Service] 🔄 2-minute timer triggered');
       await _updateLocation(service);
     });
     
-    print('[BG Service] ✅ Background location tracking started with 2-minute intervals (testing)');
+    print('[BG Service] ✅ Background location tracking started with 2-minute intervals');
   }
 
   static Future<void> _updateLocation(ServiceInstance service) async {

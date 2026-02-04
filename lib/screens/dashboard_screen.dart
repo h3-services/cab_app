@@ -48,13 +48,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final prefs = await SharedPreferences.getInstance();
     final isTrackingInitialized = prefs.getBool('location_tracking_initialized') ?? false;
     
-    if (!isTrackingInitialized) {
-      debugPrint('🚀 Initializing location tracking for the first time');
-      await LocationTrackingService.startLocationTracking();
-      await prefs.setBool('location_tracking_initialized', true);
-    } else {
-      debugPrint('✅ Location tracking already initialized, skipping');
-    }
+    // Always restart location tracking to ensure it's running
+    debugPrint('🚀 Starting/Restarting location tracking');
+    await LocationTrackingService.startLocationTracking();
+    await prefs.setBool('location_tracking_initialized', true);
   }
 
   Future<void> _requestLocationPermissions() async {
@@ -157,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _startAutoRefresh() {
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted) {
+      if (mounted && selectedTab != 3) {
         _fetchAvailableTrips(showLoading: false);
       }
     });

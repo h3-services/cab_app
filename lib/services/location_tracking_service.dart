@@ -13,9 +13,10 @@ class LocationTrackingService {
   static bool _isInitialized = false;
 
   static Future<void> startLocationTracking() async {
+    // Always stop existing tracking first to prevent duplicates
     if (_isInitialized) {
-      debugPrint('⚠️ Location tracking already running, skipping initialization');
-      return;
+      debugPrint('⚠️ Stopping existing location tracking before restart');
+      stopLocationTracking();
     }
 
     debugPrint('🚀 Starting location tracking service...');
@@ -26,13 +27,13 @@ class LocationTrackingService {
     // Capture initial location
     await _captureAndStoreLocation();
     
-    // Set up 2-minute timer for testing
+    // Set up 2-minute timer
     _locationTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
       await _captureAndStoreLocation();
     });
     
     _isInitialized = true;
-    debugPrint('✅ Location tracking initialized with 2-minute intervals (testing)');
+    debugPrint('✅ Location tracking initialized with 2-minute intervals');
   }
 
   static Future<void> _captureAndStoreLocation() async {
