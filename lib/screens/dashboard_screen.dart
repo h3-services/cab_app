@@ -33,6 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _allTrips = [];
   bool _isLoadingTrips = false;
   late Timer _autoRefreshTimer;
+  String _historyFilter = 'All'; // Filter state for history
 
   @override
   void initState() {
@@ -703,7 +704,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const Color(0xFF757575)),
                   const SizedBox(width: 8),
                   _buildTabButton(
-                      'Pending (${_driverRequests.where((r) => (r['status'] ?? '').toString().toUpperCase() == 'PENDING').length})',
+                      'Pending (${_driverRequests.where((r) {
+                        final status = (r['status'] ?? '').toString().toUpperCase();
+                        final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
+                        return status == 'PENDING' && 
+                               tripStatus != 'COMPLETED' && 
+                               tripStatus != 'CANCELLED' &&
+                               tripStatus != 'ASSIGNED';
+                      }).length})',
                       1,
                       AppColors.orangeDark),
                   const SizedBox(width: 8),
@@ -910,7 +918,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const Color(0xFF757575)),
                 const SizedBox(width: 8),
                 _buildTabButton(
-                    'Pending (${_driverRequests.where((r) => (r['status'] ?? '').toString().toUpperCase() == 'PENDING').length})',
+                    'Pending (${_driverRequests.where((r) {
+                      final status = (r['status'] ?? '').toString().toUpperCase();
+                      final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
+                      return status == 'PENDING' && 
+                             tripStatus != 'COMPLETED' && 
+                             tripStatus != 'CANCELLED' &&
+                             tripStatus != 'ASSIGNED';
+                    }).length})',
                     1,
                     AppColors.orangeDark),
                 const SizedBox(width: 8),
@@ -1305,10 +1320,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final status = (r['status'] ?? '').toString().toUpperCase();
           final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
           
-          // Only show truly pending requests, exclude completed trips
+          // Only show truly pending requests, exclude completed, cancelled, and assigned trips
           return status == 'PENDING' && 
                  tripStatus != 'COMPLETED' && 
-                 tripStatus != 'CANCELLED';
+                 tripStatus != 'CANCELLED' &&
+                 tripStatus != 'ASSIGNED';
         })
         .toList();
 
@@ -1322,7 +1338,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: const Center(
               child: Text(
                 'No pending requests found.',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1718,16 +1734,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.check_circle_outline,
-                      size: 48, color: Colors.grey),
+                      size: 48, color: Colors.black),
                   SizedBox(height: 16),
                   Text(
                     'No approved trips yet',
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                    style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Swipe down to refresh',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(color: Colors.black, fontSize: 12),
                   ),
                 ],
               ),
@@ -2172,7 +2188,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showApprovedCancelDialog(BuildContext context, String? tripId) {
+  void _showHistoryFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Filter History'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('All Trips'),
+              leading: Radio<String>(
+                value: 'All',
+                groupValue: _historyFilter,
+                onChanged: (value) {
+                  setState(() {
+                    _historyFilter = value!;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+            ListTile(
+              title: const Text('This Week'),
+              leading: Radio<String>(
+                value: 'Week',
+                groupValue: _historyFilter,
+                onChanged: (value) {
+                  setState(() {
+                    _historyFilter = value!;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+            ListTile(
+              title: const Text('This Month'),
+              leading: Radio<String>(
+                value: 'Month',
+                groupValue: _historyFilter,
+                onChanged: (value) {
+                  setState(() {
+                    _historyFilter = value!;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -2305,13 +2372,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final allTrips = snapshot.data ?? [];
 
         // Filter for completed trips assigned to this driver
-        final completedTrips = allTrips.where((trip) {
+        var completedTrips = allTrips.where((trip) {
           final status = (trip['trip_status'] ?? trip['status'] ?? '')
               .toString()
               .toUpperCase();
           final assignedDriverId = trip['assigned_driver_id']?.toString();
           return status == 'COMPLETED' && assignedDriverId == _driverId;
         }).toList();
+
+        // Apply date filter
+        if (_historyFilter != 'All') {
+          final now = DateTime.now();
+          completedTrips = completedTrips.where((trip) {
+            final dateStr = trip['completed_at'] ?? trip['created_at'];
+            if (dateStr == null) return false;
+            
+            try {
+              final tripDate = DateTime.parse(dateStr.toString());
+              if (_historyFilter == 'Week') {
+                final weekAgo = now.subtract(const Duration(days: 7));
+                return tripDate.isAfter(weekAgo);
+              } else if (_historyFilter == 'Month') {
+                final monthAgo = DateTime(now.year, now.month - 1, now.day);
+                return tripDate.isAfter(monthAgo);
+              }
+            } catch (e) {
+              return false;
+            }
+            return true;
+          }).toList();
+        }
 
         // Sort by completion date (most recent first)
         completedTrips.sort((a, b) {
@@ -2353,23 +2443,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: Colors.black87,
                     ),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF424242),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text(
-                          'History Filter',
-                          style: TextStyle(color: Colors.white, fontSize: 13),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.keyboard_arrow_down,
-                            color: Colors.white, size: 20),
-                      ],
+                  GestureDetector(
+                    onTap: _showHistoryFilterDialog,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF424242),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'History Filter',
+                            style: TextStyle(color: Colors.white, fontSize: 13),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.keyboard_arrow_down,
+                              color: Colors.white, size: 20),
+                        ],
+                      ),
                     ),
                   ),
                 ],
