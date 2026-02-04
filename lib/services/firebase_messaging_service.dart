@@ -1,18 +1,31 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'dart:convert';
 import 'notification_service.dart';
 import '../main.dart';
 import 'notification_plugin.dart';
 import 'audio_service.dart';
 
+@pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("[FCM] Background message: ${message.messageId}");
-  await NotificationService.saveNotification(
-    message.notification?.title ?? 'Notification',
-    message.notification?.body ?? '',
-  );
-  await AudioService.playNotificationSound();
-  _showLocalNotification(message);
+  await Firebase.initializeApp();
+  print("[FCM] Background/Terminated message: ${message.messageId}");
+  
+  try {
+    await NotificationService.saveNotification(
+      message.notification?.title ?? 'Notification',
+      message.notification?.body ?? '',
+    );
+    await NotificationPlugin.showNotification(
+      id: message.hashCode,
+      title: message.notification?.title ?? 'Notification',
+      body: message.notification?.body ?? '',
+      payload: jsonEncode(message.data),
+    );
+    print("[FCM] Background notification processed with sound");
+  } catch (e) {
+    print("[FCM] Background handler error: $e");
+  }
 }
 
 Future<void> initializeFirebaseMessaging() async {
@@ -42,8 +55,8 @@ Future<void> initializeFirebaseMessaging() async {
         message.notification!.title ?? 'Notification',
         message.notification!.body ?? '',
       );
-      AudioService.playNotificationSound();
       _showLocalNotification(message);
+      print('[FCM] Foreground notification shown with sound');
     }
   });
 

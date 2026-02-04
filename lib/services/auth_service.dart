@@ -12,7 +12,7 @@ class AuthService {
     try {
       final deviceIdentifier =
           await DeviceService.generateDeviceIdentifier(phoneNumber);
-      print('Sending device identifier: $deviceIdentifier'); // Debug log
+      print('Sending device identifier: $deviceIdentifier');
 
       final response = await http.post(
         Uri.parse('$_baseUrl/drivers/'),
@@ -25,8 +25,8 @@ class AuthService {
         }),
       );
 
-      print('Response status: ${response.statusCode}'); // Debug log
-      print('Response body: ${response.body}'); // Debug log
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
@@ -36,10 +36,11 @@ class AuthService {
           'data': responseData,
         };
       } else if (response.statusCode == 409) {
+        // Device ID mismatch - phone exists but different device
         return {
           'success': false,
-          'message':
-              'This account is registered on another device. Please contact support to reset your device.',
+          'message': 'device_blocked',
+          'showBlockedScreen': true,
         };
       } else {
         return {
@@ -48,7 +49,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      print('Auth error: $e'); // Debug log
+      print('Auth error: $e');
       return {
         'success': false,
         'message': 'Network error: ${e.toString()}',

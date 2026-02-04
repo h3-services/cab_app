@@ -252,6 +252,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/dashboard');
         }
+      } else if (result['showBlockedScreen'] == true) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/device-blocked');
+        }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

@@ -32,8 +32,10 @@ class NotificationPlugin {
         description: 'Notifications for new trips and trip updates',
         importance: Importance.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
         enableLights: true,
+        showBadge: true,
       );
 
       final androidPlugin = _notificationsPlugin
@@ -124,6 +126,7 @@ class NotificationPlugin {
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
         enableLights: true,
         ongoing: false,
