@@ -34,6 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoadingTrips = false;
   late Timer _autoRefreshTimer;
   String _historyFilter = 'All'; // Filter state for history
+  double _walletBalance = 0.0; // Wallet balance
 
   @override
   void initState() {
@@ -155,8 +156,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _startAutoRefresh() {
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted && selectedTab == 0) {
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted && !_isLoadingTrips) {
         _fetchAvailableTrips();
       }
     });
@@ -289,6 +290,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (driverData != null && mounted) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('driver_data', jsonEncode(driverData));
+        
+        // Get wallet balance
+        _walletBalance = (driverData['wallet_balance'] ?? 0.0).toDouble();
       }
 
       // 2. Enhance requests with fresh trip status data in parallel
@@ -985,9 +989,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           setState(() {
             selectedTab = index;
           });
-          if (index == 2) {
-            _fetchAvailableTrips();
-          }
+          // Refresh data when switching to any tab
+          _fetchAvailableTrips();
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1051,6 +1054,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTabContent() {
+    // Check if wallet balance is negative
+    if (_walletBalance < 0) {
+      return _buildWalletTopUpMessage();
+    }
+    
     switch (selectedTab) {
       case 0:
         return _buildAvailableContent();
@@ -1063,6 +1071,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
       default:
         return _buildAvailableContent();
     }
+  }
+
+  Widget _buildWalletTopUpMessage() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/chola_cabs_logo.png',
+            width: 120,
+            height: 120,
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Wallet Balance Low',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Your wallet balance is insufficient.\nPlease top up your wallet to view and accept trips.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black87,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.greenPrimary, AppColors.greenDark],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/wallet'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.account_balance_wallet, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Top Up Wallet',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAvailableContent() {
@@ -2191,48 +2270,131 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _showHistoryFilterDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filter History'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    'assets/images/chola_cabs_logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Filter History',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Select the time period for your trip history',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Column(
+                children: [
+                  _buildFilterOption('All Trips', 'All'),
+                  const SizedBox(height: 12),
+                  _buildFilterOption('This Week', 'Week'),
+                  const SizedBox(height: 12),
+                  _buildFilterOption('This Month', 'Month'),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterOption(String title, String value) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _historyFilter = value;
+        });
+        Navigator.pop(context);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: _historyFilter == value ? AppColors.greenPrimary.withOpacity(0.1) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _historyFilter == value ? AppColors.greenPrimary : Colors.grey.shade300,
+            width: 2,
+          ),
+        ),
+        child: Row(
           children: [
-            ListTile(
-              title: const Text('All Trips'),
-              leading: Radio<String>(
-                value: 'All',
-                groupValue: _historyFilter,
-                onChanged: (value) {
-                  setState(() {
-                    _historyFilter = value!;
-                  });
-                  Navigator.pop(context);
-                },
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _historyFilter == value ? AppColors.greenPrimary : Colors.grey.shade400,
+                  width: 2,
+                ),
+                color: _historyFilter == value ? AppColors.greenPrimary : Colors.transparent,
               ),
+              child: _historyFilter == value
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  : null,
             ),
-            ListTile(
-              title: const Text('This Week'),
-              leading: Radio<String>(
-                value: 'Week',
-                groupValue: _historyFilter,
-                onChanged: (value) {
-                  setState(() {
-                    _historyFilter = value!;
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-            ListTile(
-              title: const Text('This Month'),
-              leading: Radio<String>(
-                value: 'Month',
-                groupValue: _historyFilter,
-                onChanged: (value) {
-                  setState(() {
-                    _historyFilter = value!;
-                  });
-                  Navigator.pop(context);
-                },
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: _historyFilter == value ? AppColors.greenPrimary : Colors.black87,
               ),
             ),
           ],
