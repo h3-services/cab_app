@@ -919,6 +919,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
       final tollCharge = double.tryParse(widget.tripDetails!['tollCharge'] ?? '0') ?? 0;
       final nightAllowance = double.tryParse(widget.tripDetails!['nightAllowance'] ?? '0') ?? 0;
       
+      // Just show all details - don't reduce anything from trip fare
       return actualFare + waitingCharges + interStatePermit + driverAllowance + 
              luggageCost + petCost + tollCharge + nightAllowance;
     }

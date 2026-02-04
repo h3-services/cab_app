@@ -61,6 +61,9 @@ class BackgroundLocationService {
 
     // Initialize notification plugin in background service
     await NotificationPlugin.initialize();
+    
+    // Show test notification to verify notifications are working
+    await NotificationPlugin.showTestNotification();
 
     if (service is AndroidServiceInstance) {
       service.on('setAsForeground').listen((event) {
@@ -157,12 +160,17 @@ class BackgroundLocationService {
         };
         await prefs.setString('last_location', jsonEncode(locationData));
         
-        // Show terminated state notification
-        print('[BG Location] 🔔 Showing terminated state notification');
-        await NotificationPlugin.showTerminatedLocationNotification(
-          latitude: position.latitude,
-          longitude: position.longitude,
-        );
+        // ALWAYS show terminated state notification when location is obtained
+        print('[BG Location] 🔔 FORCE showing terminated state notification');
+        try {
+          await NotificationPlugin.showTerminatedLocationNotification(
+            latitude: position.latitude,
+            longitude: position.longitude,
+          );
+          print('[BG Location] ✅ Terminated notification sent successfully');
+        } catch (e) {
+          print('[BG Location] ❌ Notification error: $e');
+        }
         
         print('[BG Location] ✅ Location update completed successfully');
       } else {

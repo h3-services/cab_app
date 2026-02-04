@@ -63,14 +63,17 @@ class NotificationPlugin {
         'terminated_location',
         'Terminated State Location',
         channelDescription: 'Location updates when app is closed',
-        importance: Importance.high,
-        priority: Priority.high,
+        importance: Importance.max,
+        priority: Priority.max,
         playSound: true,
         enableVibration: true,
         ongoing: false,
         autoCancel: true,
         showWhen: true,
         icon: '@mipmap/ic_launcher',
+        ticker: 'Location captured in background',
+        visibility: NotificationVisibility.public,
+        fullScreenIntent: false,
       );
 
       const NotificationDetails platformChannelSpecifics =
@@ -79,16 +82,19 @@ class NotificationPlugin {
       final now = DateTime.now();
       final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       
+      // Use unique ID based on timestamp to avoid overwriting
+      final notificationId = 999 + (now.millisecondsSinceEpoch % 1000);
+      
       await _notificationsPlugin.show(
-        999,
-        'Chola Cabs - App Terminated',
-        'Location captured at $timeStr\nLat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
+        notificationId,
+        '📍 Chola Cabs - Location Update',
+        'App closed - Location captured at $timeStr\nLat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
         platformChannelSpecifics,
       );
       
-      print('[NotificationPlugin] Terminated state notification shown');
+      print('[NotificationPlugin] ✅ Terminated state notification shown with ID: $notificationId');
     } catch (e) {
-      print('[NotificationPlugin] Terminated notification error: $e');
+      print('[NotificationPlugin] ❌ Terminated notification error: $e');
     }
   }
 
@@ -143,6 +149,40 @@ class NotificationPlugin {
       await _notificationsPlugin.cancelAll();
     } catch (e) {
       debugPrint('[NotificationPlugin] Cancel all notifications error: $e');
+    }
+  }
+
+  // Test notification to verify notifications are working
+  static Future<void> showTestNotification() async {
+    try {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'terminated_location',
+        'Test Notification',
+        channelDescription: 'Test notification to verify functionality',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        enableVibration: true,
+        ongoing: false,
+        autoCancel: true,
+        showWhen: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const NotificationDetails platformChannelSpecifics =
+          NotificationDetails(android: androidPlatformChannelSpecifics);
+
+      await _notificationsPlugin.show(
+        888,
+        '🔔 Test Notification',
+        'This is a test notification to verify notifications are working',
+        platformChannelSpecifics,
+      );
+      
+      print('[NotificationPlugin] ✅ Test notification shown');
+    } catch (e) {
+      print('[NotificationPlugin] ❌ Test notification error: $e');
     }
   }
 }

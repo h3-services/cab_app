@@ -2404,7 +2404,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               _buildTableHeader('End KM'),
                               _buildTableHeader('Distance'),
                               _buildTableHeader('Total Trip Cost'),
-                              _buildTableHeader('Service Fee (2%)'),
+                              _buildTableHeader('Service Fee (10%)'),
                               _buildTableHeader('Status'),
                             ],
                           ),
@@ -2439,7 +2439,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     trip['amount'] ??
                                     800.0)
                                 .toDouble();
-                            final serviceFee = totalCost * 0.0172;
+                            final serviceFee = totalCost * 0.10;
                             final distance =
                                 trip['distance'] ?? trip['distance_km'] ?? 5;
 

@@ -539,9 +539,9 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
       final driverId = prefs.getString('driverId');
       
       if (driverId != null) {
-        // Calculate wallet deduction (2% of trip cost)
+        // Calculate wallet deduction (10% of trip cost)
         final tripCost = 8908.0; // Updated total cost
-        final walletFee = tripCost * 0.02;
+        final walletFee = tripCost * 0.10;
         
         // Get current wallet balance
         final driverDetails = await ApiService.getDriverDetails(driverId);
