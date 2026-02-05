@@ -35,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Timer _autoRefreshTimer;
   String _historyFilter = 'All'; // Filter state for history
   double _walletBalance = 0.0; // Wallet balance
+  List<dynamic>? _cachedHistoryTrips; // Cache for history trips
 
   @override
   void initState() {
@@ -180,12 +181,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isAvailable = prefs.getBool('is_available') ?? false;
     
     if (_driverId != null && cachedDriverData != null) {
-      // Skip full approval check, show UI immediately and load trips in background
+      // Skip full approval check, show UI immediately and load trips with loading indicator
       _tripStateService.setReadyForTrip(isAvailable);
       setState(() => _isCheckingStatus = false);
       _startAutoRefresh();
-      // Load trips in background without showing loading indicator
-      _fetchAvailableTrips(showLoading: false);
+      // Load trips with loading indicator so user knows to wait
+      _fetchAvailableTrips(showLoading: true);
     } else if (_driverId != null) {
       // First time load, do full check
       _checkApprovalStatus(_driverId!);
@@ -296,10 +297,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _walletBalance = (driverData['wallet_balance'] ?? 0.0).toDouble();
       }
 
-      // Use request data as-is without additional API calls
-      final enhancedRequests = requests.map((request) {
+      // Enhance requests with latest trip status
+      final enhancedRequests = await Future.wait(requests.map((request) async {
+        final tripId = request['trip_id']?.toString();
+        if (tripId != null) {
+          try {
+            final tripDetails = await ApiService.getTripDetails(tripId);
+            final enhanced = Map<String, dynamic>.from(request);
+            enhanced['trip_status'] = tripDetails['trip_status'] ?? tripDetails['status'] ?? request['trip_status'];
+            enhanced['odo_start'] = tripDetails['odo_start'] ?? request['odo_start'];
+            return enhanced;
+          } catch (e) {
+            return Map<String, dynamic>.from(request);
+          }
+        }
         return Map<String, dynamic>.from(request);
-      }).toList();
+      }));
 
       // Filter available trips
       final requestedTripIds = enhancedRequests
@@ -934,8 +947,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           setState(() {
             selectedTab = index;
           });
-          // Refresh data when switching to any tab
-          _fetchAvailableTrips();
+          // Refresh data when switching tabs, except History tab
+          if (index != 3) {
+            _fetchAvailableTrips();
+          }
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1002,6 +1017,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Check if wallet balance is negative
     if (_walletBalance < 0) {
       return _buildWalletTopUpMessage();
+    }
+    
+    // Show loading only when loading AND no cached data available
+    if (_isLoadingTrips && _availableTrips.isEmpty && _driverRequests.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
     }
     
     switch (selectedTab) {
@@ -2350,6 +2370,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildHistoryContent() {
+    // If we have cached data, show it immediately and fetch in background
+    if (_cachedHistoryTrips != null) {
+      // Fetch fresh data in background without blocking UI
+      ApiService.getAllTrips().then((trips) {
+        if (mounted) {
+          setState(() {
+            _cachedHistoryTrips = trips;
+          });
+        }
+      });
+      
+      return _buildHistoryTable(_cachedHistoryTrips!);
+    }
+    
+    // First load - show loading indicator
     return FutureBuilder<List<dynamic>>(
       future: ApiService.getAllTrips(),
       builder: (context, snapshot) {
@@ -2364,7 +2399,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }
 
-        final allTrips = snapshot.data ?? [];
+        final trips = snapshot.data ?? [];
+        _cachedHistoryTrips = trips;
+        return _buildHistoryTable(trips);
+      },
+    );
+  }
+  
+  Widget _buildHistoryTable(List<dynamic> allTrips) {
 
         // Filter for completed trips assigned to this driver
         var completedTrips = allTrips.where((trip) {
