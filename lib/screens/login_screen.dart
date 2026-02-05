@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import 'device_blocked_screen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -241,6 +242,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         return;
                                       }
                                       
+                                      // Check and update FCM token
+                                      await _checkAndUpdateFcmToken(driverId, driverData);
+                                      
                                       // Device ID matches or not set - proceed with login
                                       final prefs = await SharedPreferences.getInstance();
                                       await prefs.setString('phoneNumber', _phoneController.text);
@@ -313,6 +317,20 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _checkAndUpdateFcmToken(String driverId, Map<String, dynamic> driverData) async {
+    try {
+      final currentFcmToken = await FirebaseMessaging.instance.getToken();
+      final storedFcmToken = driverData['fcm_token']?.toString();
+      
+      if (currentFcmToken != null && currentFcmToken != storedFcmToken) {
+        await ApiService.addFcmToken(driverId, currentFcmToken);
+        debugPrint('FCM token updated for driver $driverId');
+      }
+    } catch (e) {
+      debugPrint('Error updating FCM token: $e');
+    }
   }
 
   @override

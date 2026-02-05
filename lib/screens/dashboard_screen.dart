@@ -713,7 +713,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         return status == 'PENDING' && 
                                tripStatus != 'COMPLETED' && 
                                tripStatus != 'CANCELLED' &&
-                               tripStatus != 'ASSIGNED';
+                               tripStatus != 'ASSIGNED' &&
+                               tripStatus != 'STARTED' &&
+                               tripStatus != 'ON_TRIP' &&
+                               tripStatus != 'ONWAY' &&
+                               tripStatus != 'IN_PROGRESS';
                       }).length})',
                       1,
                       AppColors.orangeDark),
@@ -1442,15 +1446,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final assignedDriverId = request['assigned_driver_id'] ??
               request['trip']?['assigned_driver_id'];
 
-          // Show "assigned to other" card if:
-          // 1. Trip is not in available (OPEN) trips list, OR
-          // 2. Trip status is explicitly ASSIGNED to someone else, OR
-          // 3. There's an assigned driver that's not the current driver
-          if (!tripStillOpen ||
-              (tripStatus == 'ASSIGNED' && assignedDriverId != _driverId) ||
-              (assignedDriverId != null && assignedDriverId != _driverId)) {
+          // Don't show completed or started trips in pending
+          if (tripStatus == 'COMPLETED' || 
+              tripStatus == 'STARTED' || 
+              tripStatus == 'ON_TRIP' ||
+              tripStatus == 'ONWAY' ||
+              tripStatus == 'IN_PROGRESS') {
+            return const SizedBox.shrink();
+          }
+
+          // Show "assigned to other" card only if:
+          // Trip is assigned to a different driver (not current driver)
+          if (assignedDriverId != null && assignedDriverId != _driverId) {
             return _buildAssignedToOtherCard(request);
           }
+          
+          // Show "assigned to other" if trip is no longer OPEN and not assigned to current driver
+          if (!tripStillOpen && (assignedDriverId == null || assignedDriverId != _driverId)) {
+            return _buildAssignedToOtherCard(request);
+          }
+          
           return _buildRequestCard(request);
         },
       ),
