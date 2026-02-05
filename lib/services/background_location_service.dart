@@ -41,6 +41,11 @@ class BackgroundLocationService {
 
     await service.startService();
     _serviceInitialized = true;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('background_service_running', true);
+    await prefs.setString('service_last_start', DateTime.now().toIso8601String());
+    
     debugPrint('✅ Background location service initialized');
   }
 
@@ -57,10 +62,7 @@ class BackgroundLocationService {
       print('[BG Service] dotenv load error: $e');
     }
 
-    // Initialize notification plugin in background service
     await NotificationPlugin.initialize();
-    
-    // Show test notification to verify notifications are working
     await NotificationPlugin.showTestNotification();
 
     if (service is AndroidServiceInstance) {
@@ -70,6 +72,7 @@ class BackgroundLocationService {
       service.on('setAsBackground').listen((event) {
         service.setAsBackgroundService();
       });
+      service.setAsForegroundService();
     }
 
     service.on('stopService').listen((event) {
@@ -77,36 +80,35 @@ class BackgroundLocationService {
       service.stopSelf();
     });
 
-    // Prevent duplicate timers
     if (_locationTimer != null && _locationTimer!.isActive) {
-      print('[BG Service] Canceling existing timer before creating new one');
+      print('[BG Service] Canceling existing timer');
       _locationTimer!.cancel();
     }
 
-    // Update location immediately
     await _updateLocation(service);
 
-    // Use Timer.periodic for reliable background execution (2 minutes)
-    _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
-      print('[BG Service] 🔄 2-minute timer triggered');
+    _locationTimer = Timer.periodic(const Duration(minutes: 15), (timer) async {
+      print('[BG Service] 🔄 15-min timer at ${DateTime.now()}');
       await _updateLocation(service);
+      
+      if (service is AndroidServiceInstance) {
+        service.setAsForegroundService();
+      }
     });
     
-    print('[BG Service] ✅ Background location tracking started with 2-minute intervals');
+    print('[BG Service] ✅ Started with 15-min intervals');
   }
 
   static Future<void> _updateLocation(ServiceInstance service) async {
     try {
-      print('[BG Location] 🔄 Starting location update...');
+      print('[BG Location] 🔄 Starting location update at ${DateTime.now()}...');
       
-      // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         print('[BG Location] ❌ Location services disabled');
         return;
       }
 
-      // Check permissions
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied || 
           permission == LocationPermission.deniedForever) {
@@ -122,10 +124,9 @@ class BackgroundLocationService {
           desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 30),
         );
-        print('[BG Location] 📍 Position obtained: ${position.latitude}, ${position.longitude}');
+        print('[BG Location] 📍 Position: ${position.latitude}, ${position.longitude}');
       } catch (e) {
-        print('[BG Location] ⚠️ Failed to get current position: $e, trying last known...');
-        // Fallback to last known position
+        print('[BG Location] ⚠️ Failed to get position: $e, using last known...');
         position = await Geolocator.getLastKnownPosition() ?? 
           Position(
             latitude: 0,
@@ -145,10 +146,9 @@ class BackgroundLocationService {
       final driverId = prefs.getString('driverId');
       
       if (driverId != null && driverId.isNotEmpty) {
-        print('[BG Location] 📤 Sending location to backend for driver: $driverId');
+        print('[BG Location] 📤 Sending location for driver: $driverId');
         await _sendLocationToBackend(driverId, position, service);
         
-        // Store location with terminated state
         final locationData = {
           'latitude': position.latitude,
           'longitude': position.longitude,
@@ -157,20 +157,21 @@ class BackgroundLocationService {
           'app_state': 'terminated',
         };
         await prefs.setString('last_location', jsonEncode(locationData));
+        await prefs.setString('last_location_time', DateTime.now().toIso8601String());
+        await prefs.setInt('location_update_count', (prefs.getInt('location_update_count') ?? 0) + 1);
         
-        // ALWAYS show terminated state notification when location is obtained
-        print('[BG Location] 🔔 FORCE showing terminated state notification');
+        print('[BG Location] 🔔 Showing terminated notification');
         try {
           await NotificationPlugin.showTerminatedLocationNotification(
             latitude: position.latitude,
             longitude: position.longitude,
           );
-          print('[BG Location] ✅ Terminated notification sent successfully');
+          print('[BG Location] ✅ Notification sent');
         } catch (e) {
           print('[BG Location] ❌ Notification error: $e');
         }
         
-        print('[BG Location] ✅ Location update completed successfully');
+        print('[BG Location] ✅ Update completed at ${DateTime.now()}');
       } else {
         print('[BG Location] ❌ No driver ID found');
       }

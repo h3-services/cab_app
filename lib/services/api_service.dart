@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -26,6 +27,12 @@ class ApiService {
           'Content-Type': 'application/json',
         },
         body: jsonEncode(body),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          debugPrint('API Timeout: checkPhoneExists after 30 seconds');
+          throw TimeoutException('Server not responding. Please check your internet connection or try again later.');
+        },
       );
 
       debugPrint('Response Status: ${response.statusCode}');
@@ -39,7 +46,7 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('API Error: $e');
-      throw Exception('Network error: $e');
+      rethrow;
     }
   }
 

@@ -63,7 +63,7 @@ void onStart(ServiceInstance service) async {
 
   Timer.periodic(const Duration(minutes: 15), (timer) async {
     try {
-      debugPrint('📍 Background location update');
+      debugPrint('📍 Background location update at ${DateTime.now()}');
       
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
@@ -80,6 +80,10 @@ void onStart(ServiceInstance service) async {
       }));
 
       await sendLocationToServer(position.latitude, position.longitude, service);
+      
+      if (service is AndroidServiceInstance) {
+        service.setAsForegroundService();
+      }
     } catch (e) {
       debugPrint('[BG Location Error] $e');
       try {

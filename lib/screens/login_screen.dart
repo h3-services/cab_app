@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
+import 'dart:async';
 import 'device_blocked_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -222,16 +223,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                     final response = await ApiService.checkPhoneExists(_phoneController.text);
                                     
                                     if (response['exists'] == true) {
-                                      // Phone exists - check device ID
                                       final currentDeviceId = await _getDeviceId();
                                       final driverId = response['driver_id'].toString();
                                       
-                                      // Get driver details to check device ID
                                       final driverData = await ApiService.getDriverDetails(driverId);
                                       final registeredDeviceId = driverData['device_id']?.toString();
                                       
-                                      if (registeredDeviceId != null && registeredDeviceId != currentDeviceId) {
-                                        // Device ID mismatch - show blocked screen
+                                      if (registeredDeviceId != null && 
+                                          registeredDeviceId.isNotEmpty && 
+                                          registeredDeviceId != 'unknown' &&
+                                          registeredDeviceId != currentDeviceId) {
                                         if (!mounted) return;
                                         Navigator.pushReplacement(
                                           context,
@@ -242,10 +243,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                         return;
                                       }
                                       
-                                      // Check and update FCM token
+                                      if (registeredDeviceId == null || registeredDeviceId.isEmpty || registeredDeviceId == 'unknown') {
+                                        await ApiService.updateDriverDeviceId(driverId, currentDeviceId);
+                                      }
+                                      
                                       await _checkAndUpdateFcmToken(driverId, driverData);
                                       
-                                      // Device ID matches or not set - proceed with login
                                       final prefs = await SharedPreferences.getInstance();
                                       await prefs.setString('phoneNumber', _phoneController.text);
                                       await prefs.setString('driverId', driverId);
@@ -255,16 +258,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                       if (!mounted) return;
                                       Navigator.pushReplacementNamed(context, '/dashboard');
                                     } else {
-                                      // Phone doesn't exist - go to registration flow
                                       if (!mounted) return;
                                       Navigator.pushNamed(context, '/otp', arguments: _phoneController.text);
                                     }
                                   } catch (e) {
                                     if (!mounted) return;
+                                    String errorMessage = 'Error: ${e.toString()}';
+                                    if (e is TimeoutException) {
+                                      errorMessage = 'Server not responding. Please check your internet connection.';
+                                    } else if (e.toString().contains('SocketException')) {
+                                      errorMessage = 'No internet connection. Please check your network.';
+                                    }
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Error: ${e.toString()}'),
+                                        content: Text(errorMessage),
                                         backgroundColor: Colors.red,
+                                        duration: const Duration(seconds: 4),
                                       ),
                                     );
                                   } finally {

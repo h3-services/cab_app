@@ -18,9 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkLoginStatus() async {
-    // Wait for 3 seconds for branding
-    await Future.delayed(const Duration(seconds: 3));
-
+    await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -28,47 +26,35 @@ class _SplashScreenState extends State<SplashScreen> {
     final String? driverId = prefs.getString('driverId');
     final bool isKycSubmitted = prefs.getBool('isKycSubmitted') ?? false;
 
-    // If user is not logged in, go to login screen
     if (!isLoggedIn || driverId == null || driverId.isEmpty) {
       if (mounted) Navigator.pushReplacementNamed(context, '/login');
       return;
     }
 
-    // User is logged in, check their status
     if (isKycSubmitted) {
       try {
-        // Check Status from API
-        final driverData = await ApiService.getDriverDetails(driverId);
+        final driverData = await ApiService.getDriverDetails(driverId).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw TimeoutException('Request timeout'),
+        );
         final bool isApproved = driverData['is_approved'] == true;
-        final String kycVerified =
-            (driverData['kyc_verified'] ?? '').toString().toLowerCase();
+        final String kycVerified = (driverData['kyc_verified'] ?? '').toString().toLowerCase();
 
-        debugPrint(
-            "Status Check: isApproved=$isApproved, kycStatus=$kycVerified");
-
-        if (isApproved &&
-            (kycVerified == 'verified' || kycVerified == 'approved')) {
+        if (isApproved && (kycVerified == 'verified' || kycVerified == 'approved')) {
           if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
         } else {
-          if (mounted)
-            Navigator.pushReplacementNamed(context, '/approval-pending');
+          if (mounted) Navigator.pushReplacementNamed(context, '/approval-pending');
         }
       } catch (e) {
         debugPrint('Status Check Failed: $e');
-
         if (e.toString().contains('404')) {
-          debugPrint(
-              'Driver not found (404). Clearing session and going to Login.');
           await prefs.clear();
           if (mounted) Navigator.pushReplacementNamed(context, '/login');
-          return;
+        } else {
+          if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
         }
-
-        if (mounted)
-          Navigator.pushReplacementNamed(context, '/approval-pending');
       }
     } else {
-      // User is logged in but hasn't completed KYC
       if (mounted) Navigator.pushReplacementNamed(context, '/personal-details');
     }
   }
