@@ -529,8 +529,11 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             await prefs.setString('profile_photo_path', file.path);
             break;
           case 'Police Verification':
-            // API not implemented yet - skip upload
-            debugPrint('Police Verification selected but API not implemented');
+            if (_isEditing) {
+              await ApiService.reuploadPoliceVerification(driverId, file);
+            } else {
+              await ApiService.uploadPoliceVerification(driverId, file);
+            }
             break;
           case 'RC Book':
             if (_isEditing) {
