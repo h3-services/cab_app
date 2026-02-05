@@ -175,13 +175,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _driverId = prefs.getString('driverId');
     });
 
-    // Check approval status again to prevent unauthorized access
-    if (_driverId != null) {
+    // Check if we already have cached data (returning from another screen)
+    final cachedDriverData = prefs.getString('driver_data');
+    final isAvailable = prefs.getBool('is_available') ?? false;
+    
+    if (_driverId != null && cachedDriverData != null) {
+      // Skip full approval check, show UI immediately and load trips in background
+      _tripStateService.setReadyForTrip(isAvailable);
+      setState(() => _isCheckingStatus = false);
+      _startAutoRefresh();
+      // Load trips in background without showing loading indicator
+      _fetchAvailableTrips(showLoading: false);
+    } else if (_driverId != null) {
+      // First time load, do full check
       _checkApprovalStatus(_driverId!);
     } else {
-      // If no driverId locally, we technically shouldn't be here (Splash handles it).
-      // But if we are, maybe just stop loading to let them see empty state (or login redirect).
-      // For safety, let's stop loading so we don't hang forever.
       setState(() => _isCheckingStatus = false);
     }
   }
@@ -271,79 +279,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     try {
-      // 1. Fetch data in parallel
-      final tripsFuture = ApiService.getAvailableTrips();
-      final requestsFuture = _driverId != null
-          ? ApiService.getDriverRequests(_driverId!)
-          : Future.value([]);
-      final driverFuture = _driverId != null
-          ? ApiService.getDriverDetails(_driverId!)
-          : Future.value(null);
-
-      final results =
-          await Future.wait([tripsFuture, requestsFuture, driverFuture]);
+      // Fetch only essential data in parallel
+      final results = await Future.wait([
+        ApiService.getAvailableTrips(),
+        _driverId != null ? ApiService.getDriverRequests(_driverId!) : Future.value([]),
+      ]);
+      
       final trips = results[0] as List<dynamic>;
       final requests = results[1] as List<dynamic>;
-      final driverData = results[2] as Map<String, dynamic>?;
 
-      if (driverData != null && mounted) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('driver_data', jsonEncode(driverData));
-        
-        // Get wallet balance
+      // Get wallet balance from cached driver data (no API call)
+      final prefs = await SharedPreferences.getInstance();
+      final cachedDriverData = prefs.getString('driver_data');
+      if (cachedDriverData != null) {
+        final driverData = jsonDecode(cachedDriverData);
         _walletBalance = (driverData['wallet_balance'] ?? 0.0).toDouble();
       }
 
-      // 2. Enhance requests with fresh trip status data in parallel
-      final enhancedRequests = await Future.wait(requests.map((request) async {
-        final tripId = request['trip_id']?.toString();
-        if (tripId != null) {
-          try {
-            final tripDetails = await ApiService.getTripDetails(tripId);
-            final enhanced = Map<String, dynamic>.from(request);
-
-            // Resolve trip status with high priority on tripDetails
-            final resolvedStatus = tripDetails['trip_status'] ??
-                tripDetails['status'] ??
-                request['trip_status'] ??
-                request['trip']?['trip_status'] ??
-                request['trip']?['status'] ??
-                request['status'];
-
-            enhanced['trip_status'] = resolvedStatus;
-
-            // Also merge odometer and other details
-            enhanced['odo_start'] = tripDetails['odo_start'] ??
-                request['odo_start'] ??
-                request['trip']?['odo_start'];
-
-            enhanced['odo_end'] = tripDetails['odo_end'] ??
-                request['odo_end'] ??
-                request['trip']?['odo_end'];
-
-            enhanced['distance'] = tripDetails['distance'] ??
-                tripDetails['distance_km'] ??
-                request['distance'] ??
-                request['distance_km'];
-
-            enhanced['customer_phone'] = tripDetails['customer_phone'] ??
-                request['customer_phone'] ??
-                request['trip']?['customer_phone'] ??
-                '';
-
-            return enhanced;
-          } catch (e) {
-            debugPrint('Failed to enhance request $tripId: $e');
-            return Map<String, dynamic>.from(request);
-          }
-        }
+      // Use request data as-is without additional API calls
+      final enhancedRequests = requests.map((request) {
         return Map<String, dynamic>.from(request);
-      }));
+      }).toList();
 
-      // 3. Filter available trips (Exclude ones already requested)
+      // Filter available trips
       final requestedTripIds = enhancedRequests
-          .where((r) =>
-              (r['status'] ?? '').toString().toUpperCase() != 'CANCELLED')
+          .where((r) => (r['status'] ?? '').toString().toUpperCase() != 'CANCELLED')
           .map((r) => r['trip_id'].toString())
           .toSet();
 
@@ -357,34 +317,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .toList();
 
       if (mounted) {
-        // Check for an active trip to auto-select the Approved tab
-        int initialTab = selectedTab;
-        final hasActiveTrip = enhancedRequests.any((r) {
-          final tripStatus =
-              (r['trip_status'] ?? r['status'] ?? '').toString().toUpperCase();
-          return tripStatus == 'STARTED' ||
-              tripStatus == 'ON_TRIP' ||
-              tripStatus == 'ONWAY';
-        });
-
-        if (hasActiveTrip && selectedTab == 0) {
-          initialTab = 2; // Auto-switch to Approved tab
-          debugPrint(
-              'Main Loading: Active trip detected! Switching to Approved tab.');
-        }
-
         setState(() {
           _allTrips = openTrips;
           _availableTrips = filteredTrips;
           _driverRequests = enhancedRequests;
-          selectedTab = initialTab;
           _isLoadingTrips = false;
         });
-        // Debug: Log driver requests structure
-        if (enhancedRequests.isNotEmpty) {
-          debugPrint('Driver Requests Keys: ${enhancedRequests.first.keys}');
-          debugPrint('First Request: ${enhancedRequests.first}');
-        }
       }
     } catch (e) {
       debugPrint("Error fetching trips: $e");
@@ -1403,8 +1341,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final status = (r['status'] ?? '').toString().toUpperCase();
           final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
           
-          debugPrint('Pending Check - status=$status, tripStatus=$tripStatus, tripId=${r['trip_id']}');
-          
           // Only show truly pending requests, exclude completed, cancelled, assigned, and started trips
           return status == 'PENDING' && 
                  tripStatus != 'COMPLETED' && 
@@ -1416,8 +1352,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                  tripStatus != 'IN_PROGRESS';
         })
         .toList();
-
-    debugPrint('Total pending after filter: ${pendingRequests.length}');
 
     if (pendingRequests.isEmpty) {
       return RefreshIndicator(
@@ -1444,23 +1378,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         itemBuilder: (context, index) {
           final request = pendingRequests[index];
           final tripId = request['trip_id']?.toString();
+          final assignedDriverId = request['assigned_driver_id'] ?? request['trip']?['assigned_driver_id'];
 
-          // Check if this trip is still in the available (OPEN) trips list
-          final tripStillOpen =
-              _allTrips.any((t) => t['trip_id']?.toString() == tripId);
-
-          // Check explicit status fields
-          final assignedDriverId = request['assigned_driver_id'] ??
-              request['trip']?['assigned_driver_id'];
-
-          // Show "assigned to other" card only if:
-          // Trip is assigned to a different driver (not current driver)
+          // Show "assigned to other" only if explicitly assigned to different driver
           if (assignedDriverId != null && assignedDriverId != _driverId) {
             return _buildAssignedToOtherCard(request);
           }
           
-          // Show "assigned to other" if trip is no longer OPEN and not assigned to current driver
-          if (!tripStillOpen && (assignedDriverId == null || assignedDriverId != _driverId)) {
+          // Check if trip is still OPEN
+          final tripStillOpen = _allTrips.any((t) => t['trip_id']?.toString() == tripId);
+          if (!tripStillOpen) {
             return _buildAssignedToOtherCard(request);
           }
           
