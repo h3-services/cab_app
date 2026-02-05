@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_colors.dart';
 import '../widgets/common/custom_app_bar.dart';
+import '../widgets/common/app_drawer.dart';
 import '../widgets/bottom_navigation.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -40,6 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
+      endDrawer: const AppDrawer(),
       body: Column(
         children: [
           const SizedBox(height: 20),
