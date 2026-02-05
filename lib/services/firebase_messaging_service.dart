@@ -31,6 +31,10 @@ Future<void> initializeFirebaseMessaging() async {
     sound: true,
   );
 
+  // Get and print FCM token
+  final token = await messaging.getToken();
+  print('[FCM] Device Token: $token');
+
   // Handle message when app is launched from terminated state
   FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
     if (message != null) {
@@ -44,13 +48,13 @@ Future<void> initializeFirebaseMessaging() async {
   // Foreground - save and show, don't navigate automatically
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     print('[FCM] Foreground message: ${message.messageId}');
+    print('[FCM] Notification: ${message.notification?.title}');
     if (message.notification != null) {
       await NotificationService.saveNotification(
         message.notification!.title ?? 'Notification',
         message.notification!.body ?? '',
       );
       await _showLocalNotification(message);
-      // Play sound 4 times - don't await to avoid blocking
       AudioService.playNotificationSound();
       print('[FCM] Foreground notification shown, sound playing');
     }

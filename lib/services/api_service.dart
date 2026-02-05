@@ -166,6 +166,13 @@ class ApiService {
         filename: filename);
   }
 
+  static Future<void> uploadPoliceVerification(String driverId, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'driver_${driverId}_police_verification.$ext';
+    await _uploadFile('$baseUrl/uploads/driver/$driverId/police_verification', 'file', file,
+        filename: filename);
+  }
+
   static Future<void> uploadVehicleRC(String vehicleId, File file) async {
     final ext = file.path.split('.').last;
     final filename = 'vehicle_${vehicleId}_rc.$ext';
@@ -452,6 +459,13 @@ class ApiService {
     final ext = file.path.split('.').last;
     final filename = 'driver_${driverId}_licence.$ext';
     await _uploadFile('$baseUrl/uploads/driver/$driverId/licence', 'file', file,
+        filename: filename, method: 'PUT');
+  }
+
+  static Future<void> reuploadPoliceVerification(String driverId, File file) async {
+    final ext = file.path.split('.').last;
+    final filename = 'driver_${driverId}_police_verification.$ext';
+    await _uploadFile('$baseUrl/uploads/driver/$driverId/police_verification', 'file', file,
         filename: filename, method: 'PUT');
   }
 
