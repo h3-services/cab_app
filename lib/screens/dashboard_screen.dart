@@ -931,7 +931,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       return status == 'PENDING' && 
                              tripStatus != 'COMPLETED' && 
                              tripStatus != 'CANCELLED' &&
-                             tripStatus != 'ASSIGNED';
+                             tripStatus != 'ASSIGNED' &&
+                             tripStatus != 'STARTED' &&
+                             tripStatus != 'ON_TRIP' &&
+                             tripStatus != 'ONWAY' &&
+                             tripStatus != 'IN_PROGRESS';
                     }).length})',
                     1,
                     AppColors.orangeDark),
@@ -1399,13 +1403,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final status = (r['status'] ?? '').toString().toUpperCase();
           final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
           
-          // Only show truly pending requests, exclude completed, cancelled, and assigned trips
+          debugPrint('Pending Check - status=$status, tripStatus=$tripStatus, tripId=${r['trip_id']}');
+          
+          // Only show truly pending requests, exclude completed, cancelled, assigned, and started trips
           return status == 'PENDING' && 
                  tripStatus != 'COMPLETED' && 
                  tripStatus != 'CANCELLED' &&
-                 tripStatus != 'ASSIGNED';
+                 tripStatus != 'ASSIGNED' &&
+                 tripStatus != 'STARTED' &&
+                 tripStatus != 'ON_TRIP' &&
+                 tripStatus != 'ONWAY' &&
+                 tripStatus != 'IN_PROGRESS';
         })
         .toList();
+
+    debugPrint('Total pending after filter: ${pendingRequests.length}');
 
     if (pendingRequests.isEmpty) {
       return RefreshIndicator(
@@ -1434,26 +1446,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final tripId = request['trip_id']?.toString();
 
           // Check if this trip is still in the available (OPEN) trips list
-          // If not, it means the trip has been assigned to another driver
           final tripStillOpen =
               _allTrips.any((t) => t['trip_id']?.toString() == tripId);
 
-          // Also check explicit status fields if available
-          final tripStatus =
-              (request['trip_status'] ?? request['trip']?['trip_status'] ?? '')
-                  .toString()
-                  .toUpperCase();
+          // Check explicit status fields
           final assignedDriverId = request['assigned_driver_id'] ??
               request['trip']?['assigned_driver_id'];
-
-          // Don't show completed or started trips in pending
-          if (tripStatus == 'COMPLETED' || 
-              tripStatus == 'STARTED' || 
-              tripStatus == 'ON_TRIP' ||
-              tripStatus == 'ONWAY' ||
-              tripStatus == 'IN_PROGRESS') {
-            return const SizedBox.shrink();
-          }
 
           // Show "assigned to other" card only if:
           // Trip is assigned to a different driver (not current driver)

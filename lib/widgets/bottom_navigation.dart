@@ -46,7 +46,7 @@ class BottomNavigation extends StatelessWidget {
   Widget _buildNavItem(
       IconData icon, String label, bool isActive, VoidCallback onTap) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isActive ? null : onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
