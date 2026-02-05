@@ -2612,8 +2612,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         );
-      },
-    );
   }
 
   void _showApprovedCancelDialog(BuildContext context, String tripId) {

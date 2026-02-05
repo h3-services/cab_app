@@ -14,9 +14,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _locationTracking = true;
-  bool _autoAcceptTrips = false;
-  String _language = 'English';
-  String _theme = 'Light';
 
   @override
   void initState() {
@@ -29,9 +26,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
       _locationTracking = prefs.getBool('location_tracking') ?? true;
-      _autoAcceptTrips = prefs.getBool('auto_accept_trips') ?? false;
-      _language = prefs.getString('language') ?? 'English';
-      _theme = prefs.getString('theme') ?? 'Light';
     });
   }
 
@@ -39,9 +33,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications_enabled', _notificationsEnabled);
     await prefs.setBool('location_tracking', _locationTracking);
-    await prefs.setBool('auto_accept_trips', _autoAcceptTrips);
-    await prefs.setString('language', _language);
-    await prefs.setString('theme', _theme);
   }
 
   @override
@@ -103,23 +94,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildSettingsSection(
-                  'Trip Preferences',
-                  [
-                    _buildSwitchTile(
-                      'Auto Accept Trips',
-                      'Automatically accept incoming trip requests',
-                      _autoAcceptTrips,
-                      (value) {
-                        setState(() {
-                          _autoAcceptTrips = value;
-                        });
-                        _saveSettings();
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildSettingsSection(
                   'Support',
                   [
                     _buildActionTile(
@@ -133,25 +107,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Read our privacy policy',
                       Icons.privacy_tip_outlined,
                       () => _showPrivacyDialog(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildSettingsSection(
-                  'Account',
-                  [
-                    _buildActionTile(
-                      'Clear Cache',
-                      'Clear app cache and temporary files',
-                      Icons.cleaning_services_outlined,
-                      () => _showClearCacheDialog(),
-                    ),
-                    _buildActionTile(
-                      'Sign Out',
-                      'Log out of your account',
-                      Icons.logout,
-                      () => _showSignOutDialog(),
-                      isDestructive: true,
                     ),
                   ],
                 ),
@@ -334,80 +289,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showTermsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Terms of Service'),
-        content: const Text(
-          'By using this app, you agree to our terms and conditions.\n\n'
-          'For complete terms, visit our website.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _showClearCacheDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Cache'),
-        content: const Text(
-          'This will clear temporary files and may improve app performance. Continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cache cleared successfully')),
-              );
-            },
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSignOutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.clear();
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (route) => false,
-                );
-              }
-            },
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
-    );
-  }
 }

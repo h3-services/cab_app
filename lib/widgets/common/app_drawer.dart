@@ -79,28 +79,18 @@ class _AppDrawerState extends State<AppDrawer> {
                     context,
                     Icons.person_outline,
                     'Profile',
-                    'View and edit your personal details',
                   ),
                   const SizedBox(height: 16),
                   _buildDrawerMenuItem(
                     context,
                     Icons.settings_outlined,
                     'Settings',
-                    'App preferences, notifications, and privacy',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDrawerMenuItem(
-                    context,
-                    Icons.help_outline,
-                    'Help',
-                    'Get help and contact the admin for support',
                   ),
                   const SizedBox(height: 16),
                   _buildDrawerMenuItem(
                     context,
                     Icons.logout,
                     'Sign out',
-                    'Log out of your account safely',
                     isSignOut: true,
                   ),
                 ],
@@ -115,8 +105,7 @@ class _AppDrawerState extends State<AppDrawer> {
   Widget _buildDrawerMenuItem(
     BuildContext context,
     IconData icon,
-    String title,
-    String subtitle, {
+    String title, {
     bool isSignOut = false,
   }) {
     return Container(
@@ -139,8 +128,6 @@ class _AppDrawerState extends State<AppDrawer> {
             Navigator.pushNamed(context, '/profile');
           } else if (title == 'Settings') {
             Navigator.pushNamed(context, '/settings');
-          } else if (title == 'Help') {
-            Navigator.pushNamed(context, '/contact-admin');
           } else if (title == 'Sign out') {
             final prefs = await SharedPreferences.getInstance();
             await prefs.clear();
@@ -165,27 +152,12 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
             ),
             const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isSignOut ? Colors.red : Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isSignOut ? Colors.red : Colors.black,
               ),
             ),
           ],
