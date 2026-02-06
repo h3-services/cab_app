@@ -96,7 +96,7 @@ class BackgroundLocationService {
       }
     });
     
-    print('[BG Service] ✅ Started with 15-min intervals');
+    print('[BG Service] ✅ Started with 15-min intervals (works on locked screen)');
   }
 
   static Future<void> _updateLocation(ServiceInstance service) async {

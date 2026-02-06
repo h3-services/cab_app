@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../widgets/common/custom_app_bar.dart';
 import '../widgets/bottom_navigation.dart';
 import '../constants/app_colors.dart';
 import '../services/api_service.dart';
+import '../services/image_picker_service.dart';
 import 'trip_details_input_screen.dart';
 
 class TripStartScreen extends StatefulWidget {
@@ -16,6 +18,7 @@ class TripStartScreen extends StatefulWidget {
 
 class _TripStartScreenState extends State<TripStartScreen> {
   final TextEditingController _startingKmController = TextEditingController();
+  File? _odometerImage;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +79,40 @@ class _TripStartScreenState extends State<TripStartScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 20),
+                const Text('Odometer Photo *',
+                    style: TextStyle(fontSize: 14, color: Colors.black87)),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final image = await ImagePickerService.showImageSourceDialog(context);
+                    if (image != null) {
+                      setState(() => _odometerImage = image);
+                    }
+                  },
+                  child: Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: _odometerImage != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(_odometerImage!, fit: BoxFit.cover),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text('Tap to upload odometer photo',
+                                  style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -109,22 +146,34 @@ class _TripStartScreenState extends State<TripStartScreen> {
                     ),
                     child: ElevatedButton(
                       onPressed: () async {
-                        if (_startingKmController.text.isNotEmpty) {
-                          final tripId = widget.tripData['trip_id'];
-                          final requestId = widget.tripData['request_id'];
+                        if (_startingKmController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please enter starting KM')),
+                          );
+                          return;
+                        }
+                        if (_odometerImage == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please upload odometer photo')),
+                          );
+                          return;
+                        }
 
-                          try {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (c) => const Center(
-                                  child: CircularProgressIndicator()),
-                            );
+                        final tripId = widget.tripData['trip_id'];
+                        final requestId = widget.tripData['request_id'];
 
-                            if (tripId != null) {
-                              await ApiService.updateOdometerStart(
-                                  tripId.toString(),
-                                  int.parse(_startingKmController.text));
+                        try {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (c) => const Center(
+                                child: CircularProgressIndicator()),
+                          );
+
+                          if (tripId != null) {
+                            await ApiService.updateOdometerStart(
+                                tripId.toString(),
+                                int.parse(_startingKmController.text));
 
                               if (requestId != null) {
                                 try {
@@ -176,8 +225,7 @@ class _TripStartScreenState extends State<TripStartScreen> {
                               );
                             }
                           }
-                        }
-                      },
+                        },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -364,6 +412,7 @@ class TripCompletedScreen extends StatefulWidget {
 
 class _TripCompletedScreenState extends State<TripCompletedScreen> {
   final TextEditingController _endingKmController = TextEditingController();
+  File? _odometerImage;
 
   @override
   Widget build(BuildContext context) {
@@ -413,6 +462,40 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 20),
+                const Text('Odometer Photo *',
+                    style: TextStyle(fontSize: 14, color: Colors.black87)),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final image = await ImagePickerService.showImageSourceDialog(context);
+                    if (image != null) {
+                      setState(() => _odometerImage = image);
+                    }
+                  },
+                  child: Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: _odometerImage != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(_odometerImage!, fit: BoxFit.cover),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text('Tap to upload odometer photo',
+                                  style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -443,17 +526,29 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                     ),
                     child: ElevatedButton(
                       onPressed: () async {
-                        if (_endingKmController.text.isNotEmpty) {
-                          try {
-                            final endingKm =
-                                num.tryParse(_endingKmController.text);
-                            if (endingKm == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Invalid ending KM')),
-                              );
-                              return;
-                            }
+                        if (_endingKmController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please enter ending KM')),
+                          );
+                          return;
+                        }
+                        if (_odometerImage == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please upload odometer photo')),
+                          );
+                          return;
+                        }
+
+                        try {
+                          final endingKm =
+                              num.tryParse(_endingKmController.text);
+                          if (endingKm == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Invalid ending KM')),
+                            );
+                            return;
+                          }
 
                             showDialog(
                               context: context,
@@ -503,8 +598,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                               );
                             }
                           }
-                        }
-                      },
+                        },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,

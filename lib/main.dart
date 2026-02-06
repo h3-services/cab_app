@@ -18,10 +18,12 @@ import 'screens/notifications_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/device_blocked_screen.dart';
 import 'screens/contact_admin_screen.dart';
+import 'screens/no_network_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/permission_service.dart';
 import 'services/notification_plugin.dart';
+import 'services/connectivity_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -51,6 +53,8 @@ void main() async {
     debugPrint("Permission/Service init error: $e");
   }
 
+  await ConnectivityService().initialize();
+
   runApp(const MyApp());
 }
 
@@ -73,7 +77,17 @@ class _MyAppState extends State<MyApp> {
       ),
       initialRoute: '/',
       builder: (context, child) {
-        return child ?? const SizedBox();
+        return StreamBuilder<bool>(
+          stream: ConnectivityService().connectionStatus,
+          initialData: true,
+          builder: (context, snapshot) {
+            final hasConnection = snapshot.data ?? true;
+            if (!hasConnection) {
+              return const NoNetworkScreen();
+            }
+            return child ?? const SizedBox();
+          },
+        );
       },
       routes: {
         '/': (context) => const SplashScreen(),

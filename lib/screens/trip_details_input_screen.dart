@@ -226,7 +226,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   void _onCalculatePressed() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // Show loading
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -235,16 +234,25 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
           ),
         );
 
-        // Get trip details to fetch the fare
         final tripId = widget.tripData['trip_id']?.toString() ?? widget.tripData['id']?.toString() ?? '';
         
-        final tripDetails = await ApiService.getTripDetails(tripId);
+        // Prepare extras data
+        final extras = {
+          'waiting_charges': double.tryParse(_waitingChargesController.text) ?? 0.0,
+          'inter_state_permit': double.tryParse(_interStatePermitController.text) ?? 0.0,
+          'driver_allowance': double.tryParse(_driverAllowanceController.text) ?? 0.0,
+          'luggage_cost': double.tryParse(_luggageCostController.text) ?? 0.0,
+          'pet_cost': double.tryParse(_petCostController.text) ?? 0.0,
+          'toll_charge': double.tryParse(_tollChargeController.text) ?? 0.0,
+          'night_allowance': double.tryParse(_nightAllowanceController.text) ?? 0.0,
+        };
+
+        // Call API to update trip extras
+        final updatedTrip = await ApiService.updateTripExtras(tripId, extras);
         
-        // Hide loading
         if (mounted) Navigator.pop(context);
         
-        // Get fare from trip details
-        final apiFare = tripDetails['fare']?.toString() ?? _actualFareController.text;
+        final apiFare = updatedTrip['fare']?.toString() ?? _actualFareController.text;
         
         final tripDetailsMap = {
           'distance': _distanceController.text,
@@ -274,34 +282,13 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
           );
         }
       } catch (e) {
-        // Hide loading if still showing
         if (mounted) Navigator.pop(context);
         
-        // Use entered fare as fallback
-        final tripDetailsMap = {
-          'distance': _distanceController.text,
-          'time': _timeController.text.isEmpty ? '0' : _timeController.text,
-          'tariffType': _tariffController.text,
-          'actualFare': _actualFareController.text,
-          'waitingCharges': _waitingChargesController.text.isEmpty ? '0' : _waitingChargesController.text,
-          'interStatePermit': _interStatePermitController.text.isEmpty ? '0' : _interStatePermitController.text,
-          'driverAllowance': _driverAllowanceController.text.isEmpty ? '0' : _driverAllowanceController.text,
-          'luggageCost': _luggageCostController.text.isEmpty ? '0' : _luggageCostController.text,
-          'petCost': _petCostController.text.isEmpty ? '0' : _petCostController.text,
-          'tollCharge': _tollChargeController.text.isEmpty ? '0' : _tollChargeController.text,
-          'nightAllowance': _nightAllowanceController.text.isEmpty ? '0' : _nightAllowanceController.text,
-        };
-
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TripSummaryScreen(
-                tripData: widget.tripData,
-                startingKm: widget.startingKm,
-                endingKm: widget.endingKm,
-                tripDetails: tripDetailsMap,
-              ),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error calculating cost: $e'),
+              backgroundColor: Colors.red,
             ),
           );
         }

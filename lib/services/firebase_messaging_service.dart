@@ -16,7 +16,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       message.notification?.title ?? 'Notification',
       message.notification?.body ?? '',
     );
-    print("[FCM] Background notification saved");
+    await AudioService.playNotificationSound();
+    print("[FCM] Background notification saved and sound played");
   } catch (e) {
     print("[FCM] Background handler error: $e");
   }

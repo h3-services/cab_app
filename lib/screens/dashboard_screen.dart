@@ -236,8 +236,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final bool isApproved = driverData['is_approved'] == true;
       final String kycVerified =
           (driverData['kyc_verified'] ?? '').toString().toLowerCase();
-      final bool isAvailable = driverData['is_available'] == true;
-      await prefs.setBool('is_available', isAvailable);
+      
+      // Get locally stored availability preference (user's last choice)
+      final isAvailable = prefs.getBool('is_available') ?? false;
 
       if (!isApproved ||
           (kycVerified != 'verified' && kycVerified != 'approved')) {
@@ -280,6 +281,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     try {
+      // Always fetch fresh driver data to get latest wallet balance
+      if (_driverId != null) {
+        final driverData = await ApiService.getDriverDetails(_driverId!);
+        _walletBalance = (driverData['wallet_balance'] ?? 0.0).toDouble();
+        
+        // Update cached driver data
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('driver_data', jsonEncode(driverData));
+      }
+
       // Fetch only essential data in parallel
       final results = await Future.wait([
         ApiService.getAvailableTrips(),
@@ -288,14 +299,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       
       final trips = results[0] as List<dynamic>;
       final requests = results[1] as List<dynamic>;
-
-      // Get wallet balance from cached driver data (no API call)
-      final prefs = await SharedPreferences.getInstance();
-      final cachedDriverData = prefs.getString('driver_data');
-      if (cachedDriverData != null) {
-        final driverData = jsonDecode(cachedDriverData);
-        _walletBalance = (driverData['wallet_balance'] ?? 0.0).toDouble();
-      }
 
       // Enhance requests with latest trip status
       final enhancedRequests = await Future.wait(requests.map((request) async {
@@ -832,8 +835,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
 
                       try {
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('is_available', value);
+                        final prefs2 = await SharedPreferences.getInstance();
+                        await prefs2.setBool('is_available', value);
                         await ApiService.updateDriverAvailability(
                             _driverId!, value);
                         ScaffoldMessenger.of(context).showSnackBar(

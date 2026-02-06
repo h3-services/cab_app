@@ -933,6 +933,39 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> updateTripExtras(
+    String tripId,
+    Map<String, dynamic> extras,
+  ) async {
+    final url = Uri.parse('$baseUrl/trips/$tripId/extras');
+    debugPrint('PATCH Request (Trip Extras): $url');
+    debugPrint('Body: ${jsonEncode(extras)}');
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(extras),
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception(
+            'Failed to update trip extras: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
   static Future<void> updateTripStatus(String tripId, String status) async {
     final url = Uri.parse('$baseUrl/trips/$tripId/status?new_status=$status');
     debugPrint('PATCH Request (Trip Status): $url');

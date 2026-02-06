@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 
 class NotificationPlugin {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -36,6 +37,7 @@ class NotificationPlugin {
         enableVibration: true,
         enableLights: true,
         showBadge: true,
+        vibrationPattern: null,
       );
 
       final androidPlugin = _notificationsPlugin
@@ -132,6 +134,12 @@ class NotificationPlugin {
         ongoing: false,
         autoCancel: true,
         showWhen: true,
+        channelShowBadge: true,
+        icon: '@mipmap/ic_launcher',
+        ticker: 'New notification',
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
+        visibility: NotificationVisibility.public,
       );
 
       const NotificationDetails platformChannelSpecifics =
