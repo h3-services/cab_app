@@ -11,6 +11,7 @@ import '../widgets/dialogs/trip_details_dialog.dart';
 import '../services/trip_state_service.dart';
 import '../services/api_service.dart';
 import '../services/location_tracking_service.dart';
+import '../services/battery_optimization_service.dart';
 import '../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -96,40 +97,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       debugPrint('Permission error: $e');
     }
     
-    // Request battery optimization exemption only once
-    final prefs = await SharedPreferences.getInstance();
-    final batteryDialogShown = prefs.getBool('battery_dialog_shown') ?? false;
-    if (!batteryDialogShown) {
-      _requestBatteryOptimizationExemption();
-      await prefs.setBool('battery_dialog_shown', true);
+    // Request battery optimization exemption
+    if (mounted) {
+      await BatteryOptimizationService.ensureBatteryOptimizationDisabled(context);
     }
   }
-  
-  void _requestBatteryOptimizationExemption() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        title: const Text('Battery Optimization'),
-        content: const Text(
-          'For reliable location tracking when the app is closed, please disable battery optimization for this app.\n\nThis ensures continuous driver tracking for safety and trip management.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Later'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Geolocator.openAppSettings();
-            },
-            child: const Text('Open Settings'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   void _showBackgroundPermissionDialog() {
     showDialog(
@@ -1198,12 +1171,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                Text(
-                  trip['trip_type'] ?? 'ONE WAY',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      trip['trip_type'] ?? 'ONE WAY',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    if (trip['vehicle_type'] != null)
+                      Text(
+                        trip['vehicle_type'],
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),

@@ -17,6 +17,9 @@ class ErrorCodes {
     1014: 'Car Left Photo is blurry or unclear',
     1015: 'Car Right Photo is blurry or unclear',
     1016: 'Car Inside Photo is blurry or unclear',
+    1017: 'Police Verification is blurry or unclear',
+    1018: 'Police Verification has expired',
+    1019: 'Police Verification information doesn\'t match profile',
     // Personal Information (2000 Series)
     2001: 'Mobile Number is invalid or verification failed',
     2002: 'Email Address is invalid or verification failed',

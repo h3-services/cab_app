@@ -20,19 +20,88 @@ class _TripStartScreenState extends State<TripStartScreen> {
   final TextEditingController _startingKmController = TextEditingController();
   File? _odometerImage;
 
+  Widget _buildOdometerUpload() {
+    return GestureDetector(
+      onTap: () async {
+        final image = await ImagePickerService.showImageSourceDialog(context);
+        if (image != null) {
+          setState(() => _odometerImage = image);
+        }
+      },
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _odometerImage != null ? AppColors.greenLight : Colors.grey.shade400,
+            width: 2,
+          ),
+        ),
+        child: _odometerImage != null
+            ? Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      _odometerImage!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () => setState(() => _odometerImage = null),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.camera_alt, size: 48, color: Colors.grey.shade400),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tap to upload odometer photo',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
       endDrawer: _buildDrawer(context),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: const Text(
-              'Starting KM',
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: const Text(
+                'Starting KM',
               style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -116,7 +185,7 @@ class _TripStartScreenState extends State<TripStartScreen> {
               ],
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.all(24),
             child: Row(
@@ -252,6 +321,7 @@ class _TripStartScreenState extends State<TripStartScreen> {
             ),
           ),
         ],
+      ),
       ),
       bottomNavigationBar: const BottomNavigation(currentRoute: '/dashboard'),
     );
@@ -414,16 +484,85 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
   final TextEditingController _endingKmController = TextEditingController();
   File? _odometerImage;
 
+  Widget _buildOdometerUpload() {
+    return GestureDetector(
+      onTap: () async {
+        final image = await ImagePickerService.showImageSourceDialog(context);
+        if (image != null) {
+          setState(() => _odometerImage = image);
+        }
+      },
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _odometerImage != null ? AppColors.greenLight : Colors.grey.shade400,
+            width: 2,
+          ),
+        ),
+        child: _odometerImage != null
+            ? Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      _odometerImage!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () => setState(() => _odometerImage = null),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.camera_alt, size: 48, color: Colors.grey.shade400),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Tap to upload odometer photo',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
       endDrawer: _buildDrawer(context),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          Container(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+            Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -466,40 +605,11 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                 const Text('Odometer Photo *',
                     style: TextStyle(fontSize: 14, color: Colors.black87)),
                 const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () async {
-                    final image = await ImagePickerService.showImageSourceDialog(context);
-                    if (image != null) {
-                      setState(() => _odometerImage = image);
-                    }
-                  },
-                  child: Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: _odometerImage != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(_odometerImage!, fit: BoxFit.cover),
-                          )
-                        : const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.camera_alt, size: 40, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text('Tap to upload odometer photo',
-                                  style: TextStyle(color: Colors.grey)),
-                            ],
-                          ),
-                  ),
-                ),
+                _buildOdometerUpload(),
               ],
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.all(24),
             child: Row(
@@ -625,6 +735,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
             ),
           ),
         ],
+      ),
       ),
       bottomNavigationBar: const BottomNavigation(currentRoute: '/dashboard'),
     );

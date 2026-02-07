@@ -7,18 +7,23 @@ import 'dart:async';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'notification_plugin.dart';
 import 'package:flutter/foundation.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+import 'workmanager_location_service.dart';
 
 class BackgroundLocationService {
   static Timer? _locationTimer;
   static bool _serviceInitialized = false;
   
   static Future<void> initializeBackgroundService() async {
-    // Always reinitialize to ensure service is running
-    debugPrint('🚀 Initializing/Restarting background service');
+    debugPrint('🚀 Initializing background location services');
+
+    // Enable wakelock to prevent device sleep
+    await WakelockPlus.enable();
+    
+    // Initialize WorkManager for terminated state
+    await WorkManagerLocationService.initialize();
 
     final service = FlutterBackgroundService();
-
-    // Initialize notification plugin
     await NotificationPlugin.initialize();
 
     await service.configure(
@@ -29,7 +34,7 @@ class BackgroundLocationService {
         autoStartOnBoot: true,
         notificationChannelId: 'location_tracking',
         initialNotificationTitle: 'Chola Cabs Driver',
-        initialNotificationContent: 'Location tracking active for trip assignments',
+        initialNotificationContent: 'Location tracking active',
         foregroundServiceNotificationId: 888,
       ),
       iosConfiguration: IosConfiguration(
@@ -62,6 +67,9 @@ class BackgroundLocationService {
       print('[BG Service] dotenv load error: $e');
     }
 
+    // Keep device awake
+    await WakelockPlus.enable();
+    
     await NotificationPlugin.initialize();
     await NotificationPlugin.showTestNotification();
 
@@ -77,6 +85,7 @@ class BackgroundLocationService {
 
     service.on('stopService').listen((event) {
       _locationTimer?.cancel();
+      WakelockPlus.disable();
       service.stopSelf();
     });
 
@@ -89,6 +98,7 @@ class BackgroundLocationService {
 
     _locationTimer = Timer.periodic(const Duration(minutes: 15), (timer) async {
       print('[BG Service] 🔄 15-min timer at ${DateTime.now()}');
+      await WakelockPlus.enable(); // Re-enable wakelock
       await _updateLocation(service);
       
       if (service is AndroidServiceInstance) {
@@ -96,7 +106,7 @@ class BackgroundLocationService {
       }
     });
     
-    print('[BG Service] ✅ Started with 15-min intervals (works on locked screen)');
+    print('[BG Service] ✅ Started with 15-min intervals');
   }
 
   static Future<void> _updateLocation(ServiceInstance service) async {
@@ -249,6 +259,8 @@ class BackgroundLocationService {
     _locationTimer?.cancel();
     _locationTimer = null;
     _serviceInitialized = false;
+    await WakelockPlus.disable();
+    await WorkManagerLocationService.cancelTask();
     final service = FlutterBackgroundService();
     service.invoke('stopService');
   }

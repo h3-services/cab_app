@@ -236,15 +236,15 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
 
         final tripId = widget.tripData['trip_id']?.toString() ?? widget.tripData['id']?.toString() ?? '';
         
-        // Prepare extras data
+        // Prepare extras data (convert to paise - multiply by 100, handle empty as 0)
         final extras = {
-          'waiting_charges': double.tryParse(_waitingChargesController.text) ?? 0.0,
-          'inter_state_permit': double.tryParse(_interStatePermitController.text) ?? 0.0,
-          'driver_allowance': double.tryParse(_driverAllowanceController.text) ?? 0.0,
-          'luggage_cost': double.tryParse(_luggageCostController.text) ?? 0.0,
-          'pet_cost': double.tryParse(_petCostController.text) ?? 0.0,
-          'toll_charge': double.tryParse(_tollChargeController.text) ?? 0.0,
-          'night_allowance': double.tryParse(_nightAllowanceController.text) ?? 0.0,
+          'waiting_charges': _waitingChargesController.text.isEmpty ? 0 : ((double.tryParse(_waitingChargesController.text) ?? 0.0) * 100).toInt(),
+          'inter_state_permit': _interStatePermitController.text.isEmpty ? 0 : ((double.tryParse(_interStatePermitController.text) ?? 0.0) * 100).toInt(),
+          'driver_allowance': _driverAllowanceController.text.isEmpty ? 0 : ((double.tryParse(_driverAllowanceController.text) ?? 0.0) * 100).toInt(),
+          'luggage_cost': _luggageCostController.text.isEmpty ? 0 : ((double.tryParse(_luggageCostController.text) ?? 0.0) * 100).toInt(),
+          'pet_cost': _petCostController.text.isEmpty ? 0 : ((double.tryParse(_petCostController.text) ?? 0.0) * 100).toInt(),
+          'toll_charge': _tollChargeController.text.isEmpty ? 0 : ((double.tryParse(_tollChargeController.text) ?? 0.0) * 100).toInt(),
+          'night_allowance': _nightAllowanceController.text.isEmpty ? 0 : ((double.tryParse(_nightAllowanceController.text) ?? 0.0) * 100).toInt(),
         };
 
         // Call API to update trip extras

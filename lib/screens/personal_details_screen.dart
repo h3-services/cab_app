@@ -127,7 +127,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
       String? rawSeating =
           data['seatingCapacity'] ?? prefs.getString('seatingCapacity');
-      if (['2', '4', '6', '8'].contains(rawSeating)) {
+      if (['4', '6', '7'].contains(rawSeating)) {
         _selectedSeatingCapacity = rawSeating;
       } else {
         _selectedSeatingCapacity = '4'; // Default safe fallback
@@ -273,7 +273,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                 'FC Expiry Date*', _fcExpiryController, true),
                             const SizedBox(height: 16),
                             _buildDateField(
-                                'RC Expiry Date*', _rcExpiryController, true),
+                                'Permit Expiry Date*', _rcExpiryController, true),
                             const SizedBox(height: 16),
                             _buildDropdownField(
                                 'Vehicle Type*',
@@ -299,7 +299,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                             _buildDropdownField(
                                 'Seating Capacity',
                                 _selectedSeatingCapacity,
-                                ['2', '4', '6', '8'], (value) {
+                                ['4', '6', '7'], (value) {
                               setState(() {
                                 _selectedSeatingCapacity = value;
                               });
