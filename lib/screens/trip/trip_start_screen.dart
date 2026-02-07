@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import '../widgets/common/custom_app_bar.dart';
-import '../widgets/bottom_navigation.dart';
-import '../constants/app_colors.dart';
-import '../services/api_service.dart';
-import '../services/image_picker_service.dart';
+import '../../widgets/common/custom_app_bar.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../services/image_picker_service.dart';
 import 'trip_details_input_screen.dart';
 
 class TripStartScreen extends StatefulWidget {
@@ -152,36 +152,7 @@ class _TripStartScreenState extends State<TripStartScreen> {
                 const Text('Odometer Photo *',
                     style: TextStyle(fontSize: 14, color: Colors.black87)),
                 const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () async {
-                    final image = await ImagePickerService.showImageSourceDialog(context);
-                    if (image != null) {
-                      setState(() => _odometerImage = image);
-                    }
-                  },
-                  child: Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: _odometerImage != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(_odometerImage!, fit: BoxFit.cover),
-                          )
-                        : const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.camera_alt, size: 40, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text('Tap to upload odometer photo',
-                                  style: TextStyle(color: Colors.grey)),
-                            ],
-                          ),
-                  ),
-                ),
+                _buildOdometerUpload(),
               ],
             ),
           ),

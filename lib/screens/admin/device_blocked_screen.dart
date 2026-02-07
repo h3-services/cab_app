@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../constants/app_colors.dart';
-import '../services/device_service.dart';
+import '../../constants/app_colors.dart';
+import '../../services/device_service.dart';
 
 class DeviceBlockedScreen extends StatefulWidget {
   const DeviceBlockedScreen({super.key});

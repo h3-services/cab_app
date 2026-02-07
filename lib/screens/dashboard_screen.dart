@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'trip_start_screen.dart';
+import 'trip/trip_start_screen.dart';
 import '../widgets/common/custom_app_bar.dart';
 import '../widgets/common/app_drawer.dart';
 import '../widgets/bottom_navigation.dart';

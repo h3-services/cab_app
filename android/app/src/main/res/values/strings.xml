@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Chola Cabs Driver</string>
+    <string name="location_channel_name">Location Updates</string>
+    <string name="location_channel_description">Notifications when location is captured every 15 minutes</string>
+</resources>

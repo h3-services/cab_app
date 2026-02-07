@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../widgets/common/custom_app_bar.dart';
-import '../widgets/common/app_drawer.dart';
-import '../widgets/bottom_navigation.dart';
-import '../constants/app_colors.dart';
+import '../../widgets/common/custom_app_bar.dart';
+import '../../widgets/common/app_drawer.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
-import '../services/api_service.dart';
+import '../../services/api_service.dart';
 import 'document_view_screen.dart';
 
 class ProfileScreen extends StatefulWidget {

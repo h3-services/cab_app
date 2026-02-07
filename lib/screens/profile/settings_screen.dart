@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/app_colors.dart';
-import '../widgets/common/custom_app_bar.dart';
-import '../widgets/common/app_drawer.dart';
-import '../widgets/bottom_navigation.dart';
+import '../../constants/app_colors.dart';
+import '../../widgets/common/custom_app_bar.dart';
+import '../../widgets/common/app_drawer.dart';
+import '../../widgets/bottom_navigation.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

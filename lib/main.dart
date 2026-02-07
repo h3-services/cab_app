@@ -3,22 +3,21 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'constants/app_colors.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
-import 'screens/verification_screen.dart';
-import 'screens/personal_details_screen.dart';
-import 'screens/kyc_upload_screen.dart';
-import 'screens/approval_pending_screen.dart';
-import 'screens/wallet_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/menu_screen.dart';
-import 'screens/trip_process_screen.dart';
-import 'screens/otp_verification_screen.dart';
-import 'screens/notifications_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/device_blocked_screen.dart';
-import 'screens/contact_admin_screen.dart';
 import 'screens/no_network_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/verification_screen.dart';
+import 'screens/auth/personal_details_screen.dart';
+import 'screens/auth/kyc_upload_screen.dart';
+import 'screens/auth/otp_verification_screen.dart';
+import 'screens/admin/approval_pending_screen.dart';
+import 'screens/admin/contact_admin_screen.dart';
+import 'screens/admin/device_blocked_screen.dart';
+import 'screens/profile/wallet_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/profile/notifications_screen.dart';
+import 'screens/profile/settings_screen.dart';
+import 'screens/trip/trip_process_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
 import 'services/permission_service.dart';
@@ -96,7 +95,7 @@ class _MyAppState extends State<MyApp> {
         '/dashboard': (context) => const DashboardScreen(),
         '/wallet': (context) => const WalletScreen(),
         '/profile': (context) => const ProfileScreen(),
-        '/menu': (context) => const MenuScreen(),
+
         '/notifications': (context) => const NotificationsScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/approval-pending': (context) => const ApprovalPendingScreen(),

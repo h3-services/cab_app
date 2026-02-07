@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/image_picker_service.dart';
-import '../constants/app_colors.dart';
-import '../services/api_service.dart';
-import '../widgets/widgets.dart';
+import '../../services/image_picker_service.dart';
+import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';

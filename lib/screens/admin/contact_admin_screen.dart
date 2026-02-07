@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../widgets/common/custom_app_bar.dart';
-import '../constants/app_colors.dart';
+import '../../widgets/common/custom_app_bar.dart';
+import '../../constants/app_colors.dart';
 
 class ContactAdminScreen extends StatelessWidget {
   const ContactAdminScreen({super.key});

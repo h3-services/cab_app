@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../widgets/widgets.dart';
-import '../widgets/bottom_navigation.dart';
-import '../widgets/common/app_drawer.dart';
+import '../../widgets/widgets.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../widgets/common/app_drawer.dart';
 
-import '../widgets/dialogs/payment_success_dialog.dart';
-import '../services/razorpay_service.dart';
-import '../services/payment_service.dart';
-import '../services/api_service.dart';
+import '../../widgets/dialogs/payment_success_dialog.dart';
+import '../../services/razorpay_service.dart';
+import '../../services/payment_service.dart';
+import '../../services/api_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+import '../../constants/app_colors.dart';
 import 'package:flutter/material.dart';
-import '../widgets/bottom_navigation.dart';
-import '../services/api_service.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TripProcessScreen extends StatefulWidget {

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/app_colors.dart';
-import '../services/auth_service.dart';
-import '../services/api_service.dart';
-import '../services/device_service.dart';
+import '../../constants/app_colors.dart';
+import '../../services/auth_service.dart';
+import '../../services/api_service.dart';
+import '../../services/device_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class OTPVerificationScreen extends StatefulWidget {

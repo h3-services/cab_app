@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgets/common/custom_app_bar.dart';
-import '../widgets/bottom_navigation.dart';
-import '../constants/app_colors.dart';
-import '../services/api_service.dart';
+import '../../widgets/common/custom_app_bar.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
 import 'trip_start_screen.dart';
 
 class TripDetailsInputScreen extends StatefulWidget {
@@ -234,31 +234,20 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
           ),
         );
 
-        final tripId = widget.tripData['trip_id']?.toString() ?? widget.tripData['id']?.toString() ?? '';
+        final tripId = widget.tripData['trip_id']?.toString() ?? widget.tripData['id']?.toString();
+        final endingKm = num.tryParse(widget.endingKm);
         
-        // Prepare extras data (convert to paise - multiply by 100, handle empty as 0)
-        final extras = {
-          'waiting_charges': _waitingChargesController.text.isEmpty ? 0 : ((double.tryParse(_waitingChargesController.text) ?? 0.0) * 100).toInt(),
-          'inter_state_permit': _interStatePermitController.text.isEmpty ? 0 : ((double.tryParse(_interStatePermitController.text) ?? 0.0) * 100).toInt(),
-          'driver_allowance': _driverAllowanceController.text.isEmpty ? 0 : ((double.tryParse(_driverAllowanceController.text) ?? 0.0) * 100).toInt(),
-          'luggage_cost': _luggageCostController.text.isEmpty ? 0 : ((double.tryParse(_luggageCostController.text) ?? 0.0) * 100).toInt(),
-          'pet_cost': _petCostController.text.isEmpty ? 0 : ((double.tryParse(_petCostController.text) ?? 0.0) * 100).toInt(),
-          'toll_charge': _tollChargeController.text.isEmpty ? 0 : ((double.tryParse(_tollChargeController.text) ?? 0.0) * 100).toInt(),
-          'night_allowance': _nightAllowanceController.text.isEmpty ? 0 : ((double.tryParse(_nightAllowanceController.text) ?? 0.0) * 100).toInt(),
-        };
-
-        // Call API to update trip extras
-        final updatedTrip = await ApiService.updateTripExtras(tripId, extras);
+        if (tripId != null && endingKm != null) {
+          await ApiService.updateOdometerEnd(tripId, endingKm);
+        }
         
         if (mounted) Navigator.pop(context);
-        
-        final apiFare = updatedTrip['fare']?.toString() ?? _actualFareController.text;
         
         final tripDetailsMap = {
           'distance': _distanceController.text,
           'time': _timeController.text.isEmpty ? '0' : _timeController.text,
           'tariffType': _tariffController.text,
-          'actualFare': apiFare,
+          'actualFare': _actualFareController.text,
           'waitingCharges': _waitingChargesController.text.isEmpty ? '0' : _waitingChargesController.text,
           'interStatePermit': _interStatePermitController.text.isEmpty ? '0' : _interStatePermitController.text,
           'driverAllowance': _driverAllowanceController.text.isEmpty ? '0' : _driverAllowanceController.text,
@@ -283,11 +272,10 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
         }
       } catch (e) {
         if (mounted) Navigator.pop(context);
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error calculating cost: $e'),
+              content: Text('Error: $e'),
               backgroundColor: Colors.red,
             ),
           );
