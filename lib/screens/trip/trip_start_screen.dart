@@ -877,20 +877,22 @@ class TripSummaryScreen extends StatefulWidget {
 }
 
 class _TripSummaryScreenState extends State<TripSummaryScreen> {
-  num? actualFare;
+  num? fare;
+  num? totalAmount;
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchTripFare();
+    _fetchTripData();
   }
 
-  Future<void> _fetchTripFare() async {
+  Future<void> _fetchTripData() async {
     final tripId = widget.tripData['trip_id'];
     if (tripId == null) {
       setState(() {
-        actualFare = widget.fare ?? 500;
+        fare = widget.fare ?? 0;
+        totalAmount = widget.fare ?? 0;
         isLoading = false;
       });
       return;
@@ -899,17 +901,14 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     try {
       final tripDetails = await ApiService.getTripDetails(tripId.toString());
       setState(() {
-        actualFare = tripDetails['fare'] ??
-            tripDetails['total_fare'] ??
-            tripDetails['total_cost'] ??
-            tripDetails['amount'] ??
-            widget.fare ??
-            500;
+        fare = tripDetails['fare'] ?? 0;
+        totalAmount = tripDetails['total_amount'] ?? 0;
         isLoading = false;
       });
     } catch (e) {
       setState(() {
-        actualFare = widget.fare ?? 500;
+        fare = widget.fare ?? 0;
+        totalAmount = widget.fare ?? 0;
         isLoading = false;
       });
     }
@@ -928,14 +927,6 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     final startKm = num.tryParse(widget.startingKm) ?? 0;
     final endKm = num.tryParse(widget.endingKm) ?? 0;
     final dist = widget.distance ?? (endKm - startKm).abs();
-    final ratePerKm = 12.0;
-
-    // Use actualFare from API, fallback to calculation
-    final totalCost = (actualFare != null && actualFare! > 0)
-        ? actualFare!.toDouble()
-        : (dist * ratePerKm * 1.10);
-    final walletFee =
-        (actualFare != null && actualFare! > 0) ? 0 : (dist * ratePerKm * 0.10);
 
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
@@ -981,7 +972,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                         _buildSummaryRow('Time Taken in Hrs', widget.tripDetails?['time'] ?? '10.7900'),
                         _buildSummaryRow('Tariff Type', widget.tripDetails?['tariffType'] ?? 'MUV-Innova'),
                         const SizedBox(height: 8),
-                        _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${widget.tripDetails?['actualFare'] ?? '7353'}'),
+                        _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${fare ?? widget.tripDetails?['actualFare'] ?? '0'}'),
                         _buildSummaryRow('Waiting Charges(Rs)', '₹ ${widget.tripDetails?['waitingCharges'] ?? '225'}'),
                         _buildSummaryRow('Inter State Permit(Rs)', '₹ ${widget.tripDetails?['interStatePermit'] ?? '0'}'),
                         _buildSummaryRow('Driver Allowance(Rs)', '₹ ${widget.tripDetails?['driverAllowance'] ?? '400'}'),
@@ -1094,12 +1085,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
   }
 
   double _calculateTotalCost() {
-    if (widget.tripDetails != null) {
-      // Only show the actual fare as total cost - don't add other charges
-      final actualFare = double.tryParse(widget.tripDetails!['actualFare'] ?? '0') ?? 0;
-      return actualFare;
-    }
-    return 8908.0; // Default total
+    return (tripDetails?['total_amount'] ?? 0).toDouble();
   }
 
   Widget _buildSummaryRow(String label, String value) {

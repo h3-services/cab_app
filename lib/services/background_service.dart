@@ -7,8 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'notification_plugin.dart';
+import 'alarm_manager_location_service.dart';
 
 Future<void> initializeService() async {
+  await AlarmManagerLocationService.initialize();
+  
   final service = FlutterBackgroundService();
 
   await NotificationPlugin.initialize();
@@ -80,6 +83,11 @@ void onStart(ServiceInstance service) async {
       }));
 
       await sendLocationToServer(position.latitude, position.longitude, service);
+      
+      await NotificationPlugin.showTerminatedLocationNotification(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
       
       if (service is AndroidServiceInstance) {
         service.setAsForegroundService();

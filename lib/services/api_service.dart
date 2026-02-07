@@ -766,9 +766,26 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> updateOdometerEnd(
-      String tripId, num odoEnd) async {
-    final url =
-        Uri.parse('$baseUrl/trips/$tripId/odometer/end?odo_end=$odoEnd');
+      String tripId,
+      num odoEnd, {
+      num? waitingCharges,
+      num? interStatePermitCharges,
+      num? driverAllowance,
+      num? luggageCost,
+      num? petCost,
+      num? tollCharges,
+      num? nightAllowance,
+    }) async {
+    final queryParams = {'odo_end': odoEnd.toString()};
+    if (waitingCharges != null) queryParams['waiting_charges'] = waitingCharges.toString();
+    if (interStatePermitCharges != null) queryParams['inter_state_permit_charges'] = interStatePermitCharges.toString();
+    if (driverAllowance != null) queryParams['driver_allowance'] = driverAllowance.toString();
+    if (luggageCost != null) queryParams['luggage_cost'] = luggageCost.toString();
+    if (petCost != null) queryParams['pet_cost'] = petCost.toString();
+    if (tollCharges != null) queryParams['toll_charges'] = tollCharges.toString();
+    if (nightAllowance != null) queryParams['night_allowance'] = nightAllowance.toString();
+
+    final url = Uri.parse('$baseUrl/trips/$tripId/odometer/end').replace(queryParameters: queryParams);
     debugPrint('PATCH Request (Odometer End): $url');
 
     try {

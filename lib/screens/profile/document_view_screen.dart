@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
-import '../widgets/common/custom_app_bar.dart';
-import '../constants/app_colors.dart';
-import '../services/api_service.dart';
+import '../../widgets/common/custom_app_bar.dart';
+import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
 
 class DocumentViewScreen extends StatefulWidget {
   const DocumentViewScreen({super.key});

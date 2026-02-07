@@ -238,25 +238,21 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
         final endingKm = num.tryParse(widget.endingKm);
         
         if (tripId != null && endingKm != null) {
-          await ApiService.updateOdometerEnd(tripId, endingKm);
+          await ApiService.updateOdometerEnd(
+            tripId,
+            endingKm,
+            waitingCharges: _waitingChargesController.text.isEmpty ? null : num.tryParse(_waitingChargesController.text),
+            interStatePermitCharges: _interStatePermitController.text.isEmpty ? null : num.tryParse(_interStatePermitController.text),
+            driverAllowance: _driverAllowanceController.text.isEmpty ? null : num.tryParse(_driverAllowanceController.text),
+            luggageCost: _luggageCostController.text.isEmpty ? null : num.tryParse(_luggageCostController.text),
+            petCost: _petCostController.text.isEmpty ? null : num.tryParse(_petCostController.text),
+            tollCharges: _tollChargeController.text.isEmpty ? null : num.tryParse(_tollChargeController.text),
+            nightAllowance: _nightAllowanceController.text.isEmpty ? null : num.tryParse(_nightAllowanceController.text),
+          );
         }
         
         if (mounted) Navigator.pop(context);
         
-        final tripDetailsMap = {
-          'distance': _distanceController.text,
-          'time': _timeController.text.isEmpty ? '0' : _timeController.text,
-          'tariffType': _tariffController.text,
-          'actualFare': _actualFareController.text,
-          'waitingCharges': _waitingChargesController.text.isEmpty ? '0' : _waitingChargesController.text,
-          'interStatePermit': _interStatePermitController.text.isEmpty ? '0' : _interStatePermitController.text,
-          'driverAllowance': _driverAllowanceController.text.isEmpty ? '0' : _driverAllowanceController.text,
-          'luggageCost': _luggageCostController.text.isEmpty ? '0' : _luggageCostController.text,
-          'petCost': _petCostController.text.isEmpty ? '0' : _petCostController.text,
-          'tollCharge': _tollChargeController.text.isEmpty ? '0' : _tollChargeController.text,
-          'nightAllowance': _nightAllowanceController.text.isEmpty ? '0' : _nightAllowanceController.text,
-        };
-
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -265,7 +261,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
                 tripData: widget.tripData,
                 startingKm: widget.startingKm,
                 endingKm: widget.endingKm,
-                tripDetails: tripDetailsMap,
               ),
             ),
           );

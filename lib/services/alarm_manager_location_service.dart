@@ -25,8 +25,9 @@ class AlarmManagerLocationService {
       exact: true,
       wakeup: true,
       rescheduleOnReboot: true,
+      allowWhileIdle: true,
     );
-    debugPrint('✅ Alarm Manager initialized for location tracking');
+    debugPrint('✅ Alarm Manager initialized for 15-minute location tracking');
   }
 
   @pragma('vm:entry-point')

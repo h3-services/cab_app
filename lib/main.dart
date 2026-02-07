@@ -23,6 +23,7 @@ import 'services/firebase_messaging_service.dart';
 import 'services/permission_service.dart';
 import 'services/notification_plugin.dart';
 import 'services/connectivity_service.dart';
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
