@@ -26,7 +26,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   late final TextEditingController _distanceController;
   final _timeController = TextEditingController();
   final _tariffController = TextEditingController(text: 'MUV-Innova');
-  final _actualFareController = TextEditingController();
   final _waitingChargesController = TextEditingController();
   final _interStatePermitController = TextEditingController();
   final _driverAllowanceController = TextEditingController();
@@ -34,7 +33,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   final _petCostController = TextEditingController();
   final _tollChargeController = TextEditingController();
   final _nightAllowanceController = TextEditingController();
-  bool _isLoadingFare = true;
 
   @override
   void initState() {
@@ -44,30 +42,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
     final endKm = double.tryParse(widget.endingKm) ?? 0;
     final distance = (endKm - startKm).abs();
     _distanceController = TextEditingController(text: distance.toString());
-    _fetchTripFare();
-  }
-
-  Future<void> _fetchTripFare() async {
-    final tripId = widget.tripData['trip_id']?.toString() ?? widget.tripData['id']?.toString();
-    if (tripId == null || tripId.isEmpty) {
-      setState(() => _isLoadingFare = false);
-      return;
-    }
-
-    try {
-      final tripDetails = await ApiService.getTripDetails(tripId);
-      final fare = tripDetails['fare']?.toString() ?? tripDetails['total_fare']?.toString() ?? '';
-      if (fare.isNotEmpty && mounted) {
-        setState(() {
-          _actualFareController.text = fare;
-          _isLoadingFare = false;
-        });
-      } else {
-        setState(() => _isLoadingFare = false);
-      }
-    } catch (e) {
-      setState(() => _isLoadingFare = false);
-    }
   }
 
   @override
@@ -108,7 +82,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
                       _buildInputField('Distance Traveled (km)', _distanceController),
                       _buildInputField('Time Taken in Hrs', _timeController),
                       _buildInputField('Tariff Type', _tariffController),
-                      _buildInputField('Total Actual Fare (₹)', _actualFareController),
                       _buildInputField('Waiting Charges (₹)', _waitingChargesController),
                       _buildInputField('Inter State Permit (₹)', _interStatePermitController),
                       _buildInputField('Driver Allowance (₹)', _driverAllowanceController),
@@ -171,7 +144,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   }
 
   Widget _buildInputField(String label, TextEditingController controller) {
-    final isActualFare = label.contains('Actual Fare');
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -197,20 +169,9 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               filled: true,
               fillColor: Colors.grey.shade50,
-              suffixIcon: isActualFare && _isLoadingFare
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : null,
             ),
             validator: (value) {
-              // Only distance and actual fare are required
-              if (label.contains('Distance') || label.contains('Actual Fare')) {
+              if (label.contains('Distance')) {
                 if (value == null || value.isEmpty) {
                   return 'This field is required';
                 }
@@ -222,6 +183,8 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
       ),
     );
   }
+
+
 
   void _onCalculatePressed() async {
     if (_formKey.currentState!.validate()) {
@@ -284,7 +247,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
     _distanceController.dispose();
     _timeController.dispose();
     _tariffController.dispose();
-    _actualFareController.dispose();
     _waitingChargesController.dispose();
     _interStatePermitController.dispose();
     _driverAllowanceController.dispose();

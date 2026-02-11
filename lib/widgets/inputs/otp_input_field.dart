@@ -5,7 +5,7 @@ class OtpInputField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final Function(String) onChanged;
-  
+
   const OtpInputField({
     super.key,
     required this.controller,
@@ -15,9 +15,13 @@ class OtpInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 60,
-      height: 60,
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: TextField(
         controller: controller,
         focusNode: focusNode,
@@ -25,28 +29,11 @@ class OtpInputField extends StatelessWidget {
         keyboardType: TextInputType.number,
         maxLength: 1,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
+          border: InputBorder.none,
           counterText: '',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.grey),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.grey),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.black),
-          ),
-          fillColor: Colors.grey[300],
-          filled: true,
         ),
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
-        ),
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         onChanged: onChanged,
       ),
     );

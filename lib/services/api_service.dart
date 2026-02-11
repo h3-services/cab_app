@@ -203,6 +203,20 @@ class ApiService {
         filename: filename);
   }
 
+  static Future<void> uploadOdometerStart(String tripId, File file) async {
+    final ext = file.path.split('.').last;
+    await _uploadFile(
+        '$baseUrl/uploads/trip/$tripId/odo_start', 'file', file,
+        filename: 'odo_start.$ext');
+  }
+
+  static Future<void> uploadOdometerEnd(String tripId, File file) async {
+    final ext = file.path.split('.').last;
+    await _uploadFile(
+        '$baseUrl/uploads/trip/$tripId/odo_end', 'file', file,
+        filename: 'odo_end.$ext');
+  }
+
   static Future<Map<String, dynamic>> getDriverDetails(String driverId) async {
     final url = Uri.parse('$baseUrl/drivers/$driverId');
     try {

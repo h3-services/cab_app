@@ -6,10 +6,8 @@ import 'screens/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/no_network_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/auth/verification_screen.dart';
 import 'screens/auth/personal_details_screen.dart';
 import 'screens/auth/kyc_upload_screen.dart';
-import 'screens/auth/otp_verification_screen.dart';
 import 'screens/admin/approval_pending_screen.dart';
 import 'screens/admin/contact_admin_screen.dart';
 import 'screens/admin/device_blocked_screen.dart';
@@ -92,7 +90,7 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
-        '/otp': (context) => const VerificationScreen(),
+        '/registration': (context) => const PersonalDetailsScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/wallet': (context) => const WalletScreen(),
         '/profile': (context) => const ProfileScreen(),
@@ -100,7 +98,6 @@ class _MyAppState extends State<MyApp> {
         '/notifications': (context) => const NotificationsScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/approval-pending': (context) => const ApprovalPendingScreen(),
-        '/verification': (context) => const OTPVerificationScreen(),
         '/personal-details': (context) => const PersonalDetailsScreen(),
         '/kyc': (context) => const KycUploadScreen(),
         '/kyc_upload': (context) => const KycUploadScreen(),

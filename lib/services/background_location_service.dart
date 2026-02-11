@@ -96,8 +96,8 @@ class BackgroundLocationService {
 
     await _updateLocation(service);
 
-    _locationTimer = Timer.periodic(const Duration(minutes: 15), (timer) async {
-      print('[BG Service] 🔄 15-min timer at ${DateTime.now()}');
+    _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
+      print('[BG Service] 🔄 2-min timer at ${DateTime.now()}');
       await _updateLocation(service);
       
       if (service is AndroidServiceInstance) {
@@ -105,7 +105,7 @@ class BackgroundLocationService {
       }
     });
     
-    print('[BG Service] ✅ Started with 15-min intervals');
+    print('[BG Service] ✅ Started with 2-min intervals');
   }
 
   static Future<void> _updateLocation(ServiceInstance service) async {
@@ -169,7 +169,7 @@ class BackgroundLocationService {
         await prefs.setString('last_location_time', DateTime.now().toIso8601String());
         await prefs.setInt('location_update_count', (prefs.getInt('location_update_count') ?? 0) + 1);
         
-        print('[BG Location] 🔔 Showing terminated notification');
+        print('[BG Location] 🔔 Showing notification');
         try {
           await NotificationPlugin.showTerminatedLocationNotification(
             latitude: position.latitude,

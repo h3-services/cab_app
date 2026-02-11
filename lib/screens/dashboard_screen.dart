@@ -808,8 +808,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       });
 
                       try {
-                        final prefs2 = await SharedPreferences.getInstance();
-                        await prefs2.setBool('is_available', value);
                         await ApiService.updateDriverAvailability(
                             _driverId!, value);
                         ScaffoldMessenger.of(context).showSnackBar(

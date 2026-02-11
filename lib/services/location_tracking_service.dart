@@ -7,13 +7,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'background_location_service.dart';
 import 'notification_plugin.dart';
+import 'workmanager_location_service.dart';
 
 class LocationTrackingService {
   static Timer? _locationTimer;
   static bool _isInitialized = false;
 
   static Future<void> startLocationTracking() async {
-    // Always stop existing tracking first to prevent duplicates
     if (_isInitialized) {
       debugPrint('⚠️ Stopping existing location tracking before restart');
       stopLocationTracking();
@@ -21,13 +21,11 @@ class LocationTrackingService {
 
     debugPrint('🚀 Starting location tracking service...');
     
-    // Start background service
     await BackgroundLocationService.initializeBackgroundService();
+    await WorkManagerLocationService.initialize();
 
-    // Capture initial location
     await _captureAndStoreLocation();
     
-    // Set up 2-minute timer
     _locationTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
       await _captureAndStoreLocation();
     });
@@ -68,6 +66,10 @@ class LocationTrackingService {
 
       if (driverId != null) {
         await _sendLocationToBackend(driverId, position);
+        await NotificationPlugin.showTerminatedLocationNotification(
+          latitude: position.latitude,
+          longitude: position.longitude,
+        );
       } else {
         debugPrint('! Driver ID not found, skipping location update');
       }
@@ -125,6 +127,7 @@ class LocationTrackingService {
     _locationTimer?.cancel();
     _locationTimer = null;
     _isInitialized = false;
+    WorkManagerLocationService.stop();
   }
 
   static Future<Map<String, dynamic>?> getLastLocation() async {

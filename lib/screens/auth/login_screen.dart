@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
+import '../../services/firebase_auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
@@ -220,68 +221,49 @@ class _LoginScreenState extends State<LoginScreen> {
                                   });
 
                                   try {
-                                    final response = await ApiService.checkPhoneExists(_phoneController.text);
+                                    final phoneNumber = '+91${_phoneController.text}';
                                     
-                                    if (response['exists'] == true) {
-                                      final currentDeviceId = await _getDeviceId();
-                                      final driverId = response['driver_id'].toString();
-                                      
-                                      final driverData = await ApiService.getDriverDetails(driverId);
-                                      final registeredDeviceId = driverData['device_id']?.toString();
-                                      
-                                      if (registeredDeviceId != null && 
-                                          registeredDeviceId.isNotEmpty && 
-                                          registeredDeviceId != 'unknown' &&
-                                          registeredDeviceId != currentDeviceId) {
+                                    await FirebaseAuthService.sendOTP(
+                                      phoneNumber: phoneNumber,
+                                      onCodeSent: (verificationId) {
                                         if (!mounted) return;
-                                        Navigator.pushReplacement(
+                                        setState(() {
+                                          _isLoading = false;
+                                        });
+                                        Navigator.pushNamed(
                                           context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const DeviceBlockedScreen(),
+                                          '/verification',
+                                          arguments: _phoneController.text,
+                                        );
+                                      },
+                                      onError: (error) {
+                                        if (!mounted) return;
+                                        setState(() {
+                                          _isLoading = false;
+                                        });
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(error),
+                                            backgroundColor: Colors.red,
                                           ),
                                         );
-                                        return;
-                                      }
-                                      
-                                      if (registeredDeviceId == null || registeredDeviceId.isEmpty || registeredDeviceId == 'unknown') {
-                                        await ApiService.updateDriverDeviceId(driverId, currentDeviceId);
-                                      }
-                                      
-                                      await _checkAndUpdateFcmToken(driverId, driverData);
-                                      
-                                      final prefs = await SharedPreferences.getInstance();
-                                      await prefs.setString('phoneNumber', _phoneController.text);
-                                      await prefs.setString('driverId', driverId);
-                                      await prefs.setBool('isLoggedIn', true);
-                                      await prefs.setBool('isKycSubmitted', true);
-                                      
-                                      if (!mounted) return;
-                                      Navigator.pushReplacementNamed(context, '/dashboard');
-                                    } else {
-                                      if (!mounted) return;
-                                      Navigator.pushNamed(context, '/otp', arguments: _phoneController.text);
-                                    }
+                                      },
+                                      onAutoVerify: (credential) async {
+                                        // Auto-verification (Android)
+                                        await _handleSuccessfulAuth(_phoneController.text);
+                                      },
+                                    );
                                   } catch (e) {
                                     if (!mounted) return;
-                                    String errorMessage = 'Error: ${e.toString()}';
-                                    if (e is TimeoutException) {
-                                      errorMessage = 'Server not responding. Please check your internet connection.';
-                                    } else if (e.toString().contains('SocketException')) {
-                                      errorMessage = 'No internet connection. Please check your network.';
-                                    }
+                                    setState(() {
+                                      _isLoading = false;
+                                    });
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text(errorMessage),
+                                        content: Text('Error: ${e.toString()}'),
                                         backgroundColor: Colors.red,
-                                        duration: const Duration(seconds: 4),
                                       ),
                                     );
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() {
-                                        _isLoading = false;
-                                      });
-                                    }
                                   }
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -339,6 +321,60 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       debugPrint('Error updating FCM token: $e');
+    }
+  }
+
+  Future<void> _handleSuccessfulAuth(String phoneNumber) async {
+    try {
+      final response = await ApiService.checkPhoneExists(phoneNumber);
+      
+      if (response['exists'] == true) {
+        final currentDeviceId = await _getDeviceId();
+        final driverId = response['driver_id'].toString();
+        
+        final driverData = await ApiService.getDriverDetails(driverId);
+        final registeredDeviceId = driverData['device_id']?.toString();
+        
+        if (registeredDeviceId != null && 
+            registeredDeviceId.isNotEmpty && 
+            registeredDeviceId != 'unknown' &&
+            registeredDeviceId != currentDeviceId) {
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DeviceBlockedScreen(),
+            ),
+          );
+          return;
+        }
+        
+        if (registeredDeviceId == null || registeredDeviceId.isEmpty || registeredDeviceId == 'unknown') {
+          await ApiService.updateDriverDeviceId(driverId, currentDeviceId);
+        }
+        
+        await _checkAndUpdateFcmToken(driverId, driverData);
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('phoneNumber', phoneNumber);
+        await prefs.setString('driverId', driverId);
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setBool('isKycSubmitted', true);
+        
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      } else {
+        if (!mounted) return;
+        Navigator.pushNamed(context, '/registration', arguments: phoneNumber);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

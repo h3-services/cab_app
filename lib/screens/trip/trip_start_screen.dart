@@ -215,6 +215,9 @@ class _TripStartScreenState extends State<TripStartScreen> {
                                 tripId.toString(),
                                 int.parse(_startingKmController.text));
 
+                            await ApiService.uploadOdometerStart(
+                                tripId.toString(), _odometerImage!);
+
                               if (requestId != null) {
                                 try {
                                   await ApiService.updateRequestStatus(
@@ -640,8 +643,11 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
 
                             final tripId = widget.tripData['trip_id'];
                             if (tripId != null) {
-                              final result = await ApiService.updateOdometerEnd(
+                              await ApiService.updateOdometerEnd(
                                   tripId.toString(), endingKm);
+
+                              await ApiService.uploadOdometerEnd(
+                                  tripId.toString(), _odometerImage!);
 
                               if (!context.mounted) return;
                               Navigator.pop(context);
@@ -880,6 +886,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
   num? fare;
   num? totalAmount;
   bool isLoading = true;
+  Map<String, dynamic>? tripDetails;
 
   @override
   void initState() {
@@ -899,10 +906,11 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     }
 
     try {
-      final tripDetails = await ApiService.getTripDetails(tripId.toString());
+      final details = await ApiService.getTripDetails(tripId.toString());
       setState(() {
-        fare = tripDetails['fare'] ?? 0;
-        totalAmount = tripDetails['total_amount'] ?? 0;
+        tripDetails = details;
+        fare = details['fare'] ?? 0;
+        totalAmount = details['total_amount'] ?? 0;
         isLoading = false;
       });
     } catch (e) {

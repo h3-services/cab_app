@@ -35,10 +35,17 @@ class PermissionService {
     
     if (backgroundStatus != PermissionStatus.granted) {
       print('⚠️ Background location permission denied - will work only when app is open');
-      // Don't throw error, allow app to continue with limited functionality
     }
 
-    // Store permission status
+    // Request battery optimization exemption
+    try {
+      print('🔋 Requesting battery optimization exemption...');
+      PermissionStatus batteryStatus = await Permission.ignoreBatteryOptimizations.request();
+      print('🔋 Battery Optimization: $batteryStatus');
+    } catch (e) {
+      print('⚠️ Battery optimization request failed: $e');
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('location_permission_granted', locationStatus == PermissionStatus.granted);
     await prefs.setBool('background_location_granted', backgroundStatus == PermissionStatus.granted);
