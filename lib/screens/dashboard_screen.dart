@@ -1092,7 +1092,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: SizedBox(
                   height: MediaQuery.of(context).size.height * 0.7,
                   child: const Center(
-                      child: Text("No trips available right now."))),
+                      child: Text("No trips available right now.", style: TextStyle(fontWeight: FontWeight.bold)))),
             )
           : ListView.builder(
               padding: const EdgeInsets.only(bottom: 80),

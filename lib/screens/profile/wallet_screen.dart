@@ -24,6 +24,7 @@ class _WalletScreenState extends State<WalletScreen> {
   int completedTripsCount = 0;
   List<Map<String, dynamic>> transactions = [];
   late RazorpayService _razorpayService;
+  double _currentPaymentAmount = 0.0;
 
   @override
   void initState() {
@@ -234,12 +235,132 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _showPaymentDialog() {
-    _razorpayService.openCheckout(
-      amount: 500.0,
-      name: 'Chola Cabs',
-      description: 'Wallet Top-up',
-      contact: '9999999999',
-      email: 'user@example.com',
+    final amountController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF565656), Color.fromARGB(255, 243, 236, 236)],
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const AppLogo(width: 80, height: 80),
+              const SizedBox(height: 16),
+              const Text(
+                'Add Money to Wallet',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                  decoration: const InputDecoration(
+                   
+                    prefixText: '₹ ',
+                    prefixStyle: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                    border: OutlineInputBorder(borderSide: BorderSide.none),
+                    contentPadding: EdgeInsets.all(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final amount = double.tryParse(amountController.text);
+                        if (amount != null && amount > 0) {
+                          Navigator.pop(context);
+                          _currentPaymentAmount = amount;
+                          _razorpayService.openCheckout(
+                            amount: amount,
+                            name: 'Chola Cabs',
+                            description: 'Wallet Top-up',
+                            contact: '9999999999',
+                            email: 'user@example.com',
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a valid amount'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF66BB6A),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Proceed',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -254,7 +375,7 @@ class _WalletScreenState extends State<WalletScreen> {
         throw Exception('Driver ID not found. Please login again.');
       }
 
-      const amount = 500.0;
+      final amount = _currentPaymentAmount;
       bool paymentRecordCreated = false;
 
       // Try to create payment record, but don't fail if API doesn't exist

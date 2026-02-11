@@ -891,12 +891,25 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('\n========== TRIP SUMMARY INIT ==========');
+    debugPrint('tripDetails provided: ${widget.tripDetails != null}');
+    if (widget.tripDetails != null) {
+      debugPrint('Using provided tripDetails');
+      debugPrint('Data: ${widget.tripDetails}');
+    }
+    debugPrint('=======================================\n');
     _fetchTripData();
   }
 
   Future<void> _fetchTripData() async {
     final tripId = widget.tripData['trip_id'];
+    
+    debugPrint('\n========== FETCH TRIP DATA ==========');
+    debugPrint('Trip ID: $tripId');
+    debugPrint('widget.tripDetails: ${widget.tripDetails}');
+    
     if (tripId == null) {
+      debugPrint('No trip_id, using fallback');
       setState(() {
         fare = widget.fare ?? 0;
         totalAmount = widget.fare ?? 0;
@@ -905,21 +918,39 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
       return;
     }
 
+    if (widget.tripDetails != null) {
+      debugPrint('Using provided tripDetails (skipping API call)');
+      setState(() {
+        tripDetails = widget.tripDetails;
+        fare = tripDetails?['fare'] ?? 0;
+        totalAmount = tripDetails?['total_amount'] ?? 0;
+        isLoading = false;
+      });
+      debugPrint('Fare: $fare, Total: $totalAmount');
+      debugPrint('=====================================\n');
+      return;
+    }
+
     try {
+      debugPrint('Calling API: getTripDetails($tripId)');
       final details = await ApiService.getTripDetails(tripId.toString());
+      debugPrint('API Response: $details');
       setState(() {
         tripDetails = details;
         fare = details['fare'] ?? 0;
         totalAmount = details['total_amount'] ?? 0;
         isLoading = false;
       });
+      debugPrint('Fare: $fare, Total: $totalAmount');
     } catch (e) {
+      debugPrint('API Error: $e');
       setState(() {
         fare = widget.fare ?? 0;
         totalAmount = widget.fare ?? 0;
         isLoading = false;
       });
     }
+    debugPrint('=====================================\n');
   }
 
   @override
@@ -976,18 +1007,17 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                               color: Colors.black),
                         ),
                         const SizedBox(height: 16),
-                        _buildSummaryRow('Distance Traveled', '${widget.tripDetails?['distance'] ?? dist} km'),
-                        _buildSummaryRow('Time Taken in Hrs', widget.tripDetails?['time'] ?? '10.7900'),
-                        _buildSummaryRow('Tariff Type', widget.tripDetails?['tariffType'] ?? 'MUV-Innova'),
+                        _buildSummaryRow('Distance Traveled', '${tripDetails?['distance_km'] ?? dist} km'),
+                        _buildSummaryRow('Tariff Type', tripDetails?['vehicle_type'] ?? 'MUV-Innova'),
                         const SizedBox(height: 8),
-                        _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${fare ?? widget.tripDetails?['actualFare'] ?? '0'}'),
-                        _buildSummaryRow('Waiting Charges(Rs)', '₹ ${widget.tripDetails?['waitingCharges'] ?? '225'}'),
-                        _buildSummaryRow('Inter State Permit(Rs)', '₹ ${widget.tripDetails?['interStatePermit'] ?? '0'}'),
-                        _buildSummaryRow('Driver Allowance(Rs)', '₹ ${widget.tripDetails?['driverAllowance'] ?? '400'}'),
-                        _buildSummaryRow('Luggage Cost(Rs)', '₹ ${widget.tripDetails?['luggageCost'] ?? '300'}'),
-                        _buildSummaryRow('Pet Cost(Rs)', '₹ ${widget.tripDetails?['petCost'] ?? '0'}'),
-                        _buildSummaryRow('Toll charge(Rs)', '₹ ${widget.tripDetails?['tollCharge'] ?? '430.00'}'),
-                        _buildSummaryRow('Night Allowance(Rs)', '₹ ${widget.tripDetails?['nightAllowance'] ?? '200'}'),
+                        _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${tripDetails?['fare'] ?? 0}'),
+                        _buildSummaryRow('Waiting Charges(Rs)', '₹ ${tripDetails?['waiting_charges'] ?? 0}'),
+                        _buildSummaryRow('Inter State Permit(Rs)', '₹ ${tripDetails?['inter_state_permit_charges'] ?? 0}'),
+                        _buildSummaryRow('Driver Allowance(Rs)', '₹ ${tripDetails?['driver_allowance'] ?? 0}'),
+                        _buildSummaryRow('Luggage Cost(Rs)', '₹ ${tripDetails?['luggage_cost'] ?? 0}'),
+                        _buildSummaryRow('Pet Cost(Rs)', '₹ ${tripDetails?['pet_cost'] ?? 0}'),
+                        _buildSummaryRow('Toll charge(Rs)', '₹ ${tripDetails?['toll_charges'] ?? 0}'),
+                        _buildSummaryRow('Night Allowance(Rs)', '₹ ${tripDetails?['night_allowance'] ?? 0}'),
                         const SizedBox(height: 12),
                         const Divider(thickness: 1, color: Colors.grey),
                         const SizedBox(height: 12),
@@ -1093,7 +1123,36 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
   }
 
   double _calculateTotalCost() {
-    return (tripDetails?['total_amount'] ?? 0).toDouble();
+    debugPrint('\n========== CALCULATE TOTAL ==========');
+    debugPrint('tripDetails: $tripDetails');
+    
+    final backendTotal = (tripDetails?['total_amount'] ?? 0).toDouble();
+    final fare = (tripDetails?['fare'] ?? 0).toDouble();
+    
+    final calculatedTotal = (
+      (tripDetails?['fare'] ?? 0) +
+      (tripDetails?['waiting_charges'] ?? 0) +
+      (tripDetails?['inter_state_permit_charges'] ?? 0) +
+      (tripDetails?['driver_allowance'] ?? 0) +
+      (tripDetails?['luggage_cost'] ?? 0) +
+      (tripDetails?['pet_cost'] ?? 0) +
+      (tripDetails?['toll_charges'] ?? 0) +
+      (tripDetails?['night_allowance'] ?? 0)
+    ).toDouble();
+    
+    debugPrint('Backend total_amount: $backendTotal');
+    debugPrint('Fare: $fare');
+    debugPrint('Calculated total: $calculatedTotal');
+    
+    if (backendTotal == fare && calculatedTotal > fare) {
+      debugPrint('Using calculated total (backend bug)');
+      debugPrint('=====================================\n');
+      return calculatedTotal;
+    }
+    
+    debugPrint('Using backend total');
+    debugPrint('=====================================\n');
+    return backendTotal > 0 ? backendTotal : calculatedTotal;
   }
 
   Widget _buildSummaryRow(String label, String value) {

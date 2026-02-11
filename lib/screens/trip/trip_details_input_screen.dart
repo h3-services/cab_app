@@ -24,7 +24,6 @@ class TripDetailsInputScreen extends StatefulWidget {
 class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _distanceController;
-  final _timeController = TextEditingController();
   final _tariffController = TextEditingController(text: 'MUV-Innova');
   final _waitingChargesController = TextEditingController();
   final _interStatePermitController = TextEditingController();
@@ -80,7 +79,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
                   child: Column(
                     children: [
                       _buildInputField('Distance Traveled (km)', _distanceController),
-                      _buildInputField('Time Taken in Hrs', _timeController),
                       _buildInputField('Tariff Type', _tariffController),
                       _buildInputField('Waiting Charges (₹)', _waitingChargesController),
                       _buildInputField('Inter State Permit (₹)', _interStatePermitController),
@@ -200,17 +198,19 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
         final tripId = widget.tripData['trip_id']?.toString() ?? widget.tripData['id']?.toString();
         final endingKm = num.tryParse(widget.endingKm);
         
+        Map<String, dynamic>? updatedTripData;
+        
         if (tripId != null && endingKm != null) {
-          await ApiService.updateOdometerEnd(
+          updatedTripData = await ApiService.updateOdometerEnd(
             tripId,
             endingKm,
-            waitingCharges: _waitingChargesController.text.isEmpty ? null : num.tryParse(_waitingChargesController.text),
-            interStatePermitCharges: _interStatePermitController.text.isEmpty ? null : num.tryParse(_interStatePermitController.text),
-            driverAllowance: _driverAllowanceController.text.isEmpty ? null : num.tryParse(_driverAllowanceController.text),
-            luggageCost: _luggageCostController.text.isEmpty ? null : num.tryParse(_luggageCostController.text),
-            petCost: _petCostController.text.isEmpty ? null : num.tryParse(_petCostController.text),
-            tollCharges: _tollChargeController.text.isEmpty ? null : num.tryParse(_tollChargeController.text),
-            nightAllowance: _nightAllowanceController.text.isEmpty ? null : num.tryParse(_nightAllowanceController.text),
+            waitingCharges: _waitingChargesController.text.isEmpty ? 0 : num.tryParse(_waitingChargesController.text),
+            interStatePermitCharges: _interStatePermitController.text.isEmpty ? 0 : num.tryParse(_interStatePermitController.text),
+            driverAllowance: _driverAllowanceController.text.isEmpty ? 0 : num.tryParse(_driverAllowanceController.text),
+            luggageCost: _luggageCostController.text.isEmpty ? 0 : num.tryParse(_luggageCostController.text),
+            petCost: _petCostController.text.isEmpty ? 0 : num.tryParse(_petCostController.text),
+            tollCharges: _tollChargeController.text.isEmpty ? 0 : num.tryParse(_tollChargeController.text),
+            nightAllowance: _nightAllowanceController.text.isEmpty ? 0 : num.tryParse(_nightAllowanceController.text),
           );
         }
         
@@ -224,6 +224,7 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
                 tripData: widget.tripData,
                 startingKm: widget.startingKm,
                 endingKm: widget.endingKm,
+                tripDetails: updatedTripData,
               ),
             ),
           );
@@ -245,7 +246,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   @override
   void dispose() {
     _distanceController.dispose();
-    _timeController.dispose();
     _tariffController.dispose();
     _waitingChargesController.dispose();
     _interStatePermitController.dispose();
