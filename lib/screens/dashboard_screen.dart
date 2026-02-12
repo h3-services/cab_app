@@ -1314,7 +1314,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ],
                   ),
-                ),
+                ), 
                 
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -1605,8 +1605,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-            ],
-          ),
+          ]
+        )
         ));
   }
 
