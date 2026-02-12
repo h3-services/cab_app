@@ -26,12 +26,12 @@ class LocationTrackingService {
 
     await _captureAndStoreLocation();
     
-    _locationTimer = Timer.periodic(const Duration(minutes: 2), (_) async {
+    _locationTimer = Timer.periodic(const Duration(minutes: 5), (_) async {
       await _captureAndStoreLocation();
     });
     
     _isInitialized = true;
-    debugPrint('✅ Location tracking initialized with 2-minute intervals');
+    debugPrint('✅ Location tracking initialized with 5-minute intervals');
   }
 
   static Future<void> _captureAndStoreLocation() async {

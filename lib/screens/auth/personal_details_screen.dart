@@ -270,7 +270,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                 _drivingLicenseExpiryController, true),
                             const SizedBox(height: 16),
                             _buildDateField(
-                                'FC Expiry Date*', _fcExpiryController, true),
+                                'FC Permit Date*', _fcExpiryController, true),
                             const SizedBox(height: 16),
                             _buildDateField(
                                 'Permit Expiry Date*', _rcExpiryController, true),

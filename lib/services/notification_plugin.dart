@@ -19,16 +19,17 @@ class NotificationPlugin {
       );
       
       const AndroidNotificationChannel terminatedChannel = AndroidNotificationChannel(
-        'terminated_location',
+        'terminated_location_v2',
         'Terminated State Location',
         description: 'Location updates when app is closed',
         importance: Importance.high,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
       );
 
       const AndroidNotificationChannel tripChannel = AndroidNotificationChannel(
-        'trip_notifications',
+        'trip_notifications_v2',
         'Trip Notifications',
         description: 'Notifications for new trips and trip updates',
         importance: Importance.max,
@@ -75,12 +76,13 @@ class NotificationPlugin {
     try {
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-        'terminated_location',
+        'terminated_location_v2',
         'Terminated State Location',
         channelDescription: 'Location updates when app is closed',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
         ongoing: false,
         autoCancel: true,
@@ -122,7 +124,7 @@ class NotificationPlugin {
     try {
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-        'trip_notifications',
+        'trip_notifications_v2',
         'Trip Notifications',
         channelDescription: 'Notifications for new trips and trip updates',
         importance: Importance.max,
@@ -180,12 +182,13 @@ class NotificationPlugin {
     try {
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-        'terminated_location',
+        'terminated_location_v2',
         'Test Notification',
         channelDescription: 'Test notification to verify functionality',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
         ongoing: false,
         autoCancel: true,

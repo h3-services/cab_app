@@ -137,7 +137,7 @@ class WorkManagerLocationService {
     await Workmanager().registerPeriodicTask(
       _taskName,
       _taskName,
-      frequency: const Duration(minutes: 15),
+      frequency: const Duration(minutes: 5),
       constraints: Constraints(
         networkType: NetworkType.connected,
       ),
@@ -145,7 +145,7 @@ class WorkManagerLocationService {
       backoffPolicy: BackoffPolicy.linear,
       backoffPolicyDelay: const Duration(minutes: 1),
     );
-    print('[WorkManager] ✅ Registered 15-min periodic task');
+    print('[WorkManager] ✅ Registered 5-min periodic task');
   }
 
   static Future<void> stop() async {
