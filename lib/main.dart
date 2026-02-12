@@ -6,6 +6,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/no_network_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/otp_verification_screen.dart';
 import 'screens/auth/personal_details_screen.dart';
 import 'screens/auth/kyc_upload_screen.dart';
 import 'screens/admin/approval_pending_screen.dart';
@@ -111,6 +112,12 @@ class _MyAppState extends State<MyApp> {
             builder: (context) => TripProcessScreen(
               tripData: args ?? {},
             ),
+          );
+        }
+        if (settings.name == '/verification') {
+          final phoneNumber = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => OtpVerificationScreen(phoneNumber: phoneNumber),
           );
         }
         return null;

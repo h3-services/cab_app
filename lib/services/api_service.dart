@@ -10,6 +10,62 @@ class ApiService {
   static String get baseUrl =>
       dotenv.env['BASE_URL'] ?? 'https://api.cholacabs.in/api';
 
+  static Future<Map<String, dynamic>> sendOtp(String phoneNumber) async {
+    final url = Uri.parse('$baseUrl/auth/send-otp');
+    
+    try {
+      debugPrint('POST Request: $url');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phone_number': phoneNumber}),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Request timeout'),
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to send OTP: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> verifyOtp(String phoneNumber, String otp) async {
+    final url = Uri.parse('$baseUrl/auth/verify-otp');
+    
+    try {
+      debugPrint('POST Request: $url');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'phone_number': phoneNumber, 'otp': otp}),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException('Request timeout'),
+      );
+
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Invalid OTP');
+      }
+    } catch (e) {
+      debugPrint('API Error: $e');
+      rethrow;
+    }
+  }
+
   static Future<Map<String, dynamic>> checkPhoneExists(String phoneNumber) async {
     final url = Uri.parse('$baseUrl/drivers/check-phone');
     
