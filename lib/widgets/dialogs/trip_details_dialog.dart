@@ -57,6 +57,7 @@ class TripDetailsDialog extends StatelessWidget {
                     child: _buildCompactSection('Trip Info', [
                       _buildCompactRow('ID', trip['trip_id']?.toString() ?? '-'),
                       _buildCompactRow('Type', trip['trip_type']?.toString() ?? '-'),
+                      _buildCompactRow('Vehicle', trip['vehicle_type']?.toString() ?? '-'),
                       _buildCompactRow('Status', _getTripStatus()),
                     ]),
                   ),
