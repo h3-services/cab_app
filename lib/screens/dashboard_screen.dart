@@ -1180,12 +1180,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     if (trip['vehicle_type'] != null)
-                      Text(
-                        trip['vehicle_type'],
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.greenPrimary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: AppColors.greenPrimary.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getVehicleIcon(trip['vehicle_type']),
+                              size: 16,
+                              color: AppColors.greenPrimary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              trip['vehicle_type'],
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.greenPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],
@@ -2733,6 +2753,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         textAlign: TextAlign.center,
       ),
     );
+  }
+
+  IconData _getVehicleIcon(String vehicleType) {
+    final type = vehicleType.toUpperCase();
+    if (type.contains('SUV')) return Icons.directions_car;
+    if (type.contains('SEDAN')) return Icons.directions_car_outlined;
+    if (type.contains('HATCHBACK')) return Icons.directions_car_filled;
+    if (type.contains('TEMPO')) return Icons.local_shipping;
+    if (type.contains('TRUCK')) return Icons.local_shipping_outlined;
+    if (type.contains('VAN')) return Icons.airport_shuttle;
+    if (type.contains('BUS')) return Icons.directions_bus;
+    if (type.contains('BIKE') || type.contains('MOTORCYCLE')) return Icons.two_wheeler;
+    return Icons.directions_car;
   }
 }
 
