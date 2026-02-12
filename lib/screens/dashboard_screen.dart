@@ -602,7 +602,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ? 'You are now Online'
                                   : 'You are now Offline'),
                               backgroundColor:
-                                  value ? Colors.green : Colors.grey,
+                                  value ? AppColors.greenPrimary : Colors.grey,
                               duration: const Duration(seconds: 1),
                             ),
                           );
@@ -617,7 +617,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         }
                       },
                       activeColor: Colors.white,
-                      activeTrackColor: Colors.green,
+                      activeTrackColor: AppColors.greenPrimary,
                       inactiveThumbColor: Colors.grey.shade600,
                       inactiveTrackColor: Colors.grey.shade400,
                     ),
@@ -766,7 +766,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           height: 10,
                           decoration: BoxDecoration(
                             color: _tripStateService.isReadyForTrip
-                                ? Colors.green
+                                ? AppColors.greenPrimary
                                 : Colors.red,
                             shape: BoxShape.circle,
                           ),
@@ -779,7 +779,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           style: TextStyle(
                             fontSize: 15,
                             color: _tripStateService.isReadyForTrip
-                                ? Colors.green
+                                ? AppColors.greenPrimary
                                 : Colors.red,
                             fontWeight: FontWeight.bold,
                           ),
@@ -815,7 +815,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             content: Text(value
                                 ? 'You are now Online'
                                 : 'You are now Offline'),
-                            backgroundColor: value ? Colors.green : Colors.grey,
+                            backgroundColor: value ? AppColors.greenPrimary : Colors.grey,
                             duration: const Duration(seconds: 1),
                           ),
                         );
@@ -831,7 +831,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       }
                     },
                     activeColor: Colors.white,
-                    activeTrackColor: Colors.green,
+                    activeTrackColor: AppColors.greenPrimary,
                     inactiveThumbColor: Colors.grey.shade600,
                     inactiveTrackColor: Colors.grey.shade400,
                   ),
@@ -1150,6 +1150,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.bluePrimary, AppColors.blueDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.arrow_forward,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        trip['trip_type'] ?? 'ONE WAY',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (trip['vehicle_type'] != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.bluePrimary, AppColors.blueDark],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getVehicleIcon(trip['vehicle_type']),
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          trip['vehicle_type'],
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
               children: [
                 Container(
                   width: 8,
@@ -1167,13 +1234,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fontSize: 14,
                       color: Colors.black87,
                     ),
-                  ),
-                ),
-                Text(
-                  trip['trip_type'] ?? 'ONE WAY',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
                   ),
                 ),
               ],
@@ -1199,7 +1259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1255,7 +1315,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -1300,38 +1360,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ),
-                    if (trip['vehicle_type'] != null)
-                      Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.greenPrimary, AppColors.greenDark],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _getVehicleIcon(trip['vehicle_type']),
-                              size: 18,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              trip['vehicle_type'],
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                   ],
                 ),
               ],
