@@ -29,7 +29,7 @@ class NotificationPlugin {
       );
 
       const AndroidNotificationChannel tripChannel = AndroidNotificationChannel(
-        'trip_notifications_v2',
+        'trip_notifications_v3',
         'Trip Notifications',
         description: 'Notifications for new trips and trip updates',
         importance: Importance.max,
@@ -124,7 +124,7 @@ class NotificationPlugin {
     try {
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-        'trip_notifications_v2',
+        'trip_notifications_v3',
         'Trip Notifications',
         channelDescription: 'Notifications for new trips and trip updates',
         importance: Importance.max,
