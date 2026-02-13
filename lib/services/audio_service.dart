@@ -11,6 +11,7 @@ class AudioService {
       final double currentVolume = await volumeController.getVolume();
       
       volumeController.setVolume(1.0);
+      volumeController.showSystemUI = false;
       
       await _player.stop();
       await _player.setReleaseMode(ReleaseMode.loop);
@@ -21,15 +22,16 @@ class AudioService {
           iOS: AudioContextIOS(
             category: AVAudioSessionCategory.playback,
             options: {
-              AVAudioSessionOptions.mixWithOthers,
+              AVAudioSessionOptions.defaultToSpeaker,
+              AVAudioSessionOptions.duckOthers,
             },
           ),
           android: AudioContextAndroid(
             isSpeakerphoneOn: true,
             stayAwake: true,
             contentType: AndroidContentType.sonification,
-            usageType: AndroidUsageType.alarm,
-            audioFocus: AndroidAudioFocus.gain,
+            usageType: AndroidUsageType.notificationRingtone,
+            audioFocus: AndroidAudioFocus.gainTransient,
           ),
         ),
       );
