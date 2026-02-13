@@ -113,12 +113,3 @@ void _handleNotificationClick(Map<String, dynamic> data) {
     print('[FCM] Navigation error: $e');
   }
 }
-
-Future<void> _showLocalNotification(RemoteMessage message) async {
-  await NotificationPlugin.showNotification(
-    id: message.hashCode,
-    title: message.notification?.title ?? 'Notification',
-    body: message.notification?.body ?? '',
-    payload: jsonEncode(message.data),
-  );
-}

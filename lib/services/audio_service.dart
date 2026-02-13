@@ -16,16 +16,4 @@ class AudioService {
       debugPrint('Audio play error: $e');
     }
   }
-
-  static Future<void> stopSound() async {
-    try {
-      await _player.stop();
-    } catch (e) {
-      debugPrint('Audio stop error: $e');
-    }
-  }
-
-  static Future<void> dispose() async {
-    await _player.dispose();
-  }
 }

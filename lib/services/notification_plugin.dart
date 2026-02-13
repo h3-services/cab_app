@@ -129,7 +129,7 @@ class NotificationPlugin {
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification_sound'),
+        sound: const RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
         enableLights: true,
         ongoing: false,
@@ -147,7 +147,7 @@ class NotificationPlugin {
         ),
       );
 
-      const NotificationDetails platformChannelSpecifics =
+      final NotificationDetails platformChannelSpecifics =
           NotificationDetails(android: androidPlatformChannelSpecifics);
 
       await _notificationsPlugin.show(
