@@ -170,7 +170,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onBack: () => Navigator.pushNamedAndRemoveUntil(
               context, '/dashboard', (route) => false),
         ),
-        endDrawer: const AppDrawer(),
         body: SingleChildScrollView(
           child: Column(
             children: [

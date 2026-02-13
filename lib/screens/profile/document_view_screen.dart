@@ -95,6 +95,7 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
           'Profile Photo': driverData['photo_url'] ?? '',
           'License Document': driverData['licence_url'] ?? '',
           'Aadhaar Document': driverData['aadhar_url'] ?? '',
+          'Police Verification': driverData['police_verification_url'] ?? '',
         };
         
         if (vehicleData != null) {
@@ -102,7 +103,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
             'Vehicle Photo': vehicleData['vehicle_front_url'] ?? '',
             'RC Document': vehicleData['rc_book_url'] ?? '',
             'FC Document': vehicleData['fc_certificate_url'] ?? '',
-            'Police Verification': vehicleData['police_verification_url'] ?? '',
             'Vehicle Front': vehicleData['vehicle_front_url'] ?? '',
             'Vehicle Back': vehicleData['vehicle_back_url'] ?? '',
             'Vehicle Left': vehicleData['vehicle_left_url'] ?? '',

@@ -318,7 +318,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   void initState() {
     super.initState();
     _checkStatus();
-    _startAutoReload();
+    // Don't start auto-reload timer - rely on FCM notifications instead
   }
 
   @override
@@ -327,15 +327,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
     super.dispose();
   }
 
-  void _startAutoReload() {
-    _autoReloadTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted && !_isLoading) {
-        _checkStatus();
-      }
-    });
-  }
-
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(

@@ -907,6 +907,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     debugPrint('\n========== FETCH TRIP DATA ==========');
     debugPrint('Trip ID: $tripId');
     debugPrint('widget.tripDetails: ${widget.tripDetails}');
+    debugPrint('widget.tripData: ${widget.tripData}');
     
     if (tripId == null) {
       debugPrint('No trip_id, using fallback');
@@ -920,6 +921,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
 
     if (widget.tripDetails != null) {
       debugPrint('Using provided tripDetails (skipping API call)');
+      debugPrint('Full tripDetails: ${widget.tripDetails}');
       setState(() {
         tripDetails = widget.tripDetails;
         fare = tripDetails?['fare'] ?? 0;
@@ -927,6 +929,8 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
         isLoading = false;
       });
       debugPrint('Fare: $fare, Total: $totalAmount');
+      debugPrint('Waiting Charges: ${tripDetails?['waiting_charges']}');
+      debugPrint('Toll Charges: ${tripDetails?['toll_charges']}');
       debugPrint('=====================================\n');
       return;
     }
@@ -1008,16 +1012,16 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildSummaryRow('Distance Traveled', '${tripDetails?['distance_km'] ?? dist} km'),
-                        _buildSummaryRow('Tariff Type', tripDetails?['vehicle_type'] ?? 'MUV-Innova'),
+                        _buildSummaryRow('Tariff Type', tripDetails?['vehicle_type'] ?? widget.tripData['vehicle_type'] ?? 'MUV-Innova'),
                         const SizedBox(height: 8),
-                        _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${tripDetails?['fare'] ?? 0}'),
-                        _buildSummaryRow('Waiting Charges(Rs)', '₹ ${tripDetails?['waiting_charges'] ?? 0}'),
-                        _buildSummaryRow('Inter State Permit(Rs)', '₹ ${tripDetails?['inter_state_permit_charges'] ?? 0}'),
-                        _buildSummaryRow('Driver Allowance(Rs)', '₹ ${tripDetails?['driver_allowance'] ?? 0}'),
-                        _buildSummaryRow('Luggage Cost(Rs)', '₹ ${tripDetails?['luggage_cost'] ?? 0}'),
-                        _buildSummaryRow('Pet Cost(Rs)', '₹ ${tripDetails?['pet_cost'] ?? 0}'),
-                        _buildSummaryRow('Toll charge(Rs)', '₹ ${tripDetails?['toll_charges'] ?? 0}'),
-                        _buildSummaryRow('Night Allowance(Rs)', '₹ ${tripDetails?['night_allowance'] ?? 0}'),
+                        _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${(tripDetails?['fare'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Waiting Charges(Rs)', '₹ ${(tripDetails?['waiting_charges'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Inter State Permit(Rs)', '₹ ${(tripDetails?['inter_state_permit_charges'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Driver Allowance(Rs)', '₹ ${(tripDetails?['driver_allowance'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Luggage Cost(Rs)', '₹ ${(tripDetails?['luggage_cost'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Pet Cost(Rs)', '₹ ${(tripDetails?['pet_cost'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Toll charge(Rs)', '₹ ${(tripDetails?['toll_charges'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Night Allowance(Rs)', '₹ ${(tripDetails?['night_allowance'] ?? 0).toStringAsFixed(2)}'),
                         const SizedBox(height: 12),
                         const Divider(thickness: 1, color: Colors.grey),
                         const SizedBox(height: 12),
