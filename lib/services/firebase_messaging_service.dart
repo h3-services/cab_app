@@ -22,7 +22,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       body: message.notification?.body ?? '',
       payload: jsonEncode(message.data),
     );
-    print("[FCM] Background notification saved and shown");
+    print("[FCM] Background notification saved and shown with sound");
   } catch (e) {
     print("[FCM] Background handler error: $e");
   }

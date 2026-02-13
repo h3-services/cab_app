@@ -38,7 +38,6 @@ class NotificationPlugin {
         enableVibration: true,
         enableLights: true,
         showBadge: true,
-        vibrationPattern: null,
       );
 
       final androidPlugin = _notificationsPlugin
@@ -122,7 +121,7 @@ class NotificationPlugin {
     String? payload,
   }) async {
     try {
-      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+      final AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'trip_notifications_v3',
         'Trip Notifications',
@@ -138,10 +137,14 @@ class NotificationPlugin {
         showWhen: true,
         channelShowBadge: true,
         icon: '@mipmap/ic_launcher',
-        ticker: 'New notification',
-        category: AndroidNotificationCategory.alarm,
+        ticker: title,
         fullScreenIntent: true,
         visibility: NotificationVisibility.public,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
       );
 
       const NotificationDetails platformChannelSpecifics =
