@@ -12,17 +12,23 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("[FCM] Background/Terminated message: ${message.messageId}");
   
   try {
-    await NotificationService.saveNotification(
-      message.notification?.title ?? 'Notification',
-      message.notification?.body ?? '',
-    );
-    await NotificationPlugin.showNotification(
-      id: message.hashCode,
-      title: message.notification?.title ?? 'Notification',
-      body: message.notification?.body ?? '',
-      payload: jsonEncode(message.data),
-    );
-    print("[FCM] Background notification saved and shown with sound");
+    final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
+    final body = message.notification?.body ?? message.data['body'] ?? '';
+    
+    await NotificationService.saveNotification(title, body);
+    
+    // Only show notification if Firebase didn't already show it (data-only messages)
+    if (message.notification == null) {
+      await NotificationPlugin.showNotification(
+        id: message.hashCode,
+        title: title,
+        body: body,
+        payload: jsonEncode(message.data),
+      );
+      print("[FCM] Background notification shown (data-only)");
+    } else {
+      print("[FCM] Background notification saved (Firebase auto-shown)");
+    }
   } catch (e) {
     print("[FCM] Background handler error: $e");
   }
@@ -51,18 +57,28 @@ Future<void> initializeFirebaseMessaging() async {
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // Foreground - save and show, don't navigate automatically
+  // Foreground - save, show notification, and play audio
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     print('[FCM] Foreground message: ${message.messageId}');
     print('[FCM] Notification: ${message.notification?.title}');
-    if (message.notification != null) {
-      await NotificationService.saveNotification(
-        message.notification!.title ?? 'Notification',
-        message.notification!.body ?? '',
-      );
-      AudioService.playNotificationSound();
-      print('[FCM] Foreground notification saved, sound playing');
-    }
+    
+    final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
+    final body = message.notification?.body ?? message.data['body'] ?? '';
+    
+    await NotificationService.saveNotification(title, body);
+    
+    // Show notification in foreground
+    await NotificationPlugin.showNotification(
+      id: message.hashCode,
+      title: title,
+      body: body,
+      payload: jsonEncode(message.data),
+    );
+    
+    // Play audio
+    AudioService.playNotificationSound();
+    
+    print('[FCM] Foreground notification shown and audio playing');
   });
 
   // Background/Terminated - navigate when tapped
