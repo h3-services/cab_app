@@ -31,6 +31,7 @@ dependencies:
   connectivity_plus: ^6.0.5
   android_alarm_manager_plus: ^4.0.3
   workmanager: ^0.9.0+3
+  volume_controller: ^2.0.7
 
 dependency_overrides:
   fluttertoast: ^9.0.0

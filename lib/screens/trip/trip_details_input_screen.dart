@@ -9,12 +9,14 @@ class TripDetailsInputScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
   final String endingKm;
+  final Map<String, String>? previousInputs;
 
   const TripDetailsInputScreen({
     super.key,
     required this.tripData,
     required this.startingKm,
     required this.endingKm,
+    this.previousInputs,
   });
 
   @override
@@ -24,7 +26,7 @@ class TripDetailsInputScreen extends StatefulWidget {
 class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _distanceController;
-  final _tariffController = TextEditingController(text: 'MUV-Innova');
+  final _tariffController = TextEditingController();
   final _waitingChargesController = TextEditingController();
   final _interStatePermitController = TextEditingController();
   final _driverAllowanceController = TextEditingController();
@@ -36,11 +38,30 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   @override
   void initState() {
     super.initState();
+    debugPrint('TripDetailsInputScreen - tripData: ${widget.tripData}');
+    
     // Calculate distance from starting and ending KM
     final startKm = double.tryParse(widget.startingKm) ?? 0;
     final endKm = double.tryParse(widget.endingKm) ?? 0;
     final distance = (endKm - startKm).abs();
-    _distanceController = TextEditingController(text: distance.toString());
+    _distanceController = TextEditingController(text: widget.previousInputs?['distance'] ?? distance.toString());
+    
+    // Set vehicle type from trip data - check multiple possible locations
+    final vehicleType = widget.tripData['vehicle_type'] ?? 
+                       widget.tripData['trip']?['vehicle_type'] ?? 
+                       widget.tripData['type'] ?? '';
+    debugPrint('Vehicle type found: $vehicleType');
+    
+    _tariffController.text = widget.previousInputs?['tariff'] ?? vehicleType;
+    
+    // Restore previous inputs if available
+    _waitingChargesController.text = widget.previousInputs?['waitingCharges'] ?? '';
+    _interStatePermitController.text = widget.previousInputs?['interStatePermit'] ?? '';
+    _driverAllowanceController.text = widget.previousInputs?['driverAllowance'] ?? '';
+    _luggageCostController.text = widget.previousInputs?['luggageCost'] ?? '';
+    _petCostController.text = widget.previousInputs?['petCost'] ?? '';
+    _tollChargeController.text = widget.previousInputs?['tollCharge'] ?? '';
+    _nightAllowanceController.text = widget.previousInputs?['nightAllowance'] ?? '';
   }
 
   @override
@@ -225,6 +246,17 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
                 startingKm: widget.startingKm,
                 endingKm: widget.endingKm,
                 tripDetails: updatedTripData,
+                previousInputs: {
+                  'distance': _distanceController.text,
+                  'tariff': _tariffController.text,
+                  'waitingCharges': _waitingChargesController.text,
+                  'interStatePermit': _interStatePermitController.text,
+                  'driverAllowance': _driverAllowanceController.text,
+                  'luggageCost': _luggageCostController.text,
+                  'petCost': _petCostController.text,
+                  'tollCharge': _tollChargeController.text,
+                  'nightAllowance': _nightAllowanceController.text,
+                },
               ),
             ),
           );

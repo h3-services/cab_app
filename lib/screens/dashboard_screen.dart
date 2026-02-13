@@ -12,6 +12,7 @@ import '../services/trip_state_service.dart';
 import '../services/api_service.dart';
 import '../services/location_tracking_service.dart';
 import '../services/battery_optimization_service.dart';
+import '../services/background_service.dart';
 import '../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -43,17 +44,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDriverId();
     _requestLocationPermissions();
-    _initializeLocationTrackingOnce();
   }
 
-  Future<void> _initializeLocationTrackingOnce() async {
+  Future<void> _initializeLocationTracking() async {
     final prefs = await SharedPreferences.getInstance();
     final isTrackingInitialized = prefs.getBool('location_tracking_initialized') ?? false;
     
-    // Always restart location tracking to ensure it's running
-    debugPrint('🚀 Starting/Restarting location tracking');
-    await LocationTrackingService.startLocationTracking();
-    await prefs.setBool('location_tracking_initialized', true);
+    if (!isTrackingInitialized) {
+      debugPrint('🚀 Starting location tracking for approved driver');
+      await LocationTrackingService.startLocationTracking();
+      await initializeService();
+      await prefs.setBool('location_tracking_initialized', true);
+    } else {
+      debugPrint('🔄 Location tracking already initialized');
+    }
   }
 
   Future<void> _requestLocationPermissions() async {
@@ -219,7 +223,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Navigator.pushReplacementNamed(context, '/approval-pending');
         }
       } else {
-        // Approved! Load trips before unlocking UI
+        // Approved! Start location tracking and load trips
+        await _initializeLocationTracking();
+        
         if (mounted) {
           _tripStateService.setReadyForTrip(isAvailable);
 
@@ -2045,21 +2051,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: 0,
-            top: 0,
-            child: Text(
-              type,
-              style: const TextStyle(
-                color: Colors.black54,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+      child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.bluePrimary, AppColors.blueDark],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.arrow_forward, size: 14, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(
+                          type,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (request?['vehicle_type'] != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.bluePrimary, AppColors.blueDark],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_getVehicleIcon(request!['vehicle_type']), size: 18, color: Colors.white),
+                          const SizedBox(width: 6),
+                          Text(
+                            request['vehicle_type'],
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
-            ),
-          ),
-          Column(
+              const SizedBox(height: 12),
+              Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(

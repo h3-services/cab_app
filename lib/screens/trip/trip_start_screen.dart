@@ -867,6 +867,7 @@ class TripSummaryScreen extends StatefulWidget {
   final Map<String, dynamic>? tripDetails;
   final num? distance;
   final num? fare;
+  final Map<String, String>? previousInputs;
 
   const TripSummaryScreen({
     super.key,
@@ -876,6 +877,7 @@ class TripSummaryScreen extends StatefulWidget {
     this.tripDetails,
     this.distance,
     this.fare,
+    this.previousInputs,
   });
 
   @override
@@ -1068,6 +1070,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                             tripData: widget.tripData,
                             startingKm: widget.startingKm,
                             endingKm: widget.endingKm,
+                            previousInputs: widget.previousInputs,
                           ),
                         ),
                       );

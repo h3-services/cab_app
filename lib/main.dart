@@ -47,9 +47,8 @@ void main() async {
 
   try {
     await PermissionService.requestLocationPermissions();
-    await initializeService();
   } catch (e) {
-    debugPrint("Permission/Service init error: $e");
+    debugPrint("Permission init error: $e");
   }
 
   await ConnectivityService().initialize();

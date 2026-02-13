@@ -38,6 +38,7 @@ class NotificationPlugin {
         enableVibration: true,
         enableLights: true,
         showBadge: true,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       final androidPlugin = _notificationsPlugin
@@ -147,6 +148,7 @@ class NotificationPlugin {
         fullScreenIntent: true,
         visibility: NotificationVisibility.public,
         audioAttributesUsage: AudioAttributesUsage.alarm,
+        category: AndroidNotificationCategory.alarm,
         styleInformation: BigTextStyleInformation(
           body,
           contentTitle: title,
