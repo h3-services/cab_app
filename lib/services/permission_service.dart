@@ -37,11 +37,19 @@ class PermissionService {
       print('⚠️ Background location permission denied - will work only when app is open');
     }
 
-    // Request battery optimization exemption
+    // Request battery optimization exemption (only once)
     try {
-      print('🔋 Requesting battery optimization exemption...');
-      PermissionStatus batteryStatus = await Permission.ignoreBatteryOptimizations.request();
-      print('🔋 Battery Optimization: $batteryStatus');
+      final prefs = await SharedPreferences.getInstance();
+      final batteryOptAsked = prefs.getBool('battery_opt_asked') ?? false;
+      
+      if (!batteryOptAsked) {
+        print('🔋 Requesting battery optimization exemption...');
+        PermissionStatus batteryStatus = await Permission.ignoreBatteryOptimizations.request();
+        print('🔋 Battery Optimization: $batteryStatus');
+        await prefs.setBool('battery_opt_asked', true);
+      } else {
+        print('🔋 Battery optimization already asked, skipping...');
+      }
     } catch (e) {
       print('⚠️ Battery optimization request failed: $e');
     }

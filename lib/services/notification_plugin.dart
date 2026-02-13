@@ -121,6 +121,12 @@ class NotificationPlugin {
     String? payload,
   }) async {
     try {
+      // Don't show notification if title is empty or just "Notification"
+      if (title.isEmpty || title == 'Notification' || body.isEmpty) {
+        debugPrint('[NotificationPlugin] Skipping empty/default notification');
+        return;
+      }
+      
       final AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'trip_notifications_v3',
