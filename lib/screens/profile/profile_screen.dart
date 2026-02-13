@@ -198,37 +198,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           // Profile image
-                          Stack(
-                            children: [
-                              CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Colors.grey.shade300,
-                                backgroundImage: _profilePhotoUrl != null
-                                    ? NetworkImage(_profilePhotoUrl!)
-                                    : (_profilePhotoPath != null
-                                        ? FileImage(File(_profilePhotoPath!))
-                                            as ImageProvider
-                                        : null),
-                                child: (_profilePhotoUrl == null &&
-                                        _profilePhotoPath == null)
-                                    ? const Icon(Icons.person,
-                                        size: 60, color: Colors.grey)
-                                    : null,
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.grey,
-                                    shape: BoxShape.circle,
+                          GestureDetector(
+                            onTap: () {
+                              if (_profilePhotoUrl != null || _profilePhotoPath != null) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    backgroundColor: Colors.black,
+                                    child: Stack(
+                                      children: [
+                                        Center(
+                                          child: _profilePhotoUrl != null
+                                              ? Image.network(_profilePhotoUrl!, fit: BoxFit.contain)
+                                              : Image.file(File(_profilePhotoPath!), fit: BoxFit.contain),
+                                        ),
+                                        Positioned(
+                                          top: 10,
+                                          right: 10,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                            onPressed: () => Navigator.pop(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  child: const Icon(Icons.camera_alt,
-                                      size: 20, color: Colors.white),
-                                ),
-                              ),
-                            ],
+                                );
+                              }
+                            },
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.grey.shade300,
+                              backgroundImage: _profilePhotoUrl != null
+                                  ? NetworkImage(_profilePhotoUrl!)
+                                  : (_profilePhotoPath != null
+                                      ? FileImage(File(_profilePhotoPath!))
+                                          as ImageProvider
+                                      : null),
+                              child: (_profilePhotoUrl == null &&
+                                      _profilePhotoPath == null)
+                                  ? const Icon(Icons.person,
+                                      size: 60, color: Colors.grey)
+                                  : null,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -291,115 +303,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
 
-              // Vehicle Details and KYC Status Section
+              // Vehicle Details Section
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Vehicle Details
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Vehicle Details',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              children: [
-                                Text(
-                                  _vehicleType.isNotEmpty
-                                      ? _vehicleType
-                                      : 'Type',
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  '$_seatingCapacity Seats',
-                                  style: const TextStyle(
-                                      fontSize: 14, color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _vehicleNumber.isNotEmpty
-                                  ? _vehicleNumber
-                                  : 'NO NUMBER',
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildVehicleDetailRow('Make', _vehicleBrand),
-                            _buildVehicleDetailRow('Model', _vehicleModel),
-                            _buildVehicleDetailRow('Color', _vehicleColor),
-                          ],
-                        ),
+                    const Text(
+                      'Vehicle Details',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(height: 20),
+                    _buildDetailRow('Vehicle Type', _vehicleType),
+                    _buildDetailRow('Vehicle Number', _vehicleNumber),
+                    _buildDetailRow('Make', _vehicleBrand),
+                    _buildDetailRow('Model', _vehicleModel),
+                    _buildDetailRow('Color', _vehicleColor),
+                    _buildDetailRow('Seating Capacity', _seatingCapacity),
+                  ],
+                ),
+              ),
 
-                    // KYC Status
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'KYC Status',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            _buildKYCItem(
-                                'License', 'Verified', Icons.credit_card),
-                            const SizedBox(height: 16),
-                            _buildKYCItem(
-                                'Aadhaar Card', 'Verified', Icons.credit_card),
-                            const SizedBox(height: 16),
-                            _buildKYCItem('Vehicle Photos', 'Verified',
-                                Icons.directions_car),
-                          ],
-                        ),
+              // KYC Status Section
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'KYC Status',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildKYCItem('License', 'Verified', Icons.credit_card),
+                        _buildKYCItem('Aadhaar Card', 'Verified', Icons.credit_card),
+                        _buildKYCItem('Vehicle Photos', 'Verified', Icons.directions_car),
+                      ],
                     ),
                   ],
                 ),

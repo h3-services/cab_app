@@ -76,7 +76,7 @@ class _AppDrawerState extends State<AppDrawer> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  if (!widget.hideProfile) ..[
+                  if (!widget.hideProfile)...[
                     _buildDrawerMenuItem(
                       context,
                       Icons.person_outline,
