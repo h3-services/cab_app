@@ -92,7 +92,7 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFB0B0B0),
         appBar: const CustomAppBar(),
-        endDrawer: TripDrawer(onMenuItemTap: (item) => _showCloseTripDialog()),
+        endDrawer: TripDrawer(onMenuItemTap: (_) => _showCloseTripDialog()),
         body: Column(
         children: [
           Expanded(

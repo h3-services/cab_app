@@ -7,12 +7,10 @@ class AudioService {
 
   static Future<void> playNotificationSound() async {
     try {
-      // Save current volume
       final VolumeController volumeController = VolumeController();
       final double currentVolume = await volumeController.getVolume();
       
-      // Set volume to maximum
-      await volumeController.setVolume(1.0);
+      volumeController.setVolume(1.0);
       
       await _player.stop();
       await _player.setReleaseMode(ReleaseMode.loop);
@@ -22,9 +20,9 @@ class AudioService {
         AudioContext(
           iOS: AudioContextIOS(
             category: AVAudioSessionCategory.playback,
-            options: [
+            options: {
               AVAudioSessionOptions.mixWithOthers,
-            ],
+            },
           ),
           android: AudioContextAndroid(
             isSpeakerphoneOn: true,
@@ -38,9 +36,8 @@ class AudioService {
       await _player.setSource(AssetSource('sounds/notification_sound.mp3'));
       await _player.resume();
       
-      // Restore volume after 5 seconds
-      Future.delayed(const Duration(seconds: 5), () async {
-        await volumeController.setVolume(currentVolume);
+      Future.delayed(const Duration(seconds: 5), () {
+        volumeController.setVolume(currentVolume);
       });
     } catch (e) {
       debugPrint('Audio play error: $e');
