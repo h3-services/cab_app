@@ -3,7 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
 class AppDrawer extends StatefulWidget {
-  const AppDrawer({super.key});
+  final bool hideProfile;
+  const AppDrawer({super.key, this.hideProfile = false});
 
   @override
   State<AppDrawer> createState() => _AppDrawerState();
@@ -75,12 +76,14 @@ class _AppDrawerState extends State<AppDrawer> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildDrawerMenuItem(
-                    context,
-                    Icons.person_outline,
-                    'Profile',
-                  ),
-                  const SizedBox(height: 16),
+                  if (!widget.hideProfile) ..[
+                    _buildDrawerMenuItem(
+                      context,
+                      Icons.person_outline,
+                      'Profile',
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   _buildDrawerMenuItem(
                     context,
                     Icons.settings_outlined,

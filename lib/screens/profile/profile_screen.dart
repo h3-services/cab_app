@@ -166,10 +166,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         appBar: CustomAppBar(
           showBackButton: true,
           showProfileIcon: false,
-          showMenuIcon: false,
+          showMenuIcon: true,
           onBack: () => Navigator.pushNamedAndRemoveUntil(
               context, '/dashboard', (route) => false),
         ),
+        endDrawer: const AppDrawer(hideProfile: true),
         body: SingleChildScrollView(
           child: Column(
             children: [
