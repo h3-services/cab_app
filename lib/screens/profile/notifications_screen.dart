@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/notification_service.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/common/app_drawer.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -36,6 +37,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
       ),
+      endDrawer: const AppDrawer(),
       body: FutureBuilder<List<NotificationModel>>(
         future: _notificationsFuture,
         builder: (context, snapshot) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
-import 'package:flutter/material.dart';
 import '../../widgets/bottom_navigation.dart';
+import '../../widgets/common/app_drawer.dart';
 import '../../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,6 +24,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
+      endDrawer: const AppDrawer(),
       body: Column(
         children: [
           // Custom App Bar matching the image exactly

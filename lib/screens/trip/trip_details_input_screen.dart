@@ -3,6 +3,7 @@ import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
+import '../../widgets/common/trip_drawer.dart';
 import 'trip_start_screen.dart';
 
 class TripDetailsInputScreen extends StatefulWidget {
@@ -64,12 +65,35 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
     _nightAllowanceController.text = widget.previousInputs?['nightAllowance'] ?? '';
   }
 
+  void _showCloseTripDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Close Trip First'),
+        content: const Text('Please complete and close the current trip before navigating away.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFB0B0B0),
-      appBar: const CustomAppBar(),
-      body: Column(
+// ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async {
+        _showCloseTripDialog();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFB0B0B0),
+        appBar: const CustomAppBar(),
+        endDrawer: TripDrawer(onMenuItemTap: (item) => _showCloseTripDialog()),
+        body: Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
@@ -158,7 +182,8 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const BottomNavigation(currentRoute: '/dashboard'),
+        bottomNavigationBar: const BottomNavigation(currentRoute: '/dashboard'),
+      ),
     );
   }
 
