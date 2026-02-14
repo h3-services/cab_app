@@ -23,6 +23,7 @@ class _WalletScreenState extends State<WalletScreen> {
   double walletBalance = 0.0;
   int completedTripsCount = 0;
   List<Map<String, dynamic>> transactions = [];
+  String _transactionFilter = 'All'; // Filter state for transactions
   late RazorpayService _razorpayService;
   double _currentPaymentAmount = 0.0;
 
@@ -481,6 +482,144 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
+  void _showTransactionFilterDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    'assets/images/chola_cabs_logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Filter Transactions',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Filter transactions by type',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Column(
+                children: [
+                  _buildTransactionFilterOption('All', 'All'),
+                  const SizedBox(height: 12),
+                  _buildTransactionFilterOption('Wallet Top-up', 'Top-up'),
+                  const SizedBox(height: 12),
+                  _buildTransactionFilterOption('Trip Fare', 'Trip Fare'),
+                  const SizedBox(height: 12),
+                  _buildTransactionFilterOption('Service Fee', 'Service Fee'),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionFilterOption(String title, String value) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _transactionFilter = value;
+        });
+        Navigator.pop(context);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: _transactionFilter == value ? const Color(0xFF66BB6A).withOpacity(0.1) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _transactionFilter == value ? const Color(0xFF66BB6A) : Colors.grey.shade300,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _transactionFilter == value ? const Color(0xFF66BB6A) : Colors.grey.shade400,
+                  width: 2,
+                ),
+                color: _transactionFilter == value ? const Color(0xFF66BB6A) : Colors.transparent,
+              ),
+              child: _transactionFilter == value
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
+                  : null,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: _transactionFilter == value ? const Color(0xFF66BB6A) : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
 // ignore: deprecated_member_use
@@ -643,13 +782,38 @@ class _WalletScreenState extends State<WalletScreen> {
                         ],
                       ),
                       const SizedBox(height: 32),
-                      const Text(
-                        'Transaction History',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF424242),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Transaction History',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF424242),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: _showTransactionFilterDialog,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF424242),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    _transactionFilter,
+                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       if (transactions.isEmpty && !isLoading)
@@ -673,7 +837,13 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                         )
                       else
-                        ...transactions.map((transaction) => Padding(
+                        ...transactions.where((transaction) {
+                          if (_transactionFilter == 'All') return true;
+                          if (_transactionFilter == 'Top-up') return transaction['title'] == 'Wallet Top-up';
+                          if (_transactionFilter == 'Trip Fare') return transaction['title'] == 'Trip Fare';
+                          if (_transactionFilter == 'Service Fee') return transaction['title'] == 'Service Fee';
+                          return true;
+                        }).map((transaction) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: _buildTransactionItem(
                                 transaction['title'],

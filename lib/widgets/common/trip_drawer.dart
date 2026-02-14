@@ -4,8 +4,9 @@ import 'dart:io';
 
 class TripDrawer extends StatefulWidget {
   final VoidCallback onMenuItemTap;
+  final bool blockNavigation;
   
-  const TripDrawer({super.key, required this.onMenuItemTap});
+  const TripDrawer({super.key, required this.onMenuItemTap, this.blockNavigation = false});
 
   @override
   State<TripDrawer> createState() => _TripDrawerState();
@@ -108,7 +109,9 @@ class _TripDrawerState extends State<TripDrawer> {
       child: InkWell(
         onTap: () {
           Navigator.pop(context);
-          widget.onMenuItemTap();
+          if (widget.blockNavigation) {
+            widget.onMenuItemTap();
+          }
         },
         child: Row(
           children: [

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 class BottomNavigation extends StatelessWidget {
   final String currentRoute;
+  final Function(String)? onTap;
 
   const BottomNavigation({
     super.key,
     required this.currentRoute,
+    this.onTap,
   });
 
   @override
@@ -29,14 +31,26 @@ class BottomNavigation extends StatelessWidget {
             Icons.home,
             'Home',
             currentRoute == '/dashboard',
-            () => Navigator.pushReplacementNamed(context, '/dashboard'),
+            () {
+              if (onTap != null) {
+                onTap!('/dashboard');
+              } else {
+                Navigator.pushReplacementNamed(context, '/dashboard');
+              }
+            },
           ),
           const SizedBox(width: 10),
           _buildNavItem(
             Icons.wallet,
             'Wallet',
             currentRoute == '/wallet',
-            () => Navigator.pushReplacementNamed(context, '/wallet'),
+            () {
+              if (onTap != null) {
+                onTap!('/wallet');
+              } else {
+                Navigator.pushReplacementNamed(context, '/wallet');
+              }
+            },
           ),
         ],
       ),
