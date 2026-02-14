@@ -289,6 +289,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final enhanced = Map<String, dynamic>.from(request);
             enhanced['trip_status'] = tripDetails['trip_status'] ?? tripDetails['status'] ?? request['trip_status'];
             enhanced['odo_start'] = tripDetails['odo_start'] ?? request['odo_start'];
+            enhanced['vehicle_type'] = tripDetails['vehicle_type'] ?? request['vehicle_type'];
             return enhanced;
           } catch (e) {
             return Map<String, dynamic>.from(request);
@@ -1489,7 +1490,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.bluePrimary, AppColors.blueDark],
+                        colors: [AppColors.greenPrimary, AppColors.greenDark],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -1516,7 +1517,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.bluePrimary, AppColors.blueDark],
+                          colors: [AppColors.greenPrimary, AppColors.greenDark],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -1855,7 +1856,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (_approvedFilter == 'Assigned') {
           return tripStatus == 'ASSIGNED';
         } else if (_approvedFilter == 'Started') {
-          return tripStatus == 'STARTED' || tripStatus == 'ON_TRIP' || tripStatus == 'IN_PROGRESS' || tripStatus == 'ONWAY';
+          return tripStatus == 'STARTED' || 
+                 tripStatus == 'ON_TRIP' || 
+                 tripStatus == 'ON-TRIP' || 
+                 tripStatus == 'IN_PROGRESS' || 
+                 tripStatus == 'IN-PROGRESS' || 
+                 tripStatus == 'ONWAY';
         }
         return true;
       }).toList();
@@ -1883,33 +1889,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     if (approvedRequests.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _fetchAvailableTrips,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 48, color: Colors.black),
-                  SizedBox(height: 16),
-                  Text(
-                    'No approved trips yet',
-                    style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Approved Trips',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Swipe down to refresh',
-                    style: TextStyle(color: Colors.black, fontSize: 12),
+                ),
+                GestureDetector(
+                  onTap: _showApprovedFilterDialog,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF424242),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          _approvedFilter,
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20),
+                      ],
+                    ),
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _fetchAvailableTrips,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_outline,
+                            size: 48, color: Colors.black),
+                        SizedBox(height: 16),
+                        Text(
+                          'No approved trips yet',
+                          style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Swipe down to refresh',
+                          style: TextStyle(color: Colors.black, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+        ],
       );
     }
 
@@ -1988,6 +2036,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     requestId: request['request_id']?.toString() ?? '',
                     tripId: request['trip_id']?.toString(),
                     request: request,
+                    vehicleType: request['vehicle_type'],
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -2010,6 +2059,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     String? requestId,
     String? tripId,   
     Map<String, dynamic>? request,
+    String? vehicleType,
   }) {
     // Simple status-based logic
     String buttonText;
@@ -2085,8 +2135,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.bluePrimary, AppColors.blueDark],
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFC4E4E), Color(0xFF882A2A)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -2108,12 +2158,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
-                  if (request?['vehicle_type'] != null)
+                  if (vehicleType != null)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.bluePrimary, AppColors.blueDark],
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFC4E4E), Color(0xFF882A2A)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -2122,10 +2172,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(_getVehicleIcon(request!['vehicle_type']), size: 18, color: Colors.white),
+                          Icon(_getVehicleIcon(vehicleType), size: 18, color: Colors.white),
                           const SizedBox(width: 6),
                           Text(
-                            request['vehicle_type'],
+                            vehicleType,
                             style: const TextStyle(
                               fontSize: 13,
                               color: Colors.white,
