@@ -1023,13 +1023,13 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                         _buildSummaryRow('Tariff Type', tripDetails?['vehicle_type'] ?? widget.tripData['vehicle_type'] ?? 'MUV-Innova'),
                         const SizedBox(height: 8),
                         _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${(tripDetails?['fare'] ?? 0).toStringAsFixed(2)}'),
-                        _buildSummaryRow('Waiting Charges(Rs)', '₹ ${(tripDetails?['waiting_charges'] ?? 0).toStringAsFixed(2)}'),
-                        _buildSummaryRow('Inter State Permit(Rs)', '₹ ${(tripDetails?['inter_state_permit_charges'] ?? 0).toStringAsFixed(2)}'),
-                        _buildSummaryRow('Driver Allowance(Rs)', '₹ ${(tripDetails?['driver_allowance'] ?? 0).toStringAsFixed(2)}'),
-                        _buildSummaryRow('Luggage Cost(Rs)', '₹ ${(tripDetails?['luggage_cost'] ?? 0).toStringAsFixed(2)}'),
-                        _buildSummaryRow('Pet Cost(Rs)', '₹ ${(tripDetails?['pet_cost'] ?? 0).toStringAsFixed(2)}'),
-                        _buildSummaryRow('Toll charge(Rs)', '₹ ${(tripDetails?['toll_charges'] ?? 0).toStringAsFixed(2)}'),
-                        _buildSummaryRow('Night Allowance(Rs)', '₹ ${(tripDetails?['night_allowance'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Waiting Charges(Rs)', '₹ ${_getChargeValue('waiting_charges', 'waitingCharges')}'),
+                        _buildSummaryRow('Inter State Permit(Rs)', '₹ ${_getChargeValue('inter_state_permit_charges', 'interStatePermit')}'),
+                        _buildSummaryRow('Driver Allowance(Rs)', '₹ ${_getChargeValue('driver_allowance', 'driverAllowance')}'),
+                        _buildSummaryRow('Luggage Cost(Rs)', '₹ ${_getChargeValue('luggage_cost', 'luggageCost')}'),
+                        _buildSummaryRow('Pet Cost(Rs)', '₹ ${_getChargeValue('pet_cost', 'petCost')}'),
+                        _buildSummaryRow('Toll charge(Rs)', '₹ ${_getChargeValue('toll_charges', 'tollCharge')}'),
+                        _buildSummaryRow('Night Allowance(Rs)', '₹ ${_getChargeValue('night_allowance', 'nightAllowance')}'),
                         const SizedBox(height: 12),
                         const Divider(thickness: 1, color: Colors.grey),
                         const SizedBox(height: 12),
@@ -1145,13 +1145,13 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     
     final calculatedTotal = (
       (tripDetails?['fare'] ?? 0) +
-      (tripDetails?['waiting_charges'] ?? 0) +
-      (tripDetails?['inter_state_permit_charges'] ?? 0) +
-      (tripDetails?['driver_allowance'] ?? 0) +
-      (tripDetails?['luggage_cost'] ?? 0) +
-      (tripDetails?['pet_cost'] ?? 0) +
-      (tripDetails?['toll_charges'] ?? 0) +
-      (tripDetails?['night_allowance'] ?? 0)
+      _getChargeNumValue('waiting_charges', 'waitingCharges') +
+      _getChargeNumValue('inter_state_permit_charges', 'interStatePermit') +
+      _getChargeNumValue('driver_allowance', 'driverAllowance') +
+      _getChargeNumValue('luggage_cost', 'luggageCost') +
+      _getChargeNumValue('pet_cost', 'petCost') +
+      _getChargeNumValue('toll_charges', 'tollCharge') +
+      _getChargeNumValue('night_allowance', 'nightAllowance')
     ).toDouble();
     
     debugPrint('Backend total_amount: $backendTotal');
@@ -1167,6 +1167,30 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     debugPrint('Using backend total');
     debugPrint('=====================================\n');
     return backendTotal > 0 ? backendTotal : calculatedTotal;
+  }
+
+  String _getChargeValue(String apiKey, String inputKey) {
+    final apiValue = tripDetails?[apiKey];
+    if (apiValue != null && apiValue != 0) {
+      return apiValue.toStringAsFixed(2);
+    }
+    final inputValue = widget.previousInputs?[inputKey];
+    if (inputValue != null && inputValue.isNotEmpty) {
+      return (num.tryParse(inputValue) ?? 0).toStringAsFixed(2);
+    }
+    return '0.00';
+  }
+
+  num _getChargeNumValue(String apiKey, String inputKey) {
+    final apiValue = tripDetails?[apiKey];
+    if (apiValue != null && apiValue != 0) {
+      return apiValue;
+    }
+    final inputValue = widget.previousInputs?[inputKey];
+    if (inputValue != null && inputValue.isNotEmpty) {
+      return num.tryParse(inputValue) ?? 0;
+    }
+    return 0;
   }
 
   Widget _buildSummaryRow(String label, String value) {

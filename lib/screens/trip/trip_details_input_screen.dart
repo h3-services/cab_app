@@ -92,7 +92,7 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFB0B0B0),
         appBar: const CustomAppBar(),
-        endDrawer: TripDrawer(onMenuItemTap: (_) => _showCloseTripDialog()),
+        endDrawer: TripDrawer(onMenuItemTap: _showCloseTripDialog),
         body: Column(
         children: [
           Expanded(
@@ -188,6 +188,7 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   }
 
   Widget _buildInputField(String label, TextEditingController controller) {
+    final isTariffField = label.contains('Tariff');
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -204,7 +205,8 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
           const SizedBox(height: 8),
           TextFormField(
             controller: controller,
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            keyboardType: isTariffField ? TextInputType.text : TextInputType.numberWithOptions(decimal: true),
+            readOnly: isTariffField,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
