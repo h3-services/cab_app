@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/trip_drawer.dart';
+import '../../widgets/common/app_drawer.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
@@ -94,7 +95,7 @@ class _TripStartScreenState extends State<TripStartScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
-      endDrawer: const AppDrawer(),
+      endDrawer: AppDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -301,8 +302,9 @@ class _TripStartScreenState extends State<TripStartScreen> {
       bottomNavigationBar: const BottomNavigation(currentRoute: '/dashboard'),
     );
   }
+}
 
-
+class TripCompletedScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
 
@@ -390,7 +392,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
-      endDrawer: const AppDrawer(),
+      endDrawer: AppDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -576,8 +578,9 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
       bottomNavigationBar: const BottomNavigation(currentRoute: '/dashboard'),
     );
   }
+}
 
-
+class TripSummaryScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
   final String endingKm;

@@ -36,7 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoadingTrips = false;
   late Timer _autoRefreshTimer;
   String _historyFilter = 'All'; // Filter state for history
-  String _availableFilter = 'All'; // Filter state for available trips
+  String _approvedFilter = 'All'; // Filter state for approved trips
   double _walletBalance = 0.0; // Wallet balance
   List<dynamic>? _cachedHistoryTrips; // Cache for history trips
 
@@ -1091,79 +1091,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildAvailableContent() {
-    var filteredTrips = _availableTrips;
-    
-    if (_availableFilter != 'All') {
-      filteredTrips = _availableTrips.where((trip) {
-        final status = (trip['trip_status'] ?? trip['status'] ?? '').toString().toUpperCase();
-        if (_availableFilter == 'Assigned') {
-          return status == 'ASSIGNED';
-        } else if (_availableFilter == 'Started') {
-          return status == 'STARTED' || status == 'ON_TRIP' || status == 'IN_PROGRESS';
-        }
-        return true;
-      }).toList();
-    }
-    
     return RefreshIndicator(
       onRefresh: _fetchAvailableTrips,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Available Trips',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: _showAvailableFilterDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF424242),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          _availableFilter,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+      child: _availableTrips.isEmpty
+          ? SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: const Center(
+                      child: Text("No trips available right now.", style: TextStyle(fontWeight: FontWeight.bold)))),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.only(bottom: 80),
+              itemCount: _availableTrips.length,
+              itemBuilder: (context, index) {
+                return _buildTripCard(_availableTrips[index]);
+              },
             ),
-          ),
-          Expanded(
-            child: filteredTrips.isEmpty
-                ? SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.7,
-                        child: const Center(
-                            child: Text("No trips available right now.", style: TextStyle(fontWeight: FontWeight.bold)))),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    itemCount: filteredTrips.length,
-                    itemBuilder: (context, index) {
-                      return _buildTripCard(filteredTrips[index]);
-                    },
-                  ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1880,7 +1824,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildApprovedContent() {
-    final approvedRequests = _driverRequests.where((r) {
+    var approvedRequests = _driverRequests.where((r) {
       final status = (r['status'] ?? '').toString().toUpperCase();
       final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
 
@@ -1903,6 +1847,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           tripStatus != 'COMPLETED' &&
           status != 'COMPLETED';
     }).toList();
+
+    // Apply filter
+    if (_approvedFilter != 'All') {
+      approvedRequests = approvedRequests.where((r) {
+        final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
+        if (_approvedFilter == 'Assigned') {
+          return tripStatus == 'ASSIGNED';
+        } else if (_approvedFilter == 'Started') {
+          return tripStatus == 'STARTED' || tripStatus == 'ON_TRIP' || tripStatus == 'IN_PROGRESS' || tripStatus == 'ONWAY';
+        }
+        return true;
+      }).toList();
+    }
 
     // Sort by trip status: ASSIGNED first, then STARTED, COMPLETED, CANCELLED
     approvedRequests.sort((a, b) {
@@ -1963,15 +1920,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.only(bottom: 80),
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Your approved trips are ready to start',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Approved Trips',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _showApprovedFilterDialog,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF424242),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            _approvedFilter,
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             ...approvedRequests.map((request) {
@@ -2533,7 +2515,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showAvailableFilterDialog() {
+  void _showApprovedFilterDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -2564,7 +2546,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Filter Available Trips',
+                'Filter Approved Trips',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -2583,11 +2565,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 24),
               Column(
                 children: [
-                  _buildAvailableFilterOption('All', 'All'),
+                  _buildApprovedFilterOption('All', 'All'),
                   const SizedBox(height: 12),
-                  _buildAvailableFilterOption('Assigned', 'Assigned'),
+                  _buildApprovedFilterOption('Assigned', 'Assigned'),
                   const SizedBox(height: 12),
-                  _buildAvailableFilterOption('Started', 'Started'),
+                  _buildApprovedFilterOption('Started', 'Started'),
                 ],
               ),
               const SizedBox(height: 24),
@@ -2669,11 +2651,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildAvailableFilterOption(String title, String value) {
+  Widget _buildApprovedFilterOption(String title, String value) {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _availableFilter = value;
+          _approvedFilter = value;
         });
         Navigator.pop(context);
       },
@@ -2681,10 +2663,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
-          color: _availableFilter == value ? AppColors.greenPrimary.withOpacity(0.1) : Colors.grey.shade50,
+          color: _approvedFilter == value ? AppColors.greenPrimary.withOpacity(0.1) : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _availableFilter == value ? AppColors.greenPrimary : Colors.grey.shade300,
+            color: _approvedFilter == value ? AppColors.greenPrimary : Colors.grey.shade300,
             width: 2,
           ),
         ),
@@ -2696,12 +2678,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: _availableFilter == value ? AppColors.greenPrimary : Colors.grey.shade400,
+                  color: _approvedFilter == value ? AppColors.greenPrimary : Colors.grey.shade400,
                   width: 2,
                 ),
-                color: _availableFilter == value ? AppColors.greenPrimary : Colors.transparent,
+                color: _approvedFilter == value ? AppColors.greenPrimary : Colors.transparent,
               ),
-              child: _availableFilter == value
+              child: _approvedFilter == value
                   ? const Icon(Icons.check, color: Colors.white, size: 14)
                   : null,
             ),
@@ -2711,7 +2693,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: _availableFilter == value ? AppColors.greenPrimary : Colors.black87,
+                color: _approvedFilter == value ? AppColors.greenPrimary : Colors.black87,
               ),
             ),
           ],
