@@ -118,92 +118,145 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.appGradientStart, AppColors.appGradientEnd],
-          ),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const SizedBox(height: 40),
-                const Text(
-                  'Enter OTP',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enter the 6-digit code sent to +91${widget.phoneNumber}',
-                  style: const TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-                const SizedBox(height: 40),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (index) {
-                    return SizedBox(
-                      width: 50,
-                      child: TextField(
-                        controller: _otpControllers[index],
-                        focusNode: _focusNodes[index],
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        maxLength: 1,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        decoration: InputDecoration(
-                          counterText: '',
-                          filled: true,
-                          fillColor: Colors.grey[300],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
+        title: const Text('Driver app', style: TextStyle(color: Colors.white, fontSize: 16)),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              Image.asset(
+                'assets/images/chola_cabs_logo.png',
+                height: 120,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 120,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image_not_supported),
+                  );
+                },
+              ),
+              const SizedBox(height: 40),
+              const Text(
+                'Verification Code',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'We have sent the verification\ncode to your email address',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
+              const SizedBox(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(6, (index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: 45,
+                    height: 50,
+                    child: TextField(
+                      controller: _otpControllers[index],
+                      focusNode: _focusNodes[index],
+                      textAlign: TextAlign.center,
+                      keyboardType: TextInputType.number,
+                      maxLength: 1,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(
+                        counterText: '',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.black, width: 2),
                         ),
-                        onChanged: (value) {
-                          if (value.isNotEmpty && index < 5) {
-                            _focusNodes[index + 1].requestFocus();
-                          } else if (value.isEmpty && index > 0) {
-                            _focusNodes[index - 1].requestFocus();
-                          }
-                        },
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.black, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.black, width: 2),
+                        ),
                       ),
-                    );
-                  }),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.buttonGradientStart, AppColors.buttonGradientEnd],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
+                      onChanged: (value) {
+                        if (value.isNotEmpty && index < 5) {
+                          _focusNodes[index + 1].requestFocus();
+                        } else if (value.isEmpty && index > 0) {
+                          _focusNodes[index - 1].requestFocus();
+                        }
+                      },
                     ),
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _verifyOtp,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                      ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Verify', style: TextStyle(fontSize: 18, color: Colors.white)),
+                  );
+                }),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Didn't receive OTP ? ",
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        await ApiService.sendOtp(widget.phoneNumber);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('OTP resent successfully'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        for (var controller in _otpControllers) {
+                          controller.clear();
+                        }
+                        _focusNodes[0].requestFocus();
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to resend OTP: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text(
+                      'Resend OTP',
+                      style: TextStyle(fontSize: 14, color: Colors.blue, fontWeight: FontWeight.bold),
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 40),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _verifyOtp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Continue', style: TextStyle(fontSize: 18, color: Colors.white)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
