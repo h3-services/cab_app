@@ -11,14 +11,13 @@ class ApiService {
       dotenv.env['BASE_URL'] ?? 'https://api.cholacabs.in/api';
 
   static Future<Map<String, dynamic>> sendOtp(String phoneNumber) async {
-    final url = Uri.parse('$baseUrl/auth/send-otp');
+    final url = Uri.parse('https://api.cholacabs.in/otp/send-otp?phone=91$phoneNumber');
     
     try {
       debugPrint('POST Request: $url');
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phone_number': phoneNumber}),
+        headers: {'accept': 'application/json'},
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () => throw TimeoutException('Request timeout'),
@@ -39,14 +38,13 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> verifyOtp(String phoneNumber, String otp) async {
-    final url = Uri.parse('$baseUrl/auth/verify-otp');
+    final url = Uri.parse('https://api.cholacabs.in/otp/verify-otp?phone=91$phoneNumber&otp=$otp');
     
     try {
       debugPrint('POST Request: $url');
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phone_number': phoneNumber, 'otp': otp}),
+        headers: {'accept': 'application/json'},
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () => throw TimeoutException('Request timeout'),

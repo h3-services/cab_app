@@ -233,40 +233,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                     final response = await ApiService.checkPhoneExists(_phoneController.text);
                                     
                                     if (response['exists'] == true) {
-                                      final currentDeviceId = await _getDeviceId();
-                                      final driverId = response['driver_id'].toString();
-                                      
-                                      final driverData = await ApiService.getDriverDetails(driverId);
-                                      final registeredDeviceId = driverData['device_id']?.toString();
-                                      
-                                      if (registeredDeviceId != null && 
-                                          registeredDeviceId.isNotEmpty && 
-                                          registeredDeviceId != 'unknown' &&
-                                          registeredDeviceId != currentDeviceId) {
-                                        if (!mounted) return;
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const DeviceBlockedScreen()),
-                                        );
-                                        return;
-                                      }
-                                      
-                                      if (registeredDeviceId == null || registeredDeviceId.isEmpty || registeredDeviceId == 'unknown') {
-                                        await ApiService.updateDriverDeviceId(driverId, currentDeviceId);
-                                      }
-                                      
-                                      await _checkAndUpdateFcmToken(driverId, driverData);
-                                      
-                                      final prefs = await SharedPreferences.getInstance();
-                                      await prefs.setString('phoneNumber', _phoneController.text);
-                                      await prefs.setString('driverId', driverId);
-                                      await prefs.setBool('isLoggedIn', true);
-                                      await prefs.setBool('isKycSubmitted', true);
-                                      
+                                      // Existing user - go directly to OTP verification without sending OTP
                                       if (!mounted) return;
-                                      Navigator.pushReplacementNamed(context, '/dashboard');
+                                      Navigator.pushNamed(context, '/verification', arguments: _phoneController.text);
                                     } else {
+                                      // New user - send OTP and go to registration
+                                      await ApiService.sendOtp(_phoneController.text);
+                                      
                                       if (!mounted) return;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('OTP sent successfully'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
                                       Navigator.pushNamed(context, '/registration', arguments: _phoneController.text);
                                     }
                                   } catch (e) {
