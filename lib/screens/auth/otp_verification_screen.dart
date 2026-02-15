@@ -65,59 +65,47 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     try {
       await ApiService.verifyOtp(widget.phoneNumber, otp);
       
-      final response = await ApiService.checkPhoneExists(widget.phoneNumber);
-      
-      if (response['exists'] == true) {
-        final currentDeviceId = await _getDeviceId();
-        final driverId = response['driver_id'].toString();
-        
-        final driverData = await ApiService.getDriverDetails(driverId);
-        final registeredDeviceId = driverData['device_id']?.toString();
-        
-        if (registeredDeviceId != null && 
-            registeredDeviceId.isNotEmpty && 
-            registeredDeviceId != 'unknown' &&
-            registeredDeviceId != currentDeviceId) {
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const DeviceBlockedScreen()),
-          );
-          return;
-        }
-        
-        if (registeredDeviceId == null || registeredDeviceId.isEmpty || registeredDeviceId == 'unknown') {
-          await ApiService.updateDriverDeviceId(driverId, currentDeviceId);
-        }
-        
-        await _checkAndUpdateFcmToken(driverId, driverData);
-        
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('phoneNumber', widget.phoneNumber);
-        await prefs.setString('driverId', driverId);
-        await prefs.setBool('isLoggedIn', true);
-        await prefs.setBool('isKycSubmitted', true);
-        
-        if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } else {
-        if (!mounted) return;
-        Navigator.pushNamed(context, '/registration', arguments: widget.phoneNumber);
-      }
+      if (!mounted) return;
+      Navigator.pushNamed(context, '/registration', arguments: widget.phoneNumber);
     } catch (e) {
       if (!mounted) return;
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Invalid OTP'),
-          content: const Text('The OTP you entered is incorrect. Please try again.'),
+          content: const Text('The OTP you entered is incorrect.'),
           actions: [
             TextButton(
-              onPressed: () {
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
                 Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/login');
+                try {
+                  await ApiService.sendOtp(widget.phoneNumber);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('OTP resent successfully'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  for (var controller in _otpControllers) {
+                    controller.clear();
+                  }
+                  _focusNodes[0].requestFocus();
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to resend OTP: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
-              child: const Text('OK'),
+              child: const Text('Resend OTP'),
             ),
           ],
         ),

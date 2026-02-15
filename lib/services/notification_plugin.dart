@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
+import 'package:volume_controller/volume_controller.dart';
 
 class NotificationPlugin {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -128,6 +129,13 @@ class NotificationPlugin {
         return;
       }
       
+      // Set volume to maximum for alarm stream
+      try {
+        VolumeController().setVolume(1.0, showSystemUI: false);
+      } catch (e) {
+        debugPrint('[NotificationPlugin] Volume control error: $e');
+      }
+      
       final AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'trip_notifications_v3',
@@ -153,6 +161,7 @@ class NotificationPlugin {
           body,
           contentTitle: title,
         ),
+        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
       );
 
       final NotificationDetails platformChannelSpecifics =

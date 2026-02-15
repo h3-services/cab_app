@@ -1122,7 +1122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFFC4C4C4),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -1461,7 +1461,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFC4C4C4),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -2135,8 +2135,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFC4E4E), Color(0xFF882A2A)],
+                      gradient: LinearGradient(
+                        colors: [AppColors.greenPrimary, AppColors.greenDark],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -2162,8 +2162,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFC4E4E), Color(0xFF882A2A)],
+                        gradient: LinearGradient(
+                          colors: [AppColors.greenPrimary, AppColors.greenDark],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
