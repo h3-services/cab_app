@@ -739,7 +739,15 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildSummaryRow('Distance Traveled', '${tripDetails?['distance_km'] ?? dist} km'),
-                        _buildSummaryRow('Tariff Type', tripDetails?['vehicle_type'] ?? widget.tripData['vehicle_type'] ?? 'MUV-Innova'),
+                        _buildSummaryRow('Tariff Type', () {
+                          final vehicleType = tripDetails?['vehicle_type'] ?? widget.tripData['vehicle_type'];
+                          debugPrint('\n=== TARIFF TYPE DEBUG ===');
+                          debugPrint('tripDetails vehicle_type: ${tripDetails?['vehicle_type']}');
+                          debugPrint('widget.tripData vehicle_type: ${widget.tripData['vehicle_type']}');
+                          debugPrint('Final vehicleType: $vehicleType');
+                          debugPrint('========================\n');
+                          return vehicleType ?? 'N/A';
+                        }()),
                         const SizedBox(height: 8),
                         _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${(tripDetails?['fare'] ?? 0).toStringAsFixed(2)}'),
                         _buildSummaryRow('Waiting Charges(Rs)', '₹ ${_getChargeValue('waiting_charges', 'waitingCharges')}'),

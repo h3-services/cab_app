@@ -289,7 +289,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final enhanced = Map<String, dynamic>.from(request);
             enhanced['trip_status'] = tripDetails['trip_status'] ?? tripDetails['status'] ?? request['trip_status'];
             enhanced['odo_start'] = tripDetails['odo_start'] ?? request['odo_start'];
-            enhanced['vehicle_type'] = tripDetails['vehicle_type'] ?? request['vehicle_type'];
+            enhanced['vehicle_type'] = tripDetails['vehicle_type'] ?? tripDetails['trip']?['vehicle_type'] ?? request['vehicle_type'] ?? request['trip']?['vehicle_type'];
+            debugPrint('Enhanced vehicle_type: ${enhanced['vehicle_type']} (tripDetails: ${tripDetails['vehicle_type']}, tripDetails.trip: ${tripDetails['trip']?['vehicle_type']}, request: ${request['vehicle_type']}, request.trip: ${request['trip']?['vehicle_type']})');
+            // Add phone number from trip details
+            enhanced['customer_phone'] = tripDetails['customer_phone'] ?? tripDetails['phone'] ?? request['customer_phone'] ?? request['phone'];
+            enhanced['phone'] = enhanced['customer_phone'];
             return enhanced;
           } catch (e) {
             return Map<String, dynamic>.from(request);
@@ -2311,6 +2315,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: ElevatedButton(
                               onPressed: isEnabled
                                   ? () async {
+                                      debugPrint('\n=== TRIP DATA DEBUG ===');
+                                      debugPrint('vehicleType parameter: $vehicleType');
+                                      debugPrint('type parameter: $type');
+                                      debugPrint('=======================\n');
                                       if (isTripStarted) {
                                         Navigator.push(
                                           context,
@@ -2321,6 +2329,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 'pickup': pickup,
                                                 'drop': drop,
                                                 'type': type,
+                                                'vehicle_type': vehicleType,
                                                 'customer': customer,
                                                 'phone': phone,
                                                 'request_id': requestId,
@@ -2342,6 +2351,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                     'pickup': pickup,
                                                     'drop': drop,
                                                     'type': type,
+                                                    'vehicle_type': vehicleType,
                                                     'customer': customer,
                                                     'phone': phone,
                                                     'request_id': requestId,

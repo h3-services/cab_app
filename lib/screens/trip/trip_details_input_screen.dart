@@ -27,7 +27,6 @@ class TripDetailsInputScreen extends StatefulWidget {
 class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _distanceController;
-  final _tariffController = TextEditingController();
   final _waitingChargesController = TextEditingController();
   final _interStatePermitController = TextEditingController();
   final _driverAllowanceController = TextEditingController();
@@ -46,14 +45,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
     final endKm = double.tryParse(widget.endingKm) ?? 0;
     final distance = (endKm - startKm).abs();
     _distanceController = TextEditingController(text: widget.previousInputs?['distance'] ?? distance.toString());
-    
-    // Set vehicle type from trip data - check multiple possible locations
-    final vehicleType = widget.tripData['vehicle_type'] ?? 
-                       widget.tripData['trip']?['vehicle_type'] ?? 
-                       widget.tripData['type'] ?? '';
-    debugPrint('Vehicle type found: $vehicleType');
-    
-    _tariffController.text = widget.previousInputs?['tariff'] ?? vehicleType;
     
     // Restore previous inputs if available
     _waitingChargesController.text = widget.previousInputs?['waitingCharges'] ?? '';
@@ -124,7 +115,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
                   child: Column(
                     children: [
                       _buildInputField('Distance Traveled (km)', _distanceController),
-                      _buildInputField('Tariff Type', _tariffController),
                       _buildInputField('Waiting Charges (₹)', _waitingChargesController),
                       _buildInputField('Inter State Permit (₹)', _interStatePermitController),
                       _buildInputField('Driver Allowance (₹)', _driverAllowanceController),
@@ -188,7 +178,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   }
 
   Widget _buildInputField(String label, TextEditingController controller) {
-    final isTariffField = label.contains('Tariff');
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -205,8 +194,7 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
           const SizedBox(height: 8),
           TextFormField(
             controller: controller,
-            keyboardType: isTariffField ? TextInputType.text : TextInputType.numberWithOptions(decimal: true),
-            readOnly: isTariffField,
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -275,7 +263,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
                 tripDetails: updatedTripData,
                 previousInputs: {
                   'distance': _distanceController.text,
-                  'tariff': _tariffController.text,
                   'waitingCharges': _waitingChargesController.text,
                   'interStatePermit': _interStatePermitController.text,
                   'driverAllowance': _driverAllowanceController.text,
@@ -305,7 +292,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   @override
   void dispose() {
     _distanceController.dispose();
-    _tariffController.dispose();
     _waitingChargesController.dispose();
     _interStatePermitController.dispose();
     _driverAllowanceController.dispose();
