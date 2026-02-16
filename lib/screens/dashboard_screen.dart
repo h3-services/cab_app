@@ -447,10 +447,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Trip cancelled")));
+      
+      await _fetchAvailableTrips();
+      
+      if (!mounted) return;
       setState(() {
         selectedTab = 0;
       });
-      _fetchAvailableTrips();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
