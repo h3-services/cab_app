@@ -157,7 +157,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        showBackButton: true,
+        showBackButton: false,
         showMenuIcon: false,
         showProfileIcon: false,
         actions: [
