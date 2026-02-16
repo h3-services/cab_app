@@ -291,7 +291,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             enhanced['odo_start'] = tripDetails['odo_start'] ?? request['odo_start'];
             enhanced['vehicle_type'] = tripDetails['vehicle_type'] ?? tripDetails['trip']?['vehicle_type'] ?? request['vehicle_type'] ?? request['trip']?['vehicle_type'];
             debugPrint('Enhanced vehicle_type: ${enhanced['vehicle_type']} (tripDetails: ${tripDetails['vehicle_type']}, tripDetails.trip: ${tripDetails['trip']?['vehicle_type']}, request: ${request['vehicle_type']}, request.trip: ${request['trip']?['vehicle_type']})');
-            // Add phone number from trip details
+            
+            enhanced['trip_type'] = tripDetails['trip_type'] ?? tripDetails['trip']?['trip_type'] ?? request['trip_type'] ?? request['trip']?['trip_type'];
+            
             enhanced['customer_phone'] = tripDetails['customer_phone'] ?? tripDetails['phone'] ?? request['customer_phone'] ?? request['phone'];
             enhanced['phone'] = enhanced['customer_phone'];
             return enhanced;
@@ -1506,7 +1508,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const Icon(Icons.arrow_forward, size: 14, color: Colors.white),
                         const SizedBox(width: 4),
                         Text(
-                          request['trip_type'] ?? 'ONE WAY',
+                          _formatTripType(request['trip_type'] ?? 'ONE WAY'),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -1782,7 +1784,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         Text(
-                          request['trip_type'] ?? 'One-way',
+                          _formatTripType(request['trip_type'] ?? 'One-way'),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.black54,
@@ -2027,7 +2029,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildApprovedCard(
                     pickup: request['pickup_address'] ?? 'Unknown Pickup',
                     drop: request['drop_address'] ?? 'Unknown Drop',
-                    type: request['trip_type'] ?? 'One-way',
+                    type: _formatTripType(request['trip_type'] ?? 'One-way'),
                     tripStatus: tripStatus,
                     customer: request['customer_name'] ?? 'Unknown Customer',
                     phone: displayPhone,
@@ -3141,6 +3143,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (type.contains('BUS')) return Icons.directions_bus;
     if (type.contains('BIKE') || type.contains('MOTORCYCLE')) return Icons.two_wheeler;
     return Icons.directions_car;
+  }
+
+  String _formatTripType(String? tripType) {
+    if (tripType == null || tripType.isEmpty) return 'One-way';
+    final type = tripType.toUpperCase();
+    if (type.contains('ROUND') || type == 'ROUND_TRIP' || type == 'ROUNDTRIP') return 'Round-trip';
+    if (type.contains('ONE') || type == 'ONE_WAY' || type == 'ONEWAY') return 'One-way';
+    return tripType;
   }
 }
 

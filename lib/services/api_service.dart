@@ -844,17 +844,33 @@ class ApiService {
       num? tollCharges,
       num? nightAllowance,
     }) async {
-    final queryParams = {'odo_end': odoEnd.toString()};
-    if (waitingCharges != null) queryParams['waiting_charges'] = waitingCharges.toString();
-    if (interStatePermitCharges != null) queryParams['inter_state_permit_charges'] = interStatePermitCharges.toString();
-    if (driverAllowance != null) queryParams['driver_allowance'] = driverAllowance.toString();
-    if (luggageCost != null) queryParams['luggage_cost'] = luggageCost.toString();
-    if (petCost != null) queryParams['pet_cost'] = petCost.toString();
-    if (tollCharges != null) queryParams['toll_charges'] = tollCharges.toString();
-    if (nightAllowance != null) queryParams['night_allowance'] = nightAllowance.toString();
+    final queryParams = <String, String>{'odo_end': odoEnd.toInt().toString()};
+    
+    if (waitingCharges != null && waitingCharges > 0) {
+      queryParams['waiting_charges'] = waitingCharges.toString();
+    }
+    if (interStatePermitCharges != null && interStatePermitCharges > 0) {
+      queryParams['inter_state_permit_charges'] = interStatePermitCharges.toString();
+    }
+    if (driverAllowance != null && driverAllowance > 0) {
+      queryParams['driver_allowance'] = driverAllowance.toString();
+    }
+    if (luggageCost != null && luggageCost > 0) {
+      queryParams['luggage_cost'] = luggageCost.toString();
+    }
+    if (petCost != null && petCost > 0) {
+      queryParams['pet_cost'] = petCost.toString();
+    }
+    if (tollCharges != null && tollCharges > 0) {
+      queryParams['toll_charges'] = tollCharges.toString();
+    }
+    if (nightAllowance != null && nightAllowance > 0) {
+      queryParams['night_allowance'] = nightAllowance.toString();
+    }
 
     final url = Uri.parse('$baseUrl/trips/$tripId/odometer/end').replace(queryParameters: queryParams);
     debugPrint('PATCH Request (Odometer End): $url');
+    debugPrint('Query Params: $queryParams');
 
     try {
       final response = await http.patch(
