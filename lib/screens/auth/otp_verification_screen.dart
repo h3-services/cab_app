@@ -158,6 +158,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             final navigator = Navigator.of(context);
                             final messenger = ScaffoldMessenger.of(context);
                             navigator.pop();
+                            
+                            for (var controller in _otpControllers) {
+                              controller.clear();
+                            }
+                            if (mounted) setState(() {});
+                            
                             try {
                               await ApiService.sendOtp(widget.phoneNumber);
                               if (!mounted) return;
@@ -167,9 +173,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                   backgroundColor: Colors.green,
                                 ),
                               );
-                              for (var controller in _otpControllers) {
-                                controller.clear();
-                              }
                               _focusNodes[0].requestFocus();
                             } catch (e) {
                               if (!mounted) return;
@@ -357,6 +360,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                 ),
                                 GestureDetector(
                                   onTap: () async {
+                                    for (var controller in _otpControllers) {
+                                      controller.clear();
+                                    }
+                                    setState(() {});
+                                    
                                     try {
                                       await ApiService.sendOtp(widget.phoneNumber);
                                       if (!mounted) return;
@@ -366,9 +374,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                           backgroundColor: Colors.green,
                                         ),
                                       );
-                                      for (var controller in _otpControllers) {
-                                        controller.clear();
-                                      }
                                       _focusNodes[0].requestFocus();
                                     } catch (e) {
                                       if (!mounted) return;

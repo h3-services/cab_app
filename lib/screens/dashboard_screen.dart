@@ -1643,46 +1643,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFFFC4E4E),
-                          const Color(0xFF882A2A)
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (request['request_id'] != null) {
-                          _showCancelTripDialog(
-                              request['request_id'].toString());
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        shadowColor: Colors.transparent,
-                      ),
-                      icon: const Icon(Icons.close, size: 16),
-                      label: const Text('Cancel',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
                 ],
               ),
-          ]
-        )
-        ));
-  }
+            ],
+          ),
+        ),
+      ),
+    );
 
   Widget _buildAssignedToOtherCard(Map<String, dynamic> request) {
     return GestureDetector(

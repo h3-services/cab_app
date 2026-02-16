@@ -4,7 +4,8 @@ import 'dart:io';
 
 class AppDrawer extends StatefulWidget {
   final bool hideProfile;
-  const AppDrawer({super.key, this.hideProfile = false});
+  final bool hideSettings;
+  const AppDrawer({super.key, this.hideProfile = false, this.hideSettings = false});
 
   @override
   State<AppDrawer> createState() => _AppDrawerState();
@@ -84,11 +85,14 @@ class _AppDrawerState extends State<AppDrawer> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  _buildDrawerMenuItem(
-                    context,
-                    Icons.settings_outlined,
-                    'Settings',
-                  ),
+                  if (!widget.hideSettings)...[
+                    _buildDrawerMenuItem(
+                      context,
+                      Icons.settings_outlined,
+                      'Settings',
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   const SizedBox(height: 16),
                   _buildDrawerMenuItem(
                     context,

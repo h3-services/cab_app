@@ -41,7 +41,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
-      endDrawer: const AppDrawer(),
+      endDrawer: const AppDrawer(hideSettings: true),
       body: Column(
         children: [
           const SizedBox(height: 20),
