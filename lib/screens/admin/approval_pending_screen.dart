@@ -3,6 +3,7 @@ import '../../widgets/widgets.dart';
 import '../../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class ApprovalPendingScreen extends StatefulWidget {
   const ApprovalPendingScreen({super.key});
@@ -318,7 +319,14 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   void initState() {
     super.initState();
     _checkStatus();
-    // Don't start auto-reload timer - rely on FCM notifications instead
+    
+    // Listen for foreground FCM messages to trigger status check
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final type = message.data['type'] as String?;
+      if (type == 'REGISTRATION_APPROVED' || type == 'REGISTRATION_REJECTED') {
+        _checkStatus();
+      }
+    });
   }
 
   @override

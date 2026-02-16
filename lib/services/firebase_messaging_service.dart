@@ -113,6 +113,11 @@ void _handleNotificationClick(Map<String, dynamic> data) {
             '/approval-pending', (route) => false);
         break;
 
+      case 'REGISTRATION_APPROVED':
+        // Navigate to Dashboard when approved
+        navigator.pushNamedAndRemoveUntil('/dashboard', (route) => false);
+        break;
+
       case 'TRIP_CREATED': // New Trip Available
       case 'TRIP_UNASSIGNED': // Trip was removed
       case 'TRIP_REJECTED': // Assigned to someone else
