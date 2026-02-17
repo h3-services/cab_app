@@ -44,7 +44,8 @@ class _WalletScreenState extends State<WalletScreen> {
       debugPrint('[Wallet] FCM message received: $type, title: $title');
       debugPrint('[Wallet] FCM data: ${message.data}');
       
-      if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || title.contains('Wallet Debited')) {
+      if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
+          title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
         // Update wallet balance immediately from API
         final prefs = await SharedPreferences.getInstance();
         final driverId = prefs.getString('driverId');
