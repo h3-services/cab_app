@@ -155,7 +155,7 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
     String? newBalance;
     
     // Extract amount - works for both credit and debit
-    final amountRegex = RegExp(r'(?:debited|credited|added|deducted) by [₹\$]?\s*(\d+\.?\d*)');
+    final amountRegex = RegExp(r'(?:debited by|credited with|added|deducted) [₹\$]?\s*(\d+\.?\d*)');
     final amountMatch = amountRegex.firstMatch(body);
     if (amountMatch != null) {
       amountStr = amountMatch.group(1);
