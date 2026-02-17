@@ -70,7 +70,8 @@ Future<void> initializeFirebaseMessaging() async {
     await NotificationService.saveNotification(title, body);
     
     // Handle wallet deduction - check both type and title
-    if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || title.contains('Wallet Debited')) {
+    if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
+        title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
       await _handleWalletDeduction(message.data, body);
     }
     
@@ -146,15 +147,18 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
   try {
     final prefs = await SharedPreferences.getInstance();
     
-    // Parse notification body: "Your wallet has been debited by ₹4999999.00. Your new Colacabs balance is ₹1.80."
+    // Determine if it's credit or debit
+    bool isCredit = body.contains('credited') || body.contains('added');
+    bool isDebit = body.contains('debited') || body.contains('deducted');
+    
     String? amountStr;
     String? newBalance;
     
-    // Extract debited amount
-    final debitRegex = RegExp(r'debited by [₹\$]?\s*(\d+\.?\d*)');
-    final debitMatch = debitRegex.firstMatch(body);
-    if (debitMatch != null) {
-      amountStr = debitMatch.group(1);
+    // Extract amount - works for both credit and debit
+    final amountRegex = RegExp(r'(?:debited|credited|added|deducted) by [₹\$]?\s*(\d+\.?\d*)');
+    final amountMatch = amountRegex.firstMatch(body);
+    if (amountMatch != null) {
+      amountStr = amountMatch.group(1);
     }
     
     // Extract new balance
@@ -164,27 +168,27 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
       newBalance = balanceMatch.group(1);
     }
     
-    print('[FCM] Parsed amount: $amountStr, new balance: $newBalance');
+    print('[FCM] Type: ${isCredit ? "Credit" : "Debit"}, Amount: $amountStr, Balance: $newBalance');
     
     if (amountStr != null && amountStr.isNotEmpty) {
       final now = DateTime.now();
-      final deduction = {
-        'title': 'Admin Deduction',
+      final transaction = {
+        'title': isCredit ? 'Admin Credit' : 'Admin Deduction',
         'date': now.toString().split(' ')[0],
         'tripId': 'N/A',
         'transaction_id': '',
-        'amount': '-₹$amountStr',
-        'type': 'spending',
+        'amount': '${isCredit ? "+" : "-"}₹$amountStr',
+        'type': isCredit ? 'earning' : 'spending',
         'raw_date': now.toIso8601String(),
-        'reason': 'Wallet Debited',
+        'reason': isCredit ? 'Wallet Credited' : 'Wallet Debited',
       };
       
-      final deductions = prefs.getStringList('admin_deductions') ?? [];
-      deductions.insert(0, jsonEncode(deduction));
-      await prefs.setStringList('admin_deductions', deductions);
-      print('[FCM] Admin deduction saved: ₹$amountStr');
+      final transactions = prefs.getStringList('admin_transactions') ?? [];
+      transactions.insert(0, jsonEncode(transaction));
+      await prefs.setStringList('admin_transactions', transactions);
+      print('[FCM] Admin transaction saved: ${isCredit ? "+" : "-"}₹$amountStr');
       
-      // Update cached wallet balance immediately
+      // Update cached wallet balance
       if (newBalance != null) {
         final cachedData = prefs.getString('driver_data');
         if (cachedData != null) {
@@ -194,10 +198,8 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
           print('[FCM] Cached balance updated to: ₹$newBalance');
         }
       }
-    } else {
-      print('[FCM] Could not extract amount from notification: $body');
     }
   } catch (e) {
-    print('[FCM] Error handling wallet deduction: $e');
+    print('[FCM] Error handling wallet transaction: $e');
   }
 }

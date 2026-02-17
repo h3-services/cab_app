@@ -229,14 +229,14 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-        // Load admin deductions from SharedPreferences
-        final adminDeductions = prefs.getStringList('admin_deductions') ?? [];
-        for (String deductionStr in adminDeductions) {
+        // Load admin transactions from SharedPreferences
+        final adminTxns = prefs.getStringList('admin_transactions') ?? [];
+        for (String txnStr in adminTxns) {
           try {
-            final deduction = json.decode(deductionStr) as Map<String, dynamic>;
-            transactionHistory.add(deduction);
+            final txn = json.decode(txnStr) as Map<String, dynamic>;
+            transactionHistory.add(txn);
           } catch (e) {
-            debugPrint('Error parsing admin deduction: $e');
+            debugPrint('Error parsing admin transaction: $e');
           }
         }
 
@@ -574,6 +574,8 @@ class _WalletScreenState extends State<WalletScreen> {
                   const SizedBox(height: 12),
                   _buildTransactionFilterOption('Service Fee (10%)', 'Service Fee'),
                   const SizedBox(height: 12),
+                  _buildTransactionFilterOption('Admin Credit', 'Admin Credit'),
+                  const SizedBox(height: 12),
                   _buildTransactionFilterOption('Admin Deduction', 'Admin Deduction'),
                 ],
               ),
@@ -874,13 +876,13 @@ class _WalletScreenState extends State<WalletScreen> {
                         )
                       else
                         ...transactions.where((transaction) {
-                          // Hide transactions if wallet balance is negative
                           if (walletBalance < 0) return false;
                           if (_transactionFilter == 'All') return true;
                           if (_transactionFilter == 'Top-up') return transaction['title'] == 'Wallet Top-up';
                           if (_transactionFilter == 'Service Fee') return transaction['title'] == 'Service Fee (10%)';
+                          if (_transactionFilter == 'Admin Credit') return transaction['title'] == 'Admin Credit';
                           if (_transactionFilter == 'Admin Deduction') return transaction['title'] == 'Admin Deduction';
-                          return true;
+                          return false;
                         }).map((transaction) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: _buildTransactionItem(
