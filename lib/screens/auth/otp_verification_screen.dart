@@ -318,7 +318,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                       focusNode: _focusNodes[index],
                                       textAlign: TextAlign.center,
                                       keyboardType: TextInputType.number,
-                                      maxLength: 1,
+                                      maxLength: 6,
                                       style: const TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
@@ -331,7 +331,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                         contentPadding: EdgeInsets.zero,
                                       ),
                                       onChanged: (value) {
-                                        if (value.isNotEmpty && index < 5) {
+                                        if (value.length > 1) {
+                                          // Handle paste
+                                          for (int i = 0; i < value.length && i < 6; i++) {
+                                            _otpControllers[i].text = value[i];
+                                          }
+                                          if (value.length >= 6) {
+                                            _focusNodes[5].requestFocus();
+                                          } else {
+                                            _focusNodes[value.length].requestFocus();
+                                          }
+                                        } else if (value.isNotEmpty && index < 5) {
                                           _focusNodes[index + 1].requestFocus();
                                         } else if (value.isEmpty && index > 0) {
                                           _focusNodes[index - 1].requestFocus();
