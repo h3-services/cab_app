@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:convert';
 import '../../widgets/widgets.dart';
 import '../../widgets/bottom_navigation.dart';
@@ -33,6 +34,38 @@ class _WalletScreenState extends State<WalletScreen> {
     super.initState();
     _initRazorpay();
     _loadWalletData();
+    _setupFCMListener();
+  }
+
+  void _setupFCMListener() {
+    FirebaseMessaging.onMessage.listen((message) async {
+      final type = message.data['type'];
+      final title = message.notification?.title ?? '';
+      debugPrint('[Wallet] FCM message received: $type, title: $title');
+      debugPrint('[Wallet] FCM data: ${message.data}');
+      
+      if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || title.contains('Wallet Debited')) {
+        // Update wallet balance immediately from API
+        final prefs = await SharedPreferences.getInstance();
+        final driverId = prefs.getString('driverId');
+        if (driverId != null) {
+          try {
+            final driverData = await ApiService.getDriverDetails(driverId);
+            await prefs.setString('driver_data', jsonEncode(driverData));
+            if (mounted) {
+              setState(() {
+                walletBalance = (num.tryParse(driverData['wallet_balance']?.toString() ?? '0') ?? 0).toDouble();
+              });
+            }
+            debugPrint('[Wallet] Balance updated: $walletBalance');
+          } catch (e) {
+            debugPrint('[Wallet] Error updating balance: $e');
+          }
+        }
+        // Reload full wallet data to get transactions
+        await _loadWalletData();
+      }
+    });
   }
 
   void _initRazorpay() {
@@ -130,7 +163,7 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-        // Process Trips - Show completed trip fares as earnings and create service fee
+        // Process Trips - Only create service fee transactions
         for (var trip in allTrips) {
           if (trip is Map<String, dynamic>) {
             final tripDriverId = (trip['assigned_driver_id'] ??
@@ -171,16 +204,6 @@ class _WalletScreenState extends State<WalletScreen> {
                 final serviceFee = fare * 0.10;
 
                 transactionHistory.add({
-                  'title': 'Trip Fare',
-                  'date': displayDate,
-                  'tripId': tripIdVisible,
-                  'transaction_id': '',
-                  'amount': '+₹${fare.toStringAsFixed(2)}',
-                  'type': 'earning',
-                  'raw_date': date,
-                });
-
-                transactionHistory.add({
                   'title': 'Service Fee (10%)',
                   'date': displayDate,
                   'tripId': tripIdVisible,
@@ -195,7 +218,7 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
-        // Load local transactions from SharedPreferences
+        // Load local transactions from SharedPreferences (includes admin deductions)
         final localTxns = prefs.getStringList('local_transactions') ?? [];
         for (String txnStr in localTxns) {
           try {
@@ -203,6 +226,17 @@ class _WalletScreenState extends State<WalletScreen> {
             transactionHistory.add(txn);
           } catch (e) {
             debugPrint('Error parsing local transaction: $e');
+          }
+        }
+
+        // Load admin deductions from SharedPreferences
+        final adminDeductions = prefs.getStringList('admin_deductions') ?? [];
+        for (String deductionStr in adminDeductions) {
+          try {
+            final deduction = json.decode(deductionStr) as Map<String, dynamic>;
+            transactionHistory.add(deduction);
+          } catch (e) {
+            debugPrint('Error parsing admin deduction: $e');
           }
         }
 
@@ -538,9 +572,9 @@ class _WalletScreenState extends State<WalletScreen> {
                   const SizedBox(height: 12),
                   _buildTransactionFilterOption('Wallet Top-up', 'Top-up'),
                   const SizedBox(height: 12),
-                  _buildTransactionFilterOption('Trip Fare', 'Trip Fare'),
-                  const SizedBox(height: 12),
                   _buildTransactionFilterOption('Service Fee (10%)', 'Service Fee'),
+                  const SizedBox(height: 12),
+                  _buildTransactionFilterOption('Admin Deduction', 'Admin Deduction'),
                 ],
               ),
               const SizedBox(height: 24),
@@ -844,8 +878,8 @@ class _WalletScreenState extends State<WalletScreen> {
                           if (walletBalance < 0) return false;
                           if (_transactionFilter == 'All') return true;
                           if (_transactionFilter == 'Top-up') return transaction['title'] == 'Wallet Top-up';
-                          if (_transactionFilter == 'Trip Fare') return transaction['title'] == 'Trip Fare';
                           if (_transactionFilter == 'Service Fee') return transaction['title'] == 'Service Fee (10%)';
+                          if (_transactionFilter == 'Admin Deduction') return transaction['title'] == 'Admin Deduction';
                           return true;
                         }).map((transaction) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
@@ -973,7 +1007,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   List<Widget> _buildCompletedTrips() {
-    final completedTrips = transactions.where((t) => t['title'] == 'Trip Fare').toList();
+    final completedTrips = transactions.where((t) => t['title'] == 'Service Fee (10%)').toList();
     if (completedTrips.isEmpty) {
       return [
         const Center(

@@ -1,5 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'notification_service.dart';
 import '../main.dart';
@@ -64,8 +65,14 @@ Future<void> initializeFirebaseMessaging() async {
     
     final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
     final body = message.notification?.body ?? message.data['body'] ?? '';
+    final type = message.data['type'] as String?;
     
     await NotificationService.saveNotification(title, body);
+    
+    // Handle wallet deduction - check both type and title
+    if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || title.contains('Wallet Debited')) {
+      await _handleWalletDeduction(message.data, body);
+    }
     
     // Show notification in foreground
     await NotificationPlugin.showNotification(
@@ -132,5 +139,65 @@ void _handleNotificationClick(Map<String, dynamic> data) {
     }
   } catch (e) {
     print('[FCM] Navigation error: $e');
+  }
+}
+
+Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Parse notification body: "Your wallet has been debited by ₹4999999.00. Your new Colacabs balance is ₹1.80."
+    String? amountStr;
+    String? newBalance;
+    
+    // Extract debited amount
+    final debitRegex = RegExp(r'debited by [₹\$]?\s*(\d+\.?\d*)');
+    final debitMatch = debitRegex.firstMatch(body);
+    if (debitMatch != null) {
+      amountStr = debitMatch.group(1);
+    }
+    
+    // Extract new balance
+    final balanceRegex = RegExp(r'balance is [₹\$]?\s*(\d+\.?\d*)');
+    final balanceMatch = balanceRegex.firstMatch(body);
+    if (balanceMatch != null) {
+      newBalance = balanceMatch.group(1);
+    }
+    
+    print('[FCM] Parsed amount: $amountStr, new balance: $newBalance');
+    
+    if (amountStr != null && amountStr.isNotEmpty) {
+      final now = DateTime.now();
+      final deduction = {
+        'title': 'Admin Deduction',
+        'date': now.toString().split(' ')[0],
+        'tripId': 'N/A',
+        'transaction_id': '',
+        'amount': '-₹$amountStr',
+        'type': 'spending',
+        'raw_date': now.toIso8601String(),
+        'reason': 'Wallet Debited',
+      };
+      
+      final deductions = prefs.getStringList('admin_deductions') ?? [];
+      deductions.insert(0, jsonEncode(deduction));
+      await prefs.setStringList('admin_deductions', deductions);
+      print('[FCM] Admin deduction saved: ₹$amountStr');
+      
+      // Update cached wallet balance immediately
+      if (newBalance != null) {
+        final cachedData = prefs.getString('driver_data');
+        if (cachedData != null) {
+          final driverData = jsonDecode(cachedData);
+          driverData['wallet_balance'] = newBalance;
+          await prefs.setString('driver_data', jsonEncode(driverData));
+          print('[FCM] Cached balance updated to: ₹$newBalance');
+        }
+      }
+    } else {
+      print('[FCM] Could not extract amount from notification: $body');
+    }
+  } catch (e) {
+    print('[FCM] Error handling wallet deduction: $e');
   }
 }
