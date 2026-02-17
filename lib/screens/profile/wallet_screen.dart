@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:async';
 import 'dart:convert';
 import '../../widgets/widgets.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/common/app_drawer.dart';
 import '../trip/trip_start_screen.dart';
+import '../../services/firebase_messaging_service.dart';
 
 import '../../widgets/dialogs/payment_success_dialog.dart';
 import '../../services/razorpay_service.dart';
@@ -28,6 +30,8 @@ class _WalletScreenState extends State<WalletScreen> {
   String _transactionFilter = 'All'; // Filter state for transactions
   late RazorpayService _razorpayService;
   double _currentPaymentAmount = 0.0;
+  StreamSubscription<RemoteMessage>? _fcmSubscription;
+  StreamSubscription<bool>? _walletUpdateSubscription;
 
   @override
   void initState() {
@@ -35,10 +39,26 @@ class _WalletScreenState extends State<WalletScreen> {
     _initRazorpay();
     _loadWalletData();
     _setupFCMListener();
+    _setupWalletUpdateListener();
+  }
+
+  void _setupWalletUpdateListener() {
+    _walletUpdateSubscription = walletUpdateController.stream.listen((_) {
+      if (mounted) {
+        _loadWalletData();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload wallet data when screen becomes visible
+    _loadWalletData();
   }
 
   void _setupFCMListener() {
-    FirebaseMessaging.onMessage.listen((message) async {
+    _fcmSubscription = FirebaseMessaging.onMessage.listen((message) async {
       final type = message.data['type'];
       final title = message.notification?.title ?? '';
       debugPrint('[Wallet] FCM message received: $type, title: $title');
@@ -64,7 +84,9 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
         // Reload full wallet data to get transactions
-        await _loadWalletData();
+        if (mounted) {
+          await _loadWalletData();
+        }
       }
     });
   }
@@ -80,6 +102,8 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void dispose() {
     _razorpayService.dispose();
+    _fcmSubscription?.cancel();
+    _walletUpdateSubscription?.cancel();
     super.dispose();
   }
 
@@ -952,9 +976,9 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  date,
+                  '$date ${_formatTime(date)}',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     color: Colors.grey.shade700,
                     fontWeight: FontWeight.w500,
                   ),
@@ -985,6 +1009,17 @@ class _WalletScreenState extends State<WalletScreen> {
       ),
       ),
     );
+  }
+
+  String _formatTime(String date) {
+    try {
+      final dateTime = DateTime.parse(date);
+      final hour = dateTime.hour.toString().padLeft(2, '0');
+      final minute = dateTime.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    } catch (e) {
+      return '';
+    }
   }
 
   void _navigateToTripCompleted(Map<String, dynamic> trip) {

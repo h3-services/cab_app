@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -263,6 +264,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       await prefs.setString('driverId', driverId);
                                       await prefs.setBool('isLoggedIn', true);
                                       await prefs.setBool('isKycSubmitted', true);
+                                      
+                                      // Cache driver data for profile, personal details, KYC
+                                      await prefs.setString('driver_data', jsonEncode(driverData));
+                                      await prefs.setString('vehicleId', driverData['vehicle_id']?.toString() ?? '');
                                       
                                       if (!mounted) return;
                                       Navigator.pushReplacementNamed(context, '/dashboard');

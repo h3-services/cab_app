@@ -1,11 +1,15 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'notification_service.dart';
 import '../main.dart';
 import 'notification_plugin.dart';
 import 'audio_service.dart';
+
+// Global stream controller for wallet updates
+final StreamController<bool> walletUpdateController = StreamController<bool>.broadcast();
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -17,6 +21,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     final body = message.notification?.body ?? message.data['body'] ?? '';
     
     await NotificationService.saveNotification(title, body);
+    
+    // Handle wallet transactions in background
+    final type = message.data['type'] as String?;
+    if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
+        title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
+      await _handleWalletDeduction(message.data, body);
+    }
     
     // Only show notification if Firebase didn't already show it (data-only messages)
     if (message.notification == null) {
@@ -187,6 +198,9 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
       transactions.insert(0, jsonEncode(transaction));
       await prefs.setStringList('admin_transactions', transactions);
       print('[FCM] Admin transaction saved: ${isCredit ? "+" : "-"}₹$amountStr');
+      
+      // Notify wallet screen to update
+      walletUpdateController.add(true);
       
       // Update cached wallet balance
       if (newBalance != null) {
