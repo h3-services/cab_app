@@ -17,6 +17,7 @@ import '../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -45,6 +46,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _loadDriverId();
     _requestLocationPermissions();
+    
+    // Listen for foreground FCM messages to handle rejection
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final type = message.data['type'] as String?;
+      if (type == 'REGISTRATION_REJECTED') {
+        Navigator.pushReplacementNamed(context, '/approval-pending');
+      }
+    });
   }
 
   Future<void> _initializeLocationTracking() async {
@@ -217,6 +226,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       
       // Get locally stored availability preference (user's last choice)
       final isAvailable = prefs.getBool('is_available') ?? false;
+
+      // Check if rejected
+      if (kycVerified == 'rejected') {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/approval-pending');
+        }
+        return;
+      }
 
       if (!isApproved ||
           (kycVerified != 'verified' && kycVerified != 'approved')) {
@@ -1007,6 +1024,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildTabContent() {
     // Check if wallet balance is negative
     if (_walletBalance < 0) {
+      // Only allow history tab when wallet is negative
+      if (selectedTab == 3) {
+        return _buildHistoryContent();
+      }
       return _buildWalletTopUpMessage();
     }
     
@@ -1291,28 +1312,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
-                          Icon(Icons.pets,
-                              size: 16, color: Colors.grey.shade600),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${trip['pet_count'] ?? 0} Pets',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.person,
+                                  size: 14, color: Colors.grey.shade600),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${trip['passenger_count'] ?? 1}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 16),
-                          Icon(Icons.luggage,
-                              size: 16, color: Colors.grey.shade600),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${trip['luggage_count'] ?? 0} Luggage',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.pets,
+                                  size: 14, color: Colors.grey.shade600),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${trip['pet_count'] ?? 0}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.luggage,
+                                  size: 14, color: Colors.grey.shade600),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${trip['luggage_count'] ?? 0}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -1626,26 +1673,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
-                            Icon(Icons.pets, size: 16, color: Colors.grey.shade600),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${request['pet_count'] ?? 0} Pets',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.person, size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${request['passenger_count'] ?? 1}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 16),
-                            Icon(Icons.luggage, size: 16, color: Colors.grey.shade600),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${request['luggage_count'] ?? 0} Luggage',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.pets, size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${request['pet_count'] ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.luggage, size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${request['luggage_count'] ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -2260,6 +2332,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 color: Colors.black,
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.person, size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${request?['passenger_count'] ?? 1}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.pets, size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${request?['pet_count'] ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.luggage, size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${request?['luggage_count'] ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),

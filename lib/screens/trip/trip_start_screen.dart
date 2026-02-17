@@ -700,7 +700,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFB0B0B0),
-        appBar: const CustomAppBar(),
+        appBar: CustomAppBar(onProfileTap: () => _showCloseTripDialog(context, _calculateTotalCost())),
         endDrawer: TripDrawer(blockNavigation: true, onMenuItemTap: () => _showCloseTripDialog(context, _calculateTotalCost())),
       body: Column(
         children: [

@@ -82,7 +82,7 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFB0B0B0),
-        appBar: const CustomAppBar(),
+        appBar: CustomAppBar(onProfileTap: _showCloseTripDialog),
         endDrawer: TripDrawer(onMenuItemTap: _showCloseTripDialog),
         body: Column(
         children: [
@@ -172,7 +172,10 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
           ),
         ],
       ),
-        bottomNavigationBar: const BottomNavigation(currentRoute: '/dashboard'),
+        bottomNavigationBar: BottomNavigation(
+        currentRoute: '/dashboard',
+        onTap: (route) => _showCloseTripDialog(),
+      ),
       ),
     );
   }

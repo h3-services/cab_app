@@ -9,6 +9,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
   final VoidCallback? onBack;
   final String? title;
+  final VoidCallback? onProfileTap;
 
   const CustomAppBar(
       {super.key,
@@ -17,7 +18,8 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
       this.showProfileIcon = true,
       this.actions,
       this.onBack,
-      this.title});
+      this.title,
+      this.onProfileTap});
 
   @override
   State<CustomAppBar> createState() => _CustomAppBarState();
@@ -59,7 +61,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
               ? Padding(
                   padding: const EdgeInsets.only(left: 16.0),
                   child: GestureDetector(
-                    onTap: () {
+                    onTap: widget.onProfileTap ?? () {
                       Navigator.pushNamed(context, '/profile');
                     },
                     child: CircleAvatar(
