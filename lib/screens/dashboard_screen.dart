@@ -26,7 +26,7 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
   final TripStateService _tripStateService = TripStateService();
   int selectedTab = 0; // 0: Available, 1: Pending, 2: Approved, 3: History
   String? _driverId;
@@ -35,15 +35,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _driverRequests = [];
   List<dynamic> _allTrips = [];
   bool _isLoadingTrips = false;
-  late Timer _autoRefreshTimer;
+  Timer? _autoRefreshTimer;
   String _historyFilter = 'All'; // Filter state for history
   String _approvedFilter = 'All'; // Filter state for approved trips
   double _walletBalance = 0.0; // Wallet balance
   List<dynamic>? _cachedHistoryTrips; // Cache for history trips
+  AnimationController? _shakeController;
+  Animation<double>? _shakeAnimation;
 
   @override
   void initState() {
     super.initState();
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    )..repeat(reverse: true);
+    _shakeAnimation = Tween<double>(begin: -0.05, end: 0.05).animate(
+      CurvedAnimation(parent: _shakeController!, curve: Curves.elasticIn),
+    );
     _loadDriverId();
     _requestLocationPermissions();
     
@@ -150,9 +159,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
-    if (_autoRefreshTimer.isActive) {
-      _autoRefreshTimer.cancel();
-    }
+    _shakeController?.dispose();
+    _autoRefreshTimer?.cancel();
     // Don't stop location tracking when leaving dashboard - it should run continuously
     super.dispose();
   }
@@ -480,105 +488,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _requestTrip(String tripId) async {
     if (_driverId == null) return;
-
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/images/chola_cabs_logo.png',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Request Trip',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Do you want to request this trip?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          color: Color(0xFF9E9E9E),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.greenPrimary, AppColors.greenDark],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          'Confirm',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (confirmed != true) return;
 
     try {
       await ApiService.createTripRequest(tripId, _driverId!);
@@ -2496,8 +2405,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            _buildSquareActionButton(Icons.call, Colors.green,
-                                onTap: () => _makePhoneCall(phone)),
+                            if (_shakeAnimation != null)
+                              AnimatedBuilder(
+                                animation: _shakeAnimation!,
+                                builder: (context, child) {
+                                  return Transform.rotate(
+                                    angle: _shakeAnimation!.value,
+                                    child: _buildSquareActionButton(Icons.call, Colors.green,
+                                        onTap: () => _makePhoneCall(phone)),
+                                  );
+                                },
+                              )
+                            else
+                              _buildSquareActionButton(Icons.call, Colors.green,
+                                  onTap: () => _makePhoneCall(phone)),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -2699,13 +2620,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36,
-        height: 36,
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.9), color],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Icon(icon, color: color, size: 22),
+        child: Icon(icon, color: Colors.white, size: 26),
       ),
     );
   }
