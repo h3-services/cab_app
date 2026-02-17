@@ -38,10 +38,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFB0B0B0),
-      appBar: const CustomAppBar(),
-      endDrawer: const AppDrawer(hideSettings: true),
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/dashboard', (route) => false);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFB0B0B0),
+        appBar: CustomAppBar(
+          showBackButton: true,
+          showProfileIcon: false,
+          showMenuIcon: true,
+          onBack: () => Navigator.pushNamedAndRemoveUntil(
+              context, '/dashboard', (route) => false),
+        ),
+        endDrawer: const AppDrawer(hideSettings: true),
       body: Column(
         children: [
           const SizedBox(height: 20),
@@ -118,6 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
       bottomNavigationBar: const BottomNavigation(currentRoute: '/settings'),
+      ),
     );
   }
 

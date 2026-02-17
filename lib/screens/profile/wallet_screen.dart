@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../../widgets/widgets.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/common/app_drawer.dart';
+import '../trip/trip_start_screen.dart';
 
 import '../../widgets/dialogs/payment_success_dialog.dart';
 import '../../services/razorpay_service.dart';
@@ -180,13 +181,14 @@ class _WalletScreenState extends State<WalletScreen> {
                 });
 
                 transactionHistory.add({
-                  'title': 'Service Fee',
+                  'title': 'Service Fee (10%)',
                   'date': displayDate,
                   'tripId': tripIdVisible,
                   'transaction_id': '',
                   'amount': '-₹${serviceFee.toStringAsFixed(2)}',
                   'type': 'spending',
                   'raw_date': date,
+                  'trip': trip,
                 });
               }
             }
@@ -538,7 +540,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   const SizedBox(height: 12),
                   _buildTransactionFilterOption('Trip Fare', 'Trip Fare'),
                   const SizedBox(height: 12),
-                  _buildTransactionFilterOption('Service Fee', 'Service Fee'),
+                  _buildTransactionFilterOption('Service Fee (10%)', 'Service Fee'),
                 ],
               ),
               const SizedBox(height: 24),
@@ -838,10 +840,12 @@ class _WalletScreenState extends State<WalletScreen> {
                         )
                       else
                         ...transactions.where((transaction) {
+                          // Hide transactions if wallet balance is negative
+                          if (walletBalance < 0) return false;
                           if (_transactionFilter == 'All') return true;
                           if (_transactionFilter == 'Top-up') return transaction['title'] == 'Wallet Top-up';
                           if (_transactionFilter == 'Trip Fare') return transaction['title'] == 'Trip Fare';
-                          if (_transactionFilter == 'Service Fee') return transaction['title'] == 'Service Fee';
+                          if (_transactionFilter == 'Service Fee') return transaction['title'] == 'Service Fee (10%)';
                           return true;
                         }).map((transaction) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
@@ -851,8 +855,10 @@ class _WalletScreenState extends State<WalletScreen> {
                                 transaction['tripId'],
                                 transaction['amount'],
                                 transaction['type'],
+                                transaction['trip'],
                               ),
                             )),
+                      if (walletBalance < 0) ..._buildCompletedTrips(),
                     ],
                   ),
                 ),
@@ -866,11 +872,14 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildTransactionItem(
-      String title, String date, String tripId, String amount, String type) {
+      String title, String date, String tripId, String amount, String type, [Map<String, dynamic>? trip]) {
     bool isEarning = type == 'earning';
     String subtitle = tripId != 'N/A' ? 'Trip ID: $tripId' : '';
+    bool isServiceFee = title == 'Service Fee (10%)';
 
-    return Container(
+    return GestureDetector(
+      onTap: isServiceFee && trip != null ? () => _navigateToTripCompleted(trip) : null,
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.7),
@@ -937,6 +946,57 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
         ],
       ),
+      ),
     );
+  }
+
+  void _navigateToTripCompleted(Map<String, dynamic> trip) {
+    final startingKm = trip['odometer_start']?.toString() ?? '0';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TripCompletedScreen(
+          tripData: {
+            'pickup': trip['pickup_location'] ?? '',
+            'drop': trip['drop_location'] ?? '',
+            'type': trip['trip_type'] ?? '',
+            'vehicle_type': trip['vehicle_type'] ?? '',
+            'customer': trip['customer_name'] ?? '',
+            'phone': trip['customer_phone'] ?? '',
+            'request_id': trip['request_id'],
+            'trip_id': trip['trip_id'],
+          },
+          startingKm: startingKm,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildCompletedTrips() {
+    final completedTrips = transactions.where((t) => t['title'] == 'Trip Fare').toList();
+    if (completedTrips.isEmpty) {
+      return [
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Text(
+              'No completed trips',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ),
+        ),
+      ];
+    }
+    return completedTrips.map((trip) => Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _buildTransactionItem(
+        trip['title'],
+        trip['date'],
+        trip['tripId'],
+        trip['amount'],
+        trip['type'],
+        trip['trip'],
+      ),
+    )).toList();
   }
 }

@@ -481,6 +481,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _requestTrip(String tripId) async {
     if (_driverId == null) return;
 
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    'assets/images/chola_cabs_logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Request Trip',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Do you want to request this trip?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.greenPrimary, AppColors.greenDark],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Confirm',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
     try {
       await ApiService.createTripRequest(tripId, _driverId!);
 
@@ -1948,7 +2047,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }).toList();
     }
 
-    // Sort by trip status: ASSIGNED first, then STARTED, COMPLETED, CANCELLED
+    // Sort by trip status: STARTED/ONGOING first, then ASSIGNED, then COMPLETED, CANCELLED
     approvedRequests.sort((a, b) {
       final statusA = (a['trip_status'] ?? a['status'] ?? 'ASSIGNED')
           .toString()
@@ -1958,8 +2057,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           .toUpperCase();
 
       const statusOrder = {
-        'ASSIGNED': 0,
-        'STARTED': 1,
+        'STARTED': 0,
+        'ON_TRIP': 0,
+        'ON-TRIP': 0,
+        'IN_PROGRESS': 0,
+        'IN-PROGRESS': 0,
+        'ONWAY': 0,
+        'ASSIGNED': 1,
         'COMPLETED': 2,
         'CANCELLED': 3
       };

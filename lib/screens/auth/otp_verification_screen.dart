@@ -332,14 +332,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                       ),
                                       onChanged: (value) {
                                         if (value.length > 1) {
-                                          // Handle paste
-                                          for (int i = 0; i < value.length && i < 6; i++) {
-                                            _otpControllers[i].text = value[i];
+                                          // Handle paste - distribute digits across all boxes
+                                          final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+                                          for (int i = 0; i < digits.length && i < 6; i++) {
+                                            _otpControllers[i].text = digits[i];
                                           }
-                                          if (value.length >= 6) {
+                                          // Clear current box and move focus
+                                          _otpControllers[index].text = digits.isNotEmpty ? digits[0] : '';
+                                          if (digits.length >= 6) {
                                             _focusNodes[5].requestFocus();
-                                          } else {
-                                            _focusNodes[value.length].requestFocus();
+                                          } else if (digits.length > index) {
+                                            final nextIndex = digits.length < 6 ? digits.length : 5;
+                                            _focusNodes[nextIndex].requestFocus();
                                           }
                                         } else if (value.isNotEmpty && index < 5) {
                                           _focusNodes[index + 1].requestFocus();

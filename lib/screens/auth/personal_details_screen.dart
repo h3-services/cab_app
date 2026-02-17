@@ -431,34 +431,48 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                           'vehicleId', vehicleId);
                                     }
                                   }
-                                } else if (isEditing &&
-                                    driverId != null &&
-                                    vehicleId != null) {
+                                } else if (isEditing) {
                                   debugPrint("Updating existing details...");
+                                  
+                                  // Get IDs from args if not in prefs
+                                  if (driverId == null && args is Map) {
+                                    driverId = args['driverId']?.toString();
+                                  }
+                                  if (vehicleId == null && args is Map) {
+                                    vehicleId = args['vehicleId']?.toString();
+                                  }
+                                  
+                                  if (driverId != null && vehicleId != null) {
+                                    await ApiService.updateDriver(
+                                      driverId: driverId,
+                                      name: _nameController.text,
+                                      email: _emailController.text,
+                                      primaryLocation:
+                                          _primaryLocationController.text,
+                                      licenceNumber: _licenseController.text,
+                                      aadharNumber: _aadharController.text,
+                                      licenceExpiry: licenseDate,
+                                    );
 
-                                  await ApiService.updateDriver(
-                                    driverId: driverId,
-                                    name: _nameController.text,
-                                    email: _emailController.text,
-                                    primaryLocation:
-                                        _primaryLocationController.text,
-                                    licenceNumber: _licenseController.text,
-                                    aadharNumber: _aadharController.text,
-                                    licenceExpiry: licenseDate,
-                                  );
-
-                                  await ApiService.updateVehicle(
-                                    vehicleId: vehicleId,
-                                    vehicleType: _selectedVehicleType!,
-                                    vehicleBrand: _vehicleMakeController.text,
-                                    vehicleModel: _vehicleModelController.text,
-                                    vehicleColor: _vehicleColorController.text,
-                                    seatingCapacity: int.tryParse(
-                                            _selectedSeatingCapacity ?? '4') ??
-                                        4,
-                                    rcExpiryDate: rcDate,
-                                    fcExpiryDate: fcDate,
-                                  );
+                                    await ApiService.updateVehicle(
+                                      vehicleId: vehicleId,
+                                      vehicleType: _selectedVehicleType!,
+                                      vehicleBrand: _vehicleMakeController.text,
+                                      vehicleModel: _vehicleModelController.text,
+                                      vehicleColor: _vehicleColorController.text,
+                                      seatingCapacity: int.tryParse(
+                                              _selectedSeatingCapacity ?? '4') ??
+                                          4,
+                                      rcExpiryDate: rcDate,
+                                      fcExpiryDate: fcDate,
+                                    );
+                                    
+                                    // Save IDs to prefs
+                                    await prefs.setString('driverId', driverId);
+                                    await prefs.setString('vehicleId', vehicleId);
+                                  } else {
+                                    throw Exception('Cannot update: Missing IDs');
+                                  }
                                 }
 
                                 Map<String, dynamic> userData = {
