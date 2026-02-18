@@ -53,8 +53,9 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reload wallet data when screen becomes visible
-    _loadWalletData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadWalletData();
+    });
   }
 
   void _setupFCMListener() {
@@ -62,31 +63,10 @@ class _WalletScreenState extends State<WalletScreen> {
       final type = message.data['type'];
       final title = message.notification?.title ?? '';
       debugPrint('[Wallet] FCM message received: $type, title: $title');
-      debugPrint('[Wallet] FCM data: ${message.data}');
       
       if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
           title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
-        // Update wallet balance immediately from API
-        final prefs = await SharedPreferences.getInstance();
-        final driverId = prefs.getString('driverId');
-        if (driverId != null) {
-          try {
-            final driverData = await ApiService.getDriverDetails(driverId);
-            await prefs.setString('driver_data', jsonEncode(driverData));
-            if (mounted) {
-              setState(() {
-                walletBalance = (num.tryParse(driverData['wallet_balance']?.toString() ?? '0') ?? 0).toDouble();
-              });
-            }
-            debugPrint('[Wallet] Balance updated: $walletBalance');
-          } catch (e) {
-            debugPrint('[Wallet] Error updating balance: $e');
-          }
-        }
-        // Reload full wallet data to get transactions
-        if (mounted) {
-          await _loadWalletData();
-        }
+        await _loadWalletData();
       }
     });
   }
@@ -256,14 +236,41 @@ class _WalletScreenState extends State<WalletScreen> {
 
         // Load admin transactions from SharedPreferences
         final adminTxns = prefs.getStringList('admin_transactions') ?? [];
+        debugPrint('Loading ${adminTxns.length} admin transactions');
         for (String txnStr in adminTxns) {
           try {
             final txn = json.decode(txnStr) as Map<String, dynamic>;
             transactionHistory.add(txn);
+            debugPrint('Added admin txn: ${txn['title']} - ${txn['amount']}');
           } catch (e) {
             debugPrint('Error parsing admin transaction: $e');
           }
         }
+        
+        // Also check for any missed wallet updates by comparing balance changes
+        final lastKnownBalance = prefs.getDouble('last_known_balance') ?? walletBalance;
+        final currentApiBalance = (num.tryParse((await ApiService.getDriverDetails(driverId))['wallet_balance']?.toString() ?? '0') ?? 0).toDouble();
+        
+        if ((currentApiBalance - lastKnownBalance).abs() > 0.01 && adminTxns.isEmpty && transactionHistory.where((t) => t['title'] == 'Admin Credit' || t['title'] == 'Admin Deduction').isEmpty) {
+          // Balance changed but no admin transaction recorded - create one
+          final diff = currentApiBalance - lastKnownBalance;
+          final now = DateTime.now();
+          final missedTxn = {
+            'title': diff > 0 ? 'Admin Credit' : 'Admin Deduction',
+            'date': now.toString().split(' ')[0],
+            'tripId': 'N/A',
+            'transaction_id': '',
+            'amount': '${diff > 0 ? "+" : ""}₹${diff.abs().toStringAsFixed(2)}',
+            'type': diff > 0 ? 'earning' : 'spending',
+            'raw_date': now.toIso8601String(),
+          };
+          transactionHistory.add(missedTxn);
+          final updatedAdminTxns = prefs.getStringList('admin_transactions') ?? [];
+          updatedAdminTxns.insert(0, jsonEncode(missedTxn));
+          await prefs.setStringList('admin_transactions', updatedAdminTxns);
+          debugPrint('Recovered missed admin transaction: ${missedTxn['amount']}');
+        }
+        await prefs.setDouble('last_known_balance', currentApiBalance);
 
         // Sort by date descending
         transactionHistory.sort((a, b) {
@@ -272,19 +279,15 @@ class _WalletScreenState extends State<WalletScreen> {
           return dateB.compareTo(dateA);
         });
 
+        // Balance already fetched above for comparison
+        final newBalance = currentApiBalance;
+        final driverData = await ApiService.getDriverDetails(driverId);
+        await prefs.setString('driver_data', jsonEncode(driverData));
+
         setState(() {
           completedTripsCount = completedCount;
           transactions = transactionHistory;
-        });
-
-        // Update live balance from API
-        final driverData = await ApiService.getDriverDetails(driverId);
-        await prefs.setString('driver_data', jsonEncode(driverData));
-        setState(() {
-          walletBalance =
-              (num.tryParse(driverData['wallet_balance']?.toString() ?? '0') ??
-                      0)
-                  .toDouble();
+          walletBalance = newBalance;
           isLoading = false;
         });
       } else {
@@ -856,25 +859,48 @@ class _WalletScreenState extends State<WalletScreen> {
                               color: Color(0xFF424242),
                             ),
                           ),
-                          GestureDetector(
-                            onTap: _showTransactionFilterDialog,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF424242),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    _transactionFilter,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                          Row(
+                            children: [
+                              if (transactions.isNotEmpty)
+                                GestureDetector(
+                                  onTap: _showClearAllDialog,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.delete_sweep, color: Colors.white, size: 18),
+                                        SizedBox(width: 4),
+                                        Text('Clear All', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20),
-                                ],
+                                ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: _showTransactionFilterDialog,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF424242),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        _transactionFilter,
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 20),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ],
                       ),
@@ -900,7 +926,8 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                         )
                       else
-                        ...transactions.where((transaction) {
+                        ...transactions.asMap().entries.where((entry) {
+                          final transaction = entry.value;
                           if (walletBalance < 0) return false;
                           if (_transactionFilter == 'All') return true;
                           if (_transactionFilter == 'Top-up') return transaction['title'] == 'Wallet Top-up';
@@ -908,17 +935,22 @@ class _WalletScreenState extends State<WalletScreen> {
                           if (_transactionFilter == 'Admin Credit') return transaction['title'] == 'Admin Credit';
                           if (_transactionFilter == 'Admin Deduction') return transaction['title'] == 'Admin Deduction';
                           return false;
-                        }).map((transaction) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _buildTransactionItem(
-                                transaction['title'],
-                                transaction['date'],
-                                transaction['tripId'],
-                                transaction['amount'],
-                                transaction['type'],
-                                transaction['trip'],
-                              ),
-                            )),
+                        }).map((entry) {
+                          final index = entry.key;
+                          final transaction = entry.value;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildTransactionItem(
+                              transaction['title'],
+                              transaction['date'],
+                              transaction['tripId'],
+                              transaction['amount'],
+                              transaction['type'],
+                              transaction['trip'],
+                              index,
+                            ),
+                          );
+                        }),
                       if (walletBalance < 0) ..._buildCompletedTrips(),
                     ],
                   ),
@@ -933,14 +965,46 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildTransactionItem(
-      String title, String date, String tripId, String amount, String type, [Map<String, dynamic>? trip]) {
+      String title, String date, String tripId, String amount, String type, Map<String, dynamic>? trip, int index) {
     bool isEarning = type == 'earning';
     String subtitle = tripId != 'N/A' ? 'Trip ID: $tripId' : '';
     bool isServiceFee = title == 'Service Fee (10%)';
 
     return GestureDetector(
       onTap: isServiceFee && trip != null ? () => _navigateToTripCompleted(trip) : null,
-      child: Container(
+      child: Dismissible(
+        key: Key('transaction_$index'),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(Icons.delete, color: Colors.white, size: 32),
+        ),
+        confirmDismiss: (direction) async {
+          return await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Delete Transaction'),
+              content: const Text('Are you sure you want to delete this transaction?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ),
+          );
+        },
+        onDismissed: (direction) => _deleteTransaction(index),
+        child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.7),
@@ -1008,6 +1072,72 @@ class _WalletScreenState extends State<WalletScreen> {
         ],
       ),
       ),
+      ),
+    );
+  }
+
+  Future<void> _deleteTransaction(int index) async {
+    final transaction = transactions[index];
+    final title = transaction['title'];
+    
+    setState(() {
+      transactions.removeAt(index);
+    });
+    
+    final prefs = await SharedPreferences.getInstance();
+    
+    if (title == 'Admin Credit' || title == 'Admin Deduction') {
+      final adminTxns = prefs.getStringList('admin_transactions') ?? [];
+      adminTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
+      await prefs.setStringList('admin_transactions', adminTxns);
+    } else if (title == 'Wallet Top-up') {
+      final localTxns = prefs.getStringList('local_transactions') ?? [];
+      localTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
+      await prefs.setStringList('local_transactions', localTxns);
+    }
+  }
+
+  void _showClearAllDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear All Transactions'),
+        content: const Text('Are you sure you want to delete all transaction history? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _clearAllTransactions();
+            },
+            child: const Text('Clear All', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearAllTransactions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('admin_transactions');
+    await prefs.remove('local_transactions');
+    
+    setState(() {
+      transactions.removeWhere((t) => 
+        t['title'] == 'Admin Credit' || 
+        t['title'] == 'Admin Deduction' || 
+        t['title'] == 'Wallet Top-up'
+      );
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All transactions cleared'),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 
@@ -1068,6 +1198,7 @@ class _WalletScreenState extends State<WalletScreen> {
         trip['amount'],
         trip['type'],
         trip['trip'],
+        completedTrips.indexOf(trip),
       ),
     )).toList();
   }
