@@ -2405,20 +2405,36 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            if (_shakeAnimation != null)
-                              AnimatedBuilder(
-                                animation: _shakeAnimation!,
-                                builder: (context, child) {
-                                  return Transform.rotate(
-                                    angle: _shakeAnimation!.value,
-                                    child: _buildSquareActionButton(Icons.call, Colors.green,
-                                        onTap: () => _makePhoneCall(phone)),
-                                  );
-                                },
-                              )
-                            else
-                              _buildSquareActionButton(Icons.call, Colors.green,
-                                  onTap: () => _makePhoneCall(phone)),
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [AppColors.greenPrimary, AppColors.greenDark],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.greenPrimary.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _makePhoneCall(phone),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    width: 48,
+                                    height: 48,
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.call, color: Colors.white, size: 26),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
