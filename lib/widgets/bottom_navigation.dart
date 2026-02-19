@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 
 class BottomNavigation extends StatelessWidget {
   final String currentRoute;
@@ -64,14 +65,27 @@ class BottomNavigation extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon,
-              color: isActive ? const Color(0xFF424242) : Colors.black54,
-              size: 28),
+          ShaderMask(
+            shaderCallback: (bounds) => isActive
+                ? LinearGradient(
+                    colors: [AppColors.bluePrimary, AppColors.blueDark],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ).createShader(bounds)
+                : const LinearGradient(
+                    colors: [Colors.black54, Colors.black54],
+                  ).createShader(bounds),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              color: isActive ? const Color(0xFF424242) : Colors.black54,
+              color: isActive ? AppColors.blueDark : Colors.black54,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
