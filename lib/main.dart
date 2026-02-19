@@ -45,12 +45,6 @@ void main() async {
     debugPrint("Firebase init error: $e");
   }
 
-  try {
-    await PermissionService.requestLocationPermissions();
-  } catch (e) {
-    debugPrint("Permission init error: $e");
-  }
-
   await ConnectivityService().initialize();
 
   runApp(const MyApp());
