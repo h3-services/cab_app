@@ -1306,22 +1306,23 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _navigateToTripCompleted(Map<String, dynamic> trip) {
-    final startingKm = trip['odometer_start']?.toString() ?? '0';
+    final startingKm = (trip['odo_start'] ?? trip['starting_km'] ?? '0').toString();
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => TripCompletedScreen(
           tripData: {
-            'pickup': trip['pickup_location'] ?? '',
-            'drop': trip['drop_location'] ?? '',
+            'pickup': trip['pickup_address'] ?? trip['pickup_location'] ?? '',
+            'drop': trip['drop_address'] ?? trip['drop_location'] ?? '',
             'type': trip['trip_type'] ?? '',
             'vehicle_type': trip['vehicle_type'] ?? '',
             'customer': trip['customer_name'] ?? '',
-            'phone': trip['customer_phone'] ?? '',
+            'phone': trip['customer_phone'] ?? trip['phone'] ?? '',
             'request_id': trip['request_id'],
             'trip_id': trip['trip_id'],
           },
           startingKm: startingKm,
+          isReadOnly: true,
         ),
       ),
     );
