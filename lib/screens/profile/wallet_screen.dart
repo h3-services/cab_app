@@ -248,29 +248,8 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
         
-        // Also check for any missed wallet updates by comparing balance changes
-        final lastKnownBalance = prefs.getDouble('last_known_balance') ?? walletBalance;
+        // Balance already fetched above for comparison
         final currentApiBalance = (num.tryParse((await ApiService.getDriverDetails(driverId))['wallet_balance']?.toString() ?? '0') ?? 0).toDouble();
-        
-        if ((currentApiBalance - lastKnownBalance).abs() > 0.01 && adminTxns.isEmpty && transactionHistory.where((t) => t['title'] == 'Admin Credit' || t['title'] == 'Admin Deduction').isEmpty) {
-          // Balance changed but no admin transaction recorded - create one
-          final diff = currentApiBalance - lastKnownBalance;
-          final now = DateTime.now();
-          final missedTxn = {
-            'title': diff > 0 ? 'Admin Credit' : 'Admin Deduction',
-            'date': now.toString().split(' ')[0],
-            'tripId': 'N/A',
-            'transaction_id': '',
-            'amount': '${diff > 0 ? "+" : ""}₹${diff.abs().toStringAsFixed(2)}',
-            'type': diff > 0 ? 'earning' : 'spending',
-            'raw_date': now.toIso8601String(),
-          };
-          transactionHistory.add(missedTxn);
-          final updatedAdminTxns = prefs.getStringList('admin_transactions') ?? [];
-          updatedAdminTxns.insert(0, jsonEncode(missedTxn));
-          await prefs.setStringList('admin_transactions', updatedAdminTxns);
-          debugPrint('Recovered missed admin transaction: ${missedTxn['amount']}');
-        }
         await prefs.setDouble('last_known_balance', currentApiBalance);
 
         // Sort by date descending
@@ -280,7 +259,7 @@ class _WalletScreenState extends State<WalletScreen> {
           return dateB.compareTo(dateA);
         });
 
-        // Balance already fetched above for comparison
+        // Balance already fetched above
         final newBalance = currentApiBalance;
         final driverData = await ApiService.getDriverDetails(driverId);
         await prefs.setString('driver_data', jsonEncode(driverData));
@@ -1019,22 +998,23 @@ class _WalletScreenState extends State<WalletScreen> {
                           Row(
                             children: [
                               if (transactions.isNotEmpty)
-                                GestureDetector(
-                                  onTap: _showClearAllDialog,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      borderRadius: BorderRadius.circular(8),
+                                PopupMenuButton<String>(
+                                  icon: const Icon(Icons.delete, color: Color(0xFF424242)),
+                                  onSelected: (value) {
+                                    if (value == 'clear') _showClearAllDialog();
+                                  },
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'clear',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete_sweep, color: Colors.red, size: 20),
+                                          SizedBox(width: 8),
+                                          Text('Clear All'),
+                                        ],
+                                      ),
                                     ),
-                                    child: const Row(
-                                      children: [
-                                        Icon(Icons.delete_sweep, color: Colors.white, size: 18),
-                                        SizedBox(width: 4),
-                                        Text('Clear All', style: TextStyle(color: Colors.white, fontSize: 12)),
-                                      ],
-                                    ),
-                                  ),
+                                  ],
                                 ),
                               const SizedBox(width: 8),
                               GestureDetector(
@@ -1162,73 +1142,71 @@ class _WalletScreenState extends State<WalletScreen> {
         },
         onDismissed: (direction) => _deleteTransaction(index),
         child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color:
-                  isEarning ? const Color(0xFF66BB6A) : const Color(0xFFEF5350),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isEarning ? Icons.trending_up : Icons.trending_down,
-              color: Colors.white,
-              size: 24,
-            ),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isEarning ? const Color(0xFF66BB6A) : const Color(0xFFEF5350),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '$date ${_formatTime(date)}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
+                child: Icon(
+                  isEarning ? Icons.trending_up : Icons.trending_down,
+                  color: Colors.white,
+                  size: 24,
                 ),
-                if (subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                ]
-              ],
-            ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$date ${_formatTime(date)}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ]
+                  ],
+                ),
+              ),
+              Text(
+                amount,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isEarning ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
+                ),
+              ),
+            ],
           ),
-          Text(
-            amount,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color:
-                  isEarning ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
-            ),
-          ),
-        ],
-      ),
-      ),
+        ),
       ),
     );
   }
@@ -1311,10 +1289,11 @@ class _WalletScreenState extends State<WalletScreen> {
 
   void _navigateToTripCompleted(Map<String, dynamic> trip) {
     final startingKm = (trip['odo_start'] ?? trip['starting_km'] ?? '0').toString();
+    final endingKm = (trip['odo_end'] ?? trip['ending_km'] ?? '0').toString();
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TripCompletedScreen(
+        builder: (context) => _ReadOnlyTripSummary(
           tripData: {
             'pickup': trip['pickup_address'] ?? trip['pickup_location'] ?? '',
             'drop': trip['drop_address'] ?? trip['drop_location'] ?? '',
@@ -1326,7 +1305,8 @@ class _WalletScreenState extends State<WalletScreen> {
             'trip_id': trip['trip_id'],
           },
           startingKm: startingKm,
-          isReadOnly: true,
+          endingKm: endingKm,
+          tripDetails: trip,
         ),
       ),
     );
@@ -1359,5 +1339,174 @@ class _WalletScreenState extends State<WalletScreen> {
         completedTrips.indexOf(trip),
       ),
     )).toList();
+  }
+}
+
+class _ReadOnlyTripSummary extends StatelessWidget {
+  final Map<String, dynamic> tripData;
+  final String startingKm;
+  final String endingKm;
+  final Map<String, dynamic>? tripDetails;
+
+  const _ReadOnlyTripSummary({
+    required this.tripData,
+    required this.startingKm,
+    required this.endingKm,
+    this.tripDetails,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final startKm = num.tryParse(startingKm) ?? 0;
+    final endKm = num.tryParse(endingKm) ?? 0;
+    final dist = (endKm - startKm).abs();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFB0B0B0),
+      appBar: const CustomAppBar(),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Trip Summary',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Trip Summary',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSummaryRow('Distance Traveled', '${tripDetails?['distance_km'] ?? dist} km'),
+                        _buildSummaryRow('Tariff Type', tripDetails?['vehicle_type'] ?? tripData['vehicle_type'] ?? 'N/A'),
+                        const SizedBox(height: 8),
+                        _buildSummaryRow('Total Actual Fare(Inclusive of Taxes)', '₹ ${(tripDetails?['fare'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Waiting Charges(Rs)', '₹ ${(tripDetails?['waiting_charges'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Inter State Permit(Rs)', '₹ ${(tripDetails?['inter_state_permit_charges'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Driver Allowance(Rs)', '₹ ${(tripDetails?['driver_allowance'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Luggage Cost(Rs)', '₹ ${(tripDetails?['luggage_cost'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Pet Cost(Rs)', '₹ ${(tripDetails?['pet_cost'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Toll charge(Rs)', '₹ ${(tripDetails?['toll_charges'] ?? 0).toStringAsFixed(2)}'),
+                        _buildSummaryRow('Night Allowance(Rs)', '₹ ${(tripDetails?['night_allowance'] ?? 0).toStringAsFixed(2)}'),
+                        const SizedBox(height: 12),
+                        const Divider(thickness: 1, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total Cost(Rs)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              '₹ ${(tripDetails?['total_amount'] ?? 0).toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4F884F), Color(0xFF2B4E2B)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Close Details',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black54,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
