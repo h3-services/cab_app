@@ -33,6 +33,8 @@ class _WalletScreenState extends State<WalletScreen> {
   double _currentPaymentAmount = 0.0;
   StreamSubscription<RemoteMessage>? _fcmSubscription;
   StreamSubscription<bool>? _walletUpdateSubscription;
+  bool _isSelectionMode = false;
+  Set<int> _selectedIndices = {};
 
   @override
   void initState() {
@@ -997,25 +999,60 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                           Row(
                             children: [
-                              if (transactions.isNotEmpty)
-                                PopupMenuButton<String>(
-                                  icon: const Icon(Icons.delete, color: Color(0xFF424242)),
-                                  onSelected: (value) {
-                                    if (value == 'clear') _showClearAllDialog();
+                              if (transactions.isNotEmpty && !_isSelectionMode)
+                                GestureDetector(
+                                  onTap: () => setState(() => _isSelectionMode = true),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFFEF5350), Color(0xFFC62828)],
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(Icons.delete, color: Colors.white, size: 20),
+                                  ),
+                                ),
+                              if (_isSelectionMode) ...[
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _isSelectionMode = false;
+                                      _selectedIndices.clear();
+                                    });
                                   },
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                      value: 'clear',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete_sweep, color: Colors.red, size: 20),
-                                          SizedBox(width: 8),
-                                          Text('Clear All'),
-                                        ],
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _selectedIndices.isEmpty ? null : _deleteSelectedTransactions,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      gradient: _selectedIndices.isEmpty
+                                          ? null
+                                          : const LinearGradient(
+                                              colors: [Color(0xFFEF5350), Color(0xFFC62828)],
+                                            ),
+                                      color: _selectedIndices.isEmpty ? Colors.grey.shade300 : null,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'Delete (${_selectedIndices.length})',
+                                      style: TextStyle(
+                                        color: _selectedIndices.isEmpty ? Colors.grey : Colors.white,
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
+                              ],
                               const SizedBox(width: 8),
                               GestureDetector(
                                 onTap: _showTransactionFilterDialog,
@@ -1106,17 +1143,30 @@ class _WalletScreenState extends State<WalletScreen> {
     bool isEarning = type == 'earning';
     String subtitle = tripId != 'N/A' ? 'Trip ID: $tripId' : '';
     bool isServiceFee = title == 'Service Fee (10%)';
+    bool isSelected = _selectedIndices.contains(index);
 
     return GestureDetector(
-      onTap: isServiceFee && trip != null ? () => _navigateToTripCompleted(trip) : null,
+      onTap: _isSelectionMode
+          ? () {
+              setState(() {
+                if (isSelected) {
+                  _selectedIndices.remove(index);
+                } else {
+                  _selectedIndices.add(index);
+                }
+              });
+            }
+          : (isServiceFee && trip != null ? () => _navigateToTripCompleted(trip) : null),
       child: Dismissible(
         key: Key('transaction_$index'),
-        direction: DismissDirection.endToStart,
+        direction: _isSelectionMode ? DismissDirection.none : DismissDirection.endToStart,
         background: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
           decoration: BoxDecoration(
-            color: Colors.red,
+            gradient: const LinearGradient(
+              colors: [Color(0xFFEF5350), Color(0xFFC62828)],
+            ),
             borderRadius: BorderRadius.circular(16),
           ),
           child: const Icon(Icons.delete, color: Colors.white, size: 32),
@@ -1144,11 +1194,26 @@ class _WalletScreenState extends State<WalletScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: isSelected
+                ? Colors.blue.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(16),
+            border: isSelected ? Border.all(color: Colors.blue, width: 2) : null,
           ),
           child: Row(
             children: [
+              if (_isSelectionMode)
+                Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: isSelected ? Colors.blue : Colors.grey, width: 2),
+                    color: isSelected ? Colors.blue : Colors.transparent,
+                  ),
+                  child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
+                ),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -1253,6 +1318,56 @@ class _WalletScreenState extends State<WalletScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _deleteSelectedTransactions() async {
+    if (_selectedIndices.isEmpty) return;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Transactions'),
+        content: Text('Are you sure you want to delete ${_selectedIndices.length} transaction(s)?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final indicesToDelete = _selectedIndices.toList()..sort((a, b) => b.compareTo(a));
+
+    for (int index in indicesToDelete) {
+      final transaction = transactions[index];
+      final title = transaction['title'];
+
+      if (title == 'Admin Credit' || title == 'Admin Deduction') {
+        final adminTxns = prefs.getStringList('admin_transactions') ?? [];
+        adminTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
+        await prefs.setStringList('admin_transactions', adminTxns);
+      } else if (title == 'Wallet Top-up') {
+        final localTxns = prefs.getStringList('local_transactions') ?? [];
+        localTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
+        await prefs.setStringList('local_transactions', localTxns);
+      }
+    }
+
+    setState(() {
+      for (int index in indicesToDelete) {
+        transactions.removeAt(index);
+      }
+      _isSelectionMode = false;
+      _selectedIndices.clear();
+    });
   }
 
   Future<void> _clearAllTransactions() async {

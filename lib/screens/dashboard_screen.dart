@@ -1662,7 +1662,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Pickup Date : ${_formatTripTime(request['planned_start_at'])}',
+                          'Pickup Date : ${_formatTripTime(request['planned_start_at'] ?? request['created_at'])}',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -2222,362 +2222,287 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ],
       ),
       child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.greenPrimary, AppColors.greenDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.arrow_forward, size: 14, color: Colors.white),
+                    const SizedBox(width: 4),
+                    Text(
+                      type,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (vehicleType != null)
+              Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.greenPrimary, AppColors.greenDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_getVehicleIcon(vehicleType), size: 18, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        vehicleType,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  const Icon(Icons.location_on,
+                      color: Colors.green, size: 24),
+                  Container(
+                      width: 2, height: 12, color: Colors.transparent),
+                  const Icon(Icons.location_on,
+                      color: Color(0xFF8B0000), size: 24),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(pickup,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    Text(drop,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'Pickup at ${_formatTripTime(request?['planned_start_at'] ?? request?['created_at'])}',
+                        style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('customer : $customer',
+                        style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('Phone: $phone',
+                        style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [AppColors.greenPrimary, AppColors.greenDark],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.arrow_forward, size: 14, color: Colors.white),
-                        const SizedBox(width: 4),
-                        Text(
-                          type,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _makePhoneCall(phone),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.call, color: Colors.white, size: 24),
                         ),
-                      ],
-                    ),
-                  ),
-                  if (vehicleType != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.greenPrimary, AppColors.greenDark],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(_getVehicleIcon(vehicleType), size: 18, color: Colors.white),
-                          const SizedBox(width: 6),
-                          Text(
-                            vehicleType,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    children: [
-                      const Icon(Icons.location_on,
-                          color: Colors.green, size: 24),
-                      Container(
-                          width: 2, height: 12, color: Colors.transparent),
-                      const Icon(Icons.location_on,
-                          color: Color(0xFF8B0000), size: 24),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 60.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(pickup,
-                              style: const TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 16),
-                          Text(drop,
-                              style: const TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.bold)),
-                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    flex: 5,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                            'Pickup at ${_formatTripTime(request?['planned_start_at'] ?? request?['created_at'])}',
-                            style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text('customer : $customer',
-                            style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text('Phone: $phone',
-                            style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.person, size: 14, color: Colors.grey.shade600),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${request?['passenger_count'] ?? 1}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.black54,
-                                  ),
-                                ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 110,
+                    decoration: BoxDecoration(
+                      gradient: tripStatus == 'CANCELLED'
+                          ? LinearGradient(
+                              colors: [
+                                const Color(0xFFFC4E4E),
+                                const Color(0xFF882A2A)
                               ],
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.pets, size: 14, color: Colors.grey.shade600),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${request?['pet_count'] ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.luggage, size: 14, color: Colors.grey.shade600),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${request?['luggage_count'] ?? 0}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 4,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [AppColors.greenPrimary, AppColors.greenDark],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.greenPrimary.withOpacity(0.4),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () => _makePhoneCall(phone),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    width: 48,
-                                    height: 48,
-                                    alignment: Alignment.center,
-                                    child: const Icon(Icons.call, color: Colors.white, size: 26),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: tripStatus == 'CANCELLED'
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            )
+                          : tripStatus == 'COMPLETED'
+                              ? LinearGradient(
+                                  colors: [
+                                    AppColors.greenPrimary,
+                                    AppColors.greenDark
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                )
+                              : isTripStarted
                                   ? LinearGradient(
                                       colors: [
-                                        const Color(0xFFFC4E4E),
-                                        const Color(0xFF882A2A)
+                                        AppColors.greenPrimary,
+                                        AppColors.greenDark
                                       ],
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
                                     )
-                                  : tripStatus == 'COMPLETED'
-                                      ? LinearGradient(
-                                          colors: [
-                                            AppColors.greenPrimary,
-                                            AppColors.greenDark
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        )
-                                      : isTripStarted
-                                          ? LinearGradient(
-                                              colors: [
-                                                AppColors.greenPrimary,
-                                                AppColors.greenDark
-                                              ],
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                            )
-                                          : LinearGradient(
-                                              colors: [
-                                                AppColors.bluePrimary,
-                                                AppColors.blueDark
-                                              ],
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                            ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ElevatedButton(
-                              onPressed: isEnabled
-                                  ? () async {
-                                      debugPrint('\n=== TRIP DATA DEBUG ===');
-                                      debugPrint('vehicleType parameter: $vehicleType');
-                                      debugPrint('type parameter: $type');
-                                      debugPrint('=======================\n');
-                                      if (isTripStarted) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                TripCompletedScreen(
-                                              tripData: {
-                                                'pickup': pickup,
-                                                'drop': drop,
-                                                'type': type,
-                                                'vehicle_type': vehicleType,
-                                                'customer': customer,
-                                                'phone': phone,
-                                                'request_id': requestId,
-                                                'trip_id': tripId,
-                                              },
-                                              startingKm: odometer,
-                                            ),
-                                          ),
-                                        ).then((_) => _fetchAvailableTrips());
-                                      } else {
-                                        if (tripId != null) {
-                                          try {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    TripStartScreen(
-                                                  tripData: {
-                                                    'pickup': pickup,
-                                                    'drop': drop,
-                                                    'type': type,
-                                                    'vehicle_type': vehicleType,
-                                                    'customer': customer,
-                                                    'phone': phone,
-                                                    'request_id': requestId,
-                                                    'trip_id': tripId,
-                                                  },
-                                                ),
-                                              ),
-                                            ).then((result) {
-                                              if (result != null)
-                                                _fetchAvailableTrips();
-                                            });
-                                          } catch (e) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                  content: Text(
-                                                      'Failed to navigate: $e'),
-                                                  backgroundColor: Colors.red),
-                                            );
-                                          }
-                                        }
-                                      }
-                                    }
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                elevation: 0,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    tripStatus == 'COMPLETED'
-                                        ? Icons.check_circle
-                                        : isTripStarted
-                                            ? Icons.check_circle_outline
-                                            : Icons.timer_outlined,
-                                    color: Colors.white,
-                                    size: 20,
+                                  : LinearGradient(
+                                      colors: [
+                                        AppColors.bluePrimary,
+                                        AppColors.blueDark
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: isEnabled
+                          ? () async {
+                              debugPrint('\n=== TRIP DATA DEBUG ===');
+                              debugPrint('vehicleType parameter: $vehicleType');
+                              debugPrint('type parameter: $type');
+                              debugPrint('=======================\n');
+                              if (isTripStarted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        TripCompletedScreen(
+                                      tripData: {
+                                        'pickup': pickup,
+                                        'drop': drop,
+                                        'type': type,
+                                        'vehicle_type': vehicleType,
+                                        'customer': customer,
+                                        'phone': phone,
+                                        'request_id': requestId,
+                                        'trip_id': tripId,
+                                      },
+                                      startingKm: odometer,
+                                    ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    buttonText,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16),
-                                  ),
-                                ],
-                              ),
+                                ).then((_) => _fetchAvailableTrips());
+                              } else {
+                                if (tripId != null) {
+                                  try {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            TripStartScreen(
+                                          tripData: {
+                                            'pickup': pickup,
+                                            'drop': drop,
+                                            'type': type,
+                                            'vehicle_type': vehicleType,
+                                            'customer': customer,
+                                            'phone': phone,
+                                            'request_id': requestId,
+                                            'trip_id': tripId,
+                                          },
+                                        ),
+                                      ),
+                                    ).then((result) {
+                                      if (result != null)
+                                        _fetchAvailableTrips();
+                                    });
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              'Failed to navigate: $e'),
+                                          backgroundColor: Colors.red),
+                                    );
+                                  }
+                                }
+                              }
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            tripStatus == 'COMPLETED'
+                                ? Icons.check_circle
+                                : isTripStarted
+                                    ? Icons.check_circle_outline
+                                    : Icons.timer_outlined,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            buttonText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -2586,8 +2511,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           ),
         ],
       ),
-      ),
-    );
+    ));
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
