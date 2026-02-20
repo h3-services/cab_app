@@ -19,7 +19,7 @@ class AlarmManagerLocationService {
     await _notifications.initialize(const InitializationSettings(android: androidSettings));
     
     await AndroidAlarmManager.periodic(
-      const Duration(minutes: 2),
+      const Duration(minutes: 5),
       _alarmId,
       _locationCallback,
       exact: true,
@@ -27,7 +27,7 @@ class AlarmManagerLocationService {
       rescheduleOnReboot: true,
       allowWhileIdle: true,
     );
-    debugPrint('✅ Alarm Manager initialized for 2-minute location tracking');
+    debugPrint('✅ Alarm Manager initialized for 5-minute location tracking');
   }
 
   @pragma('vm:entry-point')

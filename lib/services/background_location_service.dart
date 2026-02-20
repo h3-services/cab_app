@@ -96,8 +96,8 @@ class BackgroundLocationService {
 
     await _updateLocation(service);
 
-    _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
-      print('[BG Service] 🔄 2-min timer at ${DateTime.now()}');
+    _locationTimer = Timer.periodic(const Duration(minutes: 5), (timer) async {
+      print('[BG Service] 🔄 5-min timer at ${DateTime.now()}');
       await _updateLocation(service);
       
       if (service is AndroidServiceInstance) {
@@ -105,7 +105,7 @@ class BackgroundLocationService {
       }
     });
     
-    print('[BG Service] ✅ Started with 2-min intervals');
+    print('[BG Service] ✅ Started with 5-min intervals');
   }
 
   static Future<void> _updateLocation(ServiceInstance service) async {
