@@ -992,78 +992,80 @@ class _WalletScreenState extends State<WalletScreen> {
                           const Text(
                             'Transaction History',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF424242),
                             ),
                           ),
-                          Row(
-                            children: [
-                              if (transactions.isNotEmpty && !_isSelectionMode)
-                                GestureDetector(
-                                  onTap: () => setState(() => _isSelectionMode = true),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFFEF5350), Color(0xFFC62828)],
+                          Flexible(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (transactions.isNotEmpty && !_isSelectionMode)
+                                  GestureDetector(
+                                    onTap: () => setState(() => _isSelectionMode = true),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [Color(0xFFEF5350), Color(0xFFC62828)],
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                      borderRadius: BorderRadius.circular(8),
+                                      child: const Icon(Icons.delete, color: Colors.white, size: 20),
                                     ),
-                                    child: const Icon(Icons.delete, color: Colors.white, size: 20),
                                   ),
-                                ),
-                              if (_isSelectionMode) ...[
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _isSelectionMode = false;
-                                      _selectedIndices.clear();
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey,
-                                      borderRadius: BorderRadius.circular(8),
+                                if (_isSelectionMode) ...[
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _isSelectionMode = false;
+                                        _selectedIndices.clear();
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text('Cancel', style: TextStyle(color: Colors.white)),
                                     ),
-                                    child: const Text('Cancel', style: TextStyle(color: Colors.white)),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: _selectedIndices.isEmpty ? null : _deleteSelectedTransactions,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        gradient: _selectedIndices.isEmpty
+                                            ? null
+                                            : const LinearGradient(
+                                                colors: [Color(0xFFEF5350), Color(0xFFC62828)],
+                                              ),
+                                        color: _selectedIndices.isEmpty ? Colors.grey.shade300 : null,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        'Delete (${_selectedIndices.length})',
+                                        style: TextStyle(
+                                          color: _selectedIndices.isEmpty ? Colors.grey : Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(width: 8),
                                 GestureDetector(
-                                  onTap: _selectedIndices.isEmpty ? null : _deleteSelectedTransactions,
+                                  onTap: _showTransactionFilterDialog,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     decoration: BoxDecoration(
-                                      gradient: _selectedIndices.isEmpty
-                                          ? null
-                                          : const LinearGradient(
-                                              colors: [Color(0xFFEF5350), Color(0xFFC62828)],
-                                            ),
-                                      color: _selectedIndices.isEmpty ? Colors.grey.shade300 : null,
+                                      color: const Color(0xFF424242),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Text(
-                                      'Delete (${_selectedIndices.length})',
-                                      style: TextStyle(
-                                        color: _selectedIndices.isEmpty ? Colors.grey : Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: _showTransactionFilterDialog,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF424242),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: [
+                                    child: Row(
+                                      children: [
                                       Text(
                                         _transactionFilter,
                                         style: const TextStyle(color: Colors.white, fontSize: 13),
@@ -1075,6 +1077,7 @@ class _WalletScreenState extends State<WalletScreen> {
                                 ),
                               ),
                             ],
+                          ),
                           ),
                         ],
                       ),
@@ -1125,7 +1128,6 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                           );
                         }),
-                      if (walletBalance < 0) ..._buildCompletedTrips(),
                     ],
                   ),
                 ),

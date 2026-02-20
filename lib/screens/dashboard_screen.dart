@@ -2341,11 +2341,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+             
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
+                    margin: const EdgeInsets.only(left: 90),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [AppColors.greenPrimary, AppColors.greenDark],
@@ -2368,7 +2369,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    width: 110,
+                    width: 160,
                     decoration: BoxDecoration(
                       gradient: tripStatus == 'CANCELLED'
                           ? LinearGradient(
@@ -2490,15 +2491,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                     ? Icons.check_circle_outline
                                     : Icons.timer_outlined,
                             color: Colors.white,
-                            size: 20,
+                            size: 18,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            buttonText,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              buttonText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
