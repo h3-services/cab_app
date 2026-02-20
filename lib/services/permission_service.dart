@@ -3,7 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PermissionService {
+  static bool _permissionRequestInProgress = false;
+  
   static Future<bool> requestLocationPermissions() async {
+    // Prevent multiple simultaneous permission requests
+    if (_permissionRequestInProgress) {
+      print('⚠️ Permission request already in progress, skipping...');
+      return false;
+    }
+    
+    _permissionRequestInProgress = true;
+    
+    try {
+      return await _requestPermissionsInternal();
+    } finally {
+      _permissionRequestInProgress = false;
+    }
+  }
+  
+  static Future<bool> _requestPermissionsInternal() async {
     print('\n═══════════════════════════════════════════════════════════');
     print('🔐 REQUESTING LOCATION PERMISSIONS');
     print('═══════════════════════════════════════════════════════════');
@@ -58,6 +76,7 @@ class PermissionService {
     await prefs.setBool('location_permission_granted', locationStatus == PermissionStatus.granted);
     await prefs.setBool('background_location_granted', backgroundStatus == PermissionStatus.granted);
     await prefs.setString('permission_granted_at', DateTime.now().toIso8601String());
+    await prefs.setBool('permissions_requested_once', true);
     
     if (backgroundStatus == PermissionStatus.granted) {
       print('✅ ALL LOCATION PERMISSIONS GRANTED');

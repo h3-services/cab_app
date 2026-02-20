@@ -23,7 +23,7 @@ class WalletScreen extends StatefulWidget {
   State<WalletScreen> createState() => _WalletScreenState();
 }
 
-class _WalletScreenState extends State<WalletScreen> {
+class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver {
   bool isLoading = false;
   double walletBalance = 0.0;
   int completedTripsCount = 0;
@@ -39,10 +39,20 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initRazorpay();
     _loadWalletData();
     _setupFCMListener();
     _setupWalletUpdateListener();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      debugPrint('[Wallet] App resumed - refreshing wallet data');
+      _loadWalletData();
+    }
   }
 
   void _setupWalletUpdateListener() {
@@ -84,6 +94,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _razorpayService.dispose();
     _fcmSubscription?.cancel();
     _walletUpdateSubscription?.cancel();

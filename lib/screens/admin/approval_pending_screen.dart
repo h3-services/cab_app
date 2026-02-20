@@ -320,6 +320,11 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
     super.initState();
     _checkStatus();
     
+    // Auto-reload every 2 seconds
+    _autoReloadTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      _checkStatus();
+    });
+    
     // Listen for foreground FCM messages to trigger status check
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final type = message.data['type'] as String?;

@@ -82,6 +82,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   Future<void> _requestLocationPermissions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      
+      // Check if permissions were already requested in this app session
+      final permissionsRequested = prefs.getBool('permissions_requested_once') ?? false;
+      if (permissionsRequested) {
+        debugPrint('Permissions already requested, skipping...');
+        return;
+      }
+      
       final lastPermissionCheck = prefs.getInt('last_permission_check') ?? 0;
       final now = DateTime.now().millisecondsSinceEpoch;
       
@@ -107,6 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         await prefs.setBool('background_location_granted', true);
         await prefs.setBool('dont_show_permission_dialog', true);
         await prefs.setInt('last_permission_check', now);
+        await prefs.setBool('permissions_requested_once', true);
         debugPrint('All permissions already granted');
         return;
       }
@@ -1151,14 +1160,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Widget _buildTripCard(Map<String, dynamic> trip) {
-    return GestureDetector(
-      onTap: () => showDialog(
-        context: context,
-        builder: (context) => TripDetailsDialog(trip: trip),
-      ),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(16),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFFC4C4C4),
           borderRadius: BorderRadius.circular(12),
@@ -1425,8 +1429,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   String _formatTripTime(String? dateStr) {
@@ -1516,14 +1519,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
-    return GestureDetector(
-        onTap: () => showDialog(
-              context: context,
-              builder: (context) => TripDetailsDialog(trip: request),
-            ),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(16),
+    return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: const Color(0xFFC4C4C4),
             borderRadius: BorderRadius.circular(12),
@@ -1770,18 +1768,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
           ]
         )
-        ));
+        );
   }
 
   Widget _buildAssignedToOtherCard(Map<String, dynamic> request) {
-    return GestureDetector(
-        onTap: () => showDialog(
-              context: context,
-              builder: (context) => TripDetailsDialog(trip: request),
-            ),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
+    return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
             color: const Color(0xFFE0E0E0),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
@@ -1910,7 +1903,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
             ],
           ),
-        ));
+        );
   }
 
   Widget _buildApprovedContent() {
@@ -2188,19 +2181,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       isEnabled = true;
     }
 
-    return GestureDetector(
-      onTap: () {
-        if (request != null) {
-          showDialog(
-            context: context,
-            builder: (context) => TripDetailsDialog(trip: request),
-          );
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
           color: const Color(0xFFC4C4C4),
           borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -2515,7 +2499,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           ),
         ],
       ),
-    ));
+    );
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
