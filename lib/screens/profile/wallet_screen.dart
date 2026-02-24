@@ -422,17 +422,20 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    debugPrint('[Wallet] Payment success handler called');
     setState(() => isLoading = true);
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
+      debugPrint('[Wallet] Driver ID: $driverId');
 
       if (driverId == null || driverId.isEmpty) {
         throw Exception('Driver ID not found. Please login again.');
       }
 
       final amount = _currentPaymentAmount;
+      debugPrint('[Wallet] Payment amount: $amount');
       bool paymentRecordCreated = false;
 
       // Try to create payment record, but don't fail if API doesn't exist
@@ -446,55 +449,56 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
           razorpayOrderId: response.orderId ?? '',
           razorpaySignature: response.signature ?? '',
         );
-        debugPrint('Payment record created successfully');
+        debugPrint('[Wallet] Payment record created successfully');
         paymentRecordCreated = true;
       } catch (paymentApiError) {
-        debugPrint('Payment API failed (continuing anyway): $paymentApiError');
-        // Continue with wallet update even if payment API fails
+        debugPrint('[Wallet] Payment API failed (continuing anyway): $paymentApiError');
       }
 
       // Update wallet balance directly
+      debugPrint('[Wallet] Fetching current balance...');
       final currentData = await ApiService.getDriverDetails(driverId);
       final currentBalance =
           (num.tryParse(currentData['wallet_balance']?.toString() ?? '0') ?? 0)
               .toDouble();
       final newBalance = currentBalance + amount;
+      debugPrint('[Wallet] Old balance: $currentBalance, New balance: $newBalance');
 
       await ApiService.updateWalletBalance(driverId, newBalance);
+      debugPrint('[Wallet] Balance updated on server');
 
       setState(() => walletBalance = newBalance);
       currentData['wallet_balance'] = newBalance;
       await prefs.setString('driver_data', jsonEncode(currentData));
 
-      // If payment API failed, add transaction locally to ensure it shows in history
-      if (!paymentRecordCreated) {
-        final now = DateTime.now();
-        final localTransaction = {
-          'title': 'Wallet Top-up',
-          'date': now.toString().split(' ')[0],
-          'tripId': 'N/A',
-          'transaction_id': response.paymentId ?? '',
-          'amount': '+₹${amount.toStringAsFixed(2)}',
-          'type': 'earning',
-          'raw_date': now.toIso8601String(),
-        };
-        
-        // Save to SharedPreferences for persistence (user-specific)
-        final prefs = await SharedPreferences.getInstance();
-        final existingTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
-        existingTxns.insert(0, jsonEncode(localTransaction));
-        await prefs.setStringList('local_transactions_$driverId', existingTxns);
-        
-        setState(() {
-          transactions.insert(0, localTransaction);
-        });
-      }
+      // Always add transaction locally to ensure it shows in history
+      final now = DateTime.now();
+      final localTransaction = {
+        'title': 'Wallet Top-up',
+        'date': now.toString().split(' ')[0],
+        'tripId': 'N/A',
+        'transaction_id': response.paymentId ?? '',
+        'amount': '+₹${amount.toStringAsFixed(2)}',
+        'type': 'earning',
+        'raw_date': now.toIso8601String(),
+      };
+      
+      debugPrint('[Wallet] Saving transaction locally...');
+      final existingTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
+      existingTxns.insert(0, jsonEncode(localTransaction));
+      await prefs.setStringList('local_transactions_$driverId', existingTxns);
+      debugPrint('[Wallet] Transaction saved. Total local transactions: ${existingTxns.length}');
+      
+      setState(() {
+        transactions.insert(0, localTransaction);
+      });
+      debugPrint('[Wallet] Transaction added to UI list');
 
       if (mounted) {
-        final now = DateTime.now();
         final paymentTime =
             '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
+        debugPrint('[Wallet] Showing success dialog...');
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -504,10 +508,13 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             paymentMethod: 'Razorpay',
           ),
         );
+        debugPrint('[Wallet] Success dialog shown');
       }
 
-      _loadWalletData();
+      await _loadWalletData();
+      debugPrint('[Wallet] Wallet data reloaded');
     } catch (e) {
+      debugPrint('[Wallet] ERROR in payment success handler: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

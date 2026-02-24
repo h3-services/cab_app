@@ -48,5 +48,4 @@ flutter:
   assets:
     - assets/images/
     - assets/sounds/
-    - assets/audio/
     - .env

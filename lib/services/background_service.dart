@@ -52,6 +52,9 @@ void onStart(ServiceInstance service) async {
   await NotificationPlugin.initialize();
 
   if (service is AndroidServiceInstance) {
+    // CRITICAL: Set as foreground immediately to avoid crash
+    service.setAsForegroundService();
+    
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
     });
@@ -89,10 +92,6 @@ void onStart(ServiceInstance service) async {
         longitude: position.longitude,
         source: 'Terminated',
       );
-      
-      if (service is AndroidServiceInstance) {
-        service.setAsForegroundService();
-      }
     } catch (e) {
       debugPrint('[BG Location Error] $e');
       try {

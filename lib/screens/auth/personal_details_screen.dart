@@ -885,7 +885,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                   context: context,
                   initialDate: DateTime.now(),
                   firstDate: DateTime.now(),
-                  lastDate: DateTime(2030),
+                  lastDate: DateTime(2100),
                 );
                 if (date != null) {
                   controller.text =
