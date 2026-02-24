@@ -160,9 +160,6 @@ class NotificationPlugin {
         return;
       }
       
-      // Play audio loudly for ALL notifications
-      await LocationAudioService.playLocationSound();
-      
       // Set volume to maximum for alarm stream
       try {
         VolumeController().setVolume(1.0, showSystemUI: false);

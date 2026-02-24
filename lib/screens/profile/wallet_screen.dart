@@ -237,8 +237,8 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
           }
         }
 
-        // Load local transactions from SharedPreferences (includes admin deductions)
-        final localTxns = prefs.getStringList('local_transactions') ?? [];
+        // Load local transactions from SharedPreferences (user-specific)
+        final localTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
         for (String txnStr in localTxns) {
           try {
             final txn = json.decode(txnStr) as Map<String, dynamic>;
@@ -248,9 +248,9 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
           }
         }
 
-        // Load admin transactions from SharedPreferences
-        final adminTxns = prefs.getStringList('admin_transactions') ?? [];
-        debugPrint('Loading ${adminTxns.length} admin transactions');
+        // Load admin transactions from SharedPreferences (user-specific)
+        final adminTxns = prefs.getStringList('admin_transactions_$driverId') ?? [];
+        debugPrint('Loading ${adminTxns.length} admin transactions for driver $driverId');
         for (String txnStr in adminTxns) {
           try {
             final txn = json.decode(txnStr) as Map<String, dynamic>;
@@ -479,11 +479,11 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
           'raw_date': now.toIso8601String(),
         };
         
-        // Save to SharedPreferences for persistence
+        // Save to SharedPreferences for persistence (user-specific)
         final prefs = await SharedPreferences.getInstance();
-        final existingTxns = prefs.getStringList('local_transactions') ?? [];
+        final existingTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
         existingTxns.insert(0, jsonEncode(localTransaction));
-        await prefs.setStringList('local_transactions', existingTxns);
+        await prefs.setStringList('local_transactions_$driverId', existingTxns);
         
         setState(() {
           transactions.insert(0, localTransaction);
@@ -1298,15 +1298,18 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
     });
     
     final prefs = await SharedPreferences.getInstance();
+    final driverId = prefs.getString('driverId');
     
-    if (title == 'Admin Credit' || title == 'Admin Deduction') {
-      final adminTxns = prefs.getStringList('admin_transactions') ?? [];
-      adminTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
-      await prefs.setStringList('admin_transactions', adminTxns);
-    } else if (title == 'Wallet Top-up') {
-      final localTxns = prefs.getStringList('local_transactions') ?? [];
-      localTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
-      await prefs.setStringList('local_transactions', localTxns);
+    if (driverId != null) {
+      if (title == 'Admin Credit' || title == 'Admin Deduction') {
+        final adminTxns = prefs.getStringList('admin_transactions_$driverId') ?? [];
+        adminTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
+        await prefs.setStringList('admin_transactions_$driverId', adminTxns);
+      } else if (title == 'Wallet Top-up') {
+        final localTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
+        localTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
+        await prefs.setStringList('local_transactions_$driverId', localTxns);
+      }
     }
   }
 
@@ -1359,18 +1362,21 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
     final prefs = await SharedPreferences.getInstance();
     final indicesToDelete = _selectedIndices.toList()..sort((a, b) => b.compareTo(a));
 
-    for (int index in indicesToDelete) {
-      final transaction = transactions[index];
-      final title = transaction['title'];
+    final driverId = prefs.getString('driverId');
+    if (driverId != null) {
+      for (int index in indicesToDelete) {
+        final transaction = transactions[index];
+        final title = transaction['title'];
 
-      if (title == 'Admin Credit' || title == 'Admin Deduction') {
-        final adminTxns = prefs.getStringList('admin_transactions') ?? [];
-        adminTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
-        await prefs.setStringList('admin_transactions', adminTxns);
-      } else if (title == 'Wallet Top-up') {
-        final localTxns = prefs.getStringList('local_transactions') ?? [];
-        localTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
-        await prefs.setStringList('local_transactions', localTxns);
+        if (title == 'Admin Credit' || title == 'Admin Deduction') {
+          final adminTxns = prefs.getStringList('admin_transactions_$driverId') ?? [];
+          adminTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
+          await prefs.setStringList('admin_transactions_$driverId', adminTxns);
+        } else if (title == 'Wallet Top-up') {
+          final localTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
+          localTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
+          await prefs.setStringList('local_transactions_$driverId', localTxns);
+        }
       }
     }
 
@@ -1385,8 +1391,12 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
 
   Future<void> _clearAllTransactions() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('admin_transactions');
-    await prefs.remove('local_transactions');
+    final driverId = prefs.getString('driverId');
+    
+    if (driverId != null) {
+      await prefs.remove('admin_transactions_$driverId');
+      await prefs.remove('local_transactions_$driverId');
+    }
     
     setState(() {
       transactions.removeWhere((t) => 

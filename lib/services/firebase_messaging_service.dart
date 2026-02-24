@@ -29,6 +29,14 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       await _handleWalletDeduction(message.data, body);
     }
     
+    // Play audio in background/terminated state
+    try {
+      await AudioService.playNotificationSound();
+      print("[FCM] Background audio played");
+    } catch (e) {
+      print("[FCM] Background audio error: $e");
+    }
+    
     // Only show notification if Firebase didn't already show it (data-only messages)
     if (message.notification == null) {
       await NotificationPlugin.showNotification(
@@ -86,6 +94,14 @@ Future<void> initializeFirebaseMessaging() async {
       await _handleWalletDeduction(message.data, body);
     }
     
+    // Play audio FIRST before showing notification
+    try {
+      await AudioService.playNotificationSound();
+      print('[FCM] Foreground audio played');
+    } catch (e) {
+      print('[FCM] Foreground audio error: $e');
+    }
+    
     // Show notification in foreground
     await NotificationPlugin.showNotification(
       id: message.hashCode,
@@ -94,10 +110,7 @@ Future<void> initializeFirebaseMessaging() async {
       payload: jsonEncode(message.data),
     );
     
-    // Play audio
-    AudioService.playNotificationSound();
-    
-    print('[FCM] Foreground notification shown and audio playing');
+    print('[FCM] Foreground notification shown');
   });
 
   // Background/Terminated - navigate when tapped
@@ -157,6 +170,12 @@ void _handleNotificationClick(Map<String, dynamic> data) {
 Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) async {
   try {
     final prefs = await SharedPreferences.getInstance();
+    final driverId = prefs.getString('driverId');
+    
+    if (driverId == null) {
+      print('[FCM] No driverId found, skipping wallet transaction');
+      return;
+    }
     
     // Determine if it's credit or debit
     bool isCredit = body.contains('credited') || body.contains('added');
@@ -194,10 +213,10 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
         'reason': isCredit ? 'Wallet Credited' : 'Wallet Debited',
       };
       
-      final transactions = prefs.getStringList('admin_transactions') ?? [];
+      final transactions = prefs.getStringList('admin_transactions_$driverId') ?? [];
       transactions.insert(0, jsonEncode(transaction));
-      await prefs.setStringList('admin_transactions', transactions);
-      print('[FCM] Admin transaction saved: ${isCredit ? "+" : "-"}₹$amountStr');
+      await prefs.setStringList('admin_transactions_$driverId', transactions);
+      print('[FCM] Admin transaction saved for driver $driverId: ${isCredit ? "+" : "-"}₹$amountStr');
       
       // Notify wallet screen to update
       walletUpdateController.add(true);

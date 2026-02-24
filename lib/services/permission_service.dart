@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PermissionService {
   static bool _permissionRequestInProgress = false;
+  static bool _backgroundPermissionAsked = false;
   
   static Future<bool> requestLocationPermissions() async {
     // Prevent multiple simultaneous permission requests
@@ -26,6 +27,8 @@ class PermissionService {
     print('🔐 REQUESTING LOCATION PERMISSIONS');
     print('═══════════════════════════════════════════════════════════');
     
+    final prefs = await SharedPreferences.getInstance();
+    
     // Request notification permission first (Android 13+)
     try {
       PermissionStatus notificationStatus = await Permission.notification.request();
@@ -43,6 +46,15 @@ class PermissionService {
       throw 'Location permission required for driver tracking';
     }
 
+    // Check if background permission was already asked in this session
+    final backgroundAskedBefore = prefs.getBool('background_permission_asked') ?? false;
+    if (_backgroundPermissionAsked || backgroundAskedBefore) {
+      print('⚠️ Background permission already asked, skipping...');
+      final backgroundStatus = await Permission.locationAlways.status;
+      await prefs.setBool('background_location_granted', backgroundStatus == PermissionStatus.granted);
+      return locationStatus == PermissionStatus.granted;
+    }
+
     // Small delay before requesting background permission
     await Future.delayed(const Duration(milliseconds: 500));
 
@@ -51,13 +63,15 @@ class PermissionService {
     PermissionStatus backgroundStatus = await Permission.locationAlways.request();
     print('🌍 Background Location Permission: $backgroundStatus');
     
+    _backgroundPermissionAsked = true;
+    await prefs.setBool('background_permission_asked', true);
+    
     if (backgroundStatus != PermissionStatus.granted) {
       print('⚠️ Background location permission denied - will work only when app is open');
     }
 
     // Request battery optimization exemption (only once)
     try {
-      final prefs = await SharedPreferences.getInstance();
       final batteryOptAsked = prefs.getBool('battery_opt_asked') ?? false;
       
       if (!batteryOptAsked) {
@@ -72,7 +86,6 @@ class PermissionService {
       print('⚠️ Battery optimization request failed: $e');
     }
 
-    final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('location_permission_granted', locationStatus == PermissionStatus.granted);
     await prefs.setBool('background_location_granted', backgroundStatus == PermissionStatus.granted);
     await prefs.setString('permission_granted_at', DateTime.now().toIso8601String());
