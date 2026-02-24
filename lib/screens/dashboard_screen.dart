@@ -10,7 +10,7 @@ import '../widgets/bottom_navigation.dart';
 import '../widgets/dialogs/trip_details_dialog.dart';
 import '../services/trip_state_service.dart';
 import '../services/api_service.dart';
-import '../services/location_tracking_service.dart';
+import '../services/location_service_manager.dart';
 import '../services/battery_optimization_service.dart';
 import '../services/background_service.dart';
 import '../constants/app_colors.dart';
@@ -63,20 +63,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         Navigator.pushReplacementNamed(context, '/approval-pending');
       }
     });
-  }
-
-  Future<void> _initializeLocationTracking() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isTrackingInitialized = prefs.getBool('location_tracking_initialized') ?? false;
-    
-    if (!isTrackingInitialized) {
-      debugPrint('🚀 Starting location tracking for approved driver');
-      await LocationTrackingService.startLocationTracking();
-      await initializeService();
-      await prefs.setBool('location_tracking_initialized', true);
-    } else {
-      debugPrint('🔄 Location tracking already initialized');
-    }
   }
 
   Future<void> _requestLocationPermissions() async {
@@ -259,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         }
       } else {
         // Approved! Start location tracking and load trips
-        await _initializeLocationTracking();
+        await LocationServiceManager.initializeAllServices();
         
         if (mounted) {
           _tripStateService.setReadyForTrip(isAvailable);
@@ -1315,7 +1301,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'customer : ${trip['customer_name'] ?? 'Unknown'}',
+                        'Pickup Time : ${_formatPickupTime(trip['planned_start_at'])}',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -1453,6 +1439,19 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
     } catch (e) {
       return dateStr;
+    }
+  }
+
+  String _formatPickupTime(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final dt = DateTime.parse(dateStr);
+      final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final period = dt.hour >= 12 ? 'PM' : 'AM';
+      return '$hour:$minute $period';
+    } catch (e) {
+      return '';
     }
   }
 
@@ -1670,7 +1669,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'customer : ${request['customer_name'] ?? 'Unknown'}',
+                          'Pickup Time : ${_formatPickupTime(request['planned_start_at'] ?? request['created_at'])}',
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -1887,7 +1886,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'customer : ${request['customer_name'] ?? 'Unknown'}',
+                                'Pickup Time : ${_formatPickupTime((request['planned_start_at'] ?? request['created_at'])?.toString())}',
                                 style: const TextStyle(
                                     color: Colors.black54,
                                     fontSize: 13,

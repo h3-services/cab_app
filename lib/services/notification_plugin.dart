@@ -70,18 +70,24 @@ class NotificationPlugin {
     }
   }
 
-  static Future<void> showTerminatedLocationNotification({
+  static Future<void> showLocationCapturedNotification({
     required double latitude,
     required double longitude,
+    required String source,
   }) async {
     try {
-      const AndroidNotificationDetails androidPlatformChannelSpecifics =
-          AndroidNotificationDetails(
+      final now = DateTime.now();
+      final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      
+      // Use unique ID based on timestamp
+      final notificationId = 1000 + (now.millisecondsSinceEpoch % 1000);
+      
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'terminated_location_v2',
-        'Terminated State Location',
-        channelDescription: 'Location updates when app is closed',
-        importance: Importance.max,
-        priority: Priority.max,
+        'Location Updates',
+        channelDescription: 'Location tracking notifications',
+        importance: Importance.high,
+        priority: Priority.high,
         playSound: true,
         sound: RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
@@ -89,31 +95,34 @@ class NotificationPlugin {
         autoCancel: true,
         showWhen: true,
         icon: '@mipmap/ic_launcher',
-        ticker: 'Location captured in background',
         visibility: NotificationVisibility.public,
-        fullScreenIntent: false,
       );
 
-      const NotificationDetails platformChannelSpecifics =
-          NotificationDetails(android: androidPlatformChannelSpecifics);
-
-      final now = DateTime.now();
-      final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-      
-      // Use unique ID based on timestamp to avoid overwriting
-      final notificationId = 999 + (now.millisecondsSinceEpoch % 1000);
+      const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
       
       await _notificationsPlugin.show(
         notificationId,
-        '📍 Chola Cabs - Location Update',
-        'App closed - Location captured at $timeStr\nLat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
-        platformChannelSpecifics,
+        '📍 Location Captured - $source',
+        'Time: $timeStr | Lat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
+        platformDetails,
       );
       
-      print('[NotificationPlugin] ✅ Terminated state notification shown with ID: $notificationId');
+      debugPrint('[NotificationPlugin] ✅ Location notification shown (ID: $notificationId, Source: $source)');
     } catch (e) {
-      print('[NotificationPlugin] ❌ Terminated notification error: $e');
+      debugPrint('[NotificationPlugin] ❌ Location notification error: $e');
     }
+  }
+
+  // Backward compatibility
+  static Future<void> showTerminatedLocationNotification({
+    required double latitude,
+    required double longitude,
+  }) async {
+    await showLocationCapturedNotification(
+      latitude: latitude,
+      longitude: longitude,
+      source: 'Background',
+    );
   }
 
   static Future<void> showNotification({

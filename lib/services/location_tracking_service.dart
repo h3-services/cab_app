@@ -113,9 +113,10 @@ class LocationTrackingService {
 
       if (driverId != null) {
         await _sendLocationToBackend(driverId, position);
-        await NotificationPlugin.showTerminatedLocationNotification(
+        await NotificationPlugin.showLocationCapturedNotification(
           latitude: position.latitude,
           longitude: position.longitude,
+          source: 'Foreground',
         );
       } else {
         debugPrint('! Driver ID not found, skipping location update');

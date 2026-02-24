@@ -64,7 +64,7 @@ void onStart(ServiceInstance service) async {
     service.stopSelf();
   });
 
-  Timer.periodic(const Duration(minutes: 15), (timer) async {
+  Timer.periodic(const Duration(minutes: 5), (timer) async {
     try {
       debugPrint('📍 Background location update at ${DateTime.now()}');
       
@@ -84,9 +84,10 @@ void onStart(ServiceInstance service) async {
 
       await sendLocationToServer(position.latitude, position.longitude, service);
       
-      await NotificationPlugin.showTerminatedLocationNotification(
+      await NotificationPlugin.showLocationCapturedNotification(
         latitude: position.latitude,
         longitude: position.longitude,
+        source: 'Terminated',
       );
       
       if (service is AndroidServiceInstance) {

@@ -176,9 +176,10 @@ class BackgroundLocationService {
         
         print('[BG Location] 🔔 Showing notification');
         try {
-          await NotificationPlugin.showTerminatedLocationNotification(
+          await NotificationPlugin.showLocationCapturedNotification(
             latitude: position.latitude,
             longitude: position.longitude,
+            source: 'Background',
           );
           print('[BG Location] ✅ Notification sent');
         } catch (e) {

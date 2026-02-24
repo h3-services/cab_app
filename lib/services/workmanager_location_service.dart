@@ -3,7 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'notification_plugin.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -16,12 +16,15 @@ void callbackDispatcher() {
       
       if (driverId == null || driverId.isEmpty) {
         print('[WorkManager] ❌ No driver ID');
+        // Schedule next task before returning
+        await WorkManagerLocationService._scheduleNextTask();
         return Future.value(true);
       }
 
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         print('[WorkManager] ❌ Location disabled');
+        await WorkManagerLocationService._scheduleNextTask();
         return Future.value(true);
       }
 
@@ -29,6 +32,7 @@ void callbackDispatcher() {
       if (permission == LocationPermission.denied || 
           permission == LocationPermission.deniedForever) {
         print('[WorkManager] ❌ Permission denied');
+        await WorkManagerLocationService._scheduleNextTask();
         return Future.value(true);
       }
 
@@ -48,7 +52,11 @@ void callbackDispatcher() {
       }
 
       await _sendLocation(driverId, position);
-      await _showNotification(position);
+      await NotificationPlugin.showLocationCapturedNotification(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        source: 'WorkManager',
+      );
       
       await prefs.setString('last_workmanager_location', jsonEncode({
         'latitude': position.latitude,
@@ -57,9 +65,15 @@ void callbackDispatcher() {
       }));
       
       print('[WorkManager] ✅ Completed: ${position.latitude}, ${position.longitude}');
+      
+      // Schedule next task
+      await WorkManagerLocationService._scheduleNextTask();
+      
       return Future.value(true);
     } catch (e) {
       print('[WorkManager] ❌ Error: $e');
+      // Still schedule next task even on error
+      await WorkManagerLocationService._scheduleNextTask();
       return Future.value(false);
     }
   });
@@ -88,43 +102,6 @@ Future<void> _sendLocation(String driverId, Position position) async {
   }
 }
 
-Future<void> _showNotification(Position position) async {
-  try {
-    final notifications = FlutterLocalNotificationsPlugin();
-    
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    await notifications.initialize(const InitializationSettings(android: androidSettings));
-    
-    const channel = AndroidNotificationChannel(
-      'location_updates',
-      'Location Updates',
-      importance: Importance.high,
-    );
-    
-    await notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-    
-    final now = DateTime.now();
-    final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    
-    await notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      '📍 Location Captured',
-      'Time: $time | Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}',
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          channel.id,
-          channel.name,
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
-    );
-  } catch (e) {
-    print('[WorkManager] Notification error: $e');
-  }
-}
-
 class WorkManagerLocationService {
   static const String _taskName = 'locationTrackingTask';
 
@@ -134,18 +111,26 @@ class WorkManagerLocationService {
   }
 
   static Future<void> start() async {
-    await Workmanager().registerPeriodicTask(
+    // Cancel existing tasks first
+    await Workmanager().cancelAll();
+    
+    // Register one-time task that repeats every 5 minutes
+    // WorkManager has 15-min minimum for periodic, so we use one-time with reschedule
+    await _scheduleNextTask();
+    print('[WorkManager] ✅ Registered 5-min task chain');
+  }
+
+  static Future<void> _scheduleNextTask() async {
+    await Workmanager().registerOneOffTask(
+      '${_taskName}_${DateTime.now().millisecondsSinceEpoch}',
       _taskName,
-      _taskName,
-      frequency: const Duration(minutes: 5),
+      initialDelay: const Duration(minutes: 5),
       constraints: Constraints(
         networkType: NetworkType.connected,
       ),
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
       backoffPolicy: BackoffPolicy.linear,
       backoffPolicyDelay: const Duration(minutes: 1),
     );
-    print('[WorkManager] ✅ Registered 5-min periodic task');
   }
 
   static Future<void> stop() async {

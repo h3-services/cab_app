@@ -4,20 +4,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'notification_plugin.dart';
 
 class AlarmManagerLocationService {
   static const int _alarmId = 0;
   static const String _baseUrl = 'https://api.cholacabs.in/api';
-  static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
     await AndroidAlarmManager.initialize();
+    await NotificationPlugin.initialize();
     
-    // Initialize notifications
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    await _notifications.initialize(const InitializationSettings(android: androidSettings));
+    // Cancel any existing alarms first
+    await AndroidAlarmManager.cancel(_alarmId);
     
+    // Schedule exact alarm every 5 minutes
     await AndroidAlarmManager.periodic(
       const Duration(minutes: 5),
       _alarmId,
@@ -26,6 +26,7 @@ class AlarmManagerLocationService {
       wakeup: true,
       rescheduleOnReboot: true,
       allowWhileIdle: true,
+      startAt: DateTime.now().add(const Duration(seconds: 10)),
     );
     debugPrint('✅ Alarm Manager initialized for 5-minute location tracking');
   }
@@ -88,7 +89,11 @@ class AlarmManagerLocationService {
       await _sendLocationToBackend(driverId, position);
       
       // Show notification
-      await _showLocationNotification(position);
+      await NotificationPlugin.showLocationCapturedNotification(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        source: 'Alarm Manager',
+      );
       
       await prefs.setString('last_alarm_location', jsonEncode({
         'latitude': position.latitude,
@@ -127,33 +132,6 @@ class AlarmManagerLocationService {
       debugPrint('[Alarm] API Response: ${response.statusCode}');
     } catch (e) {
       debugPrint('[Alarm] API Error: $e');
-    }
-  }
-
-  static Future<void> _showLocationNotification(Position position) async {
-    try {
-      final now = DateTime.now();
-      final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-      
-      const androidDetails = AndroidNotificationDetails(
-        'location_updates',
-        'Location Updates',
-        channelDescription: 'Notifications when location is captured',
-        importance: Importance.high,
-        priority: Priority.high,
-        showWhen: true,
-      );
-      
-      await _notifications.show(
-        DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        '📍 Location Captured',
-        'Time: $timeStr | Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}',
-        const NotificationDetails(android: androidDetails),
-      );
-      
-      debugPrint('[Alarm] 🔔 Notification shown');
-    } catch (e) {
-      debugPrint('[Alarm] Notification error: $e');
     }
   }
 
