@@ -7,7 +7,9 @@ class AudioService {
   static double? _originalVolume;
 
   static AudioPlayer _getPlayer() {
-    _player ??= AudioPlayer();
+    // Always create a fresh player to avoid caching issues
+    _player?.dispose();
+    _player = AudioPlayer();
     return _player!;
   }
 
@@ -25,7 +27,6 @@ class AudioService {
         debugPrint('[AudioService] Volume control error: $e');
       }
       
-      await player.stop();
       await player.setReleaseMode(ReleaseMode.loop);
       await player.setVolume(1.0);
       await player.setPlayerMode(PlayerMode.mediaPlayer);
@@ -49,8 +50,9 @@ class AudioService {
         ),
       );
       
+      // Use direct path to ensure fresh audio file is loaded
       await player.play(AssetSource('sounds/notification_sound.mp3'));
-      debugPrint('[AudioService] ✅ Sound playing');
+      debugPrint('[AudioService] ✅ Sound playing from sounds/notification_sound.mp3');
       
       // Restore volume after 10 seconds
       Future.delayed(const Duration(seconds: 10), () {
@@ -78,6 +80,8 @@ class AudioService {
   static Future<void> stopSound() async {
     try {
       await _player?.stop();
+      await _player?.dispose();
+      _player = null;
       if (_originalVolume != null) {
         final VolumeController volumeController = VolumeController();
         volumeController.setVolume(_originalVolume!);

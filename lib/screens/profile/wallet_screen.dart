@@ -120,20 +120,28 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
   }
 
   Future<void> _loadWalletData() async {
+    debugPrint('[Wallet] Loading wallet data...');
     setState(() => isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
+      debugPrint('[Wallet] Driver ID: $driverId');
 
       if (driverId != null) {
+        // Load cached balance first for quick display
         final cachedDriverData = prefs.getString('driver_data');
         if (cachedDriverData != null) {
-          final data = json.decode(cachedDriverData);
-          setState(() {
-            walletBalance =
-                (num.tryParse(data['wallet_balance']?.toString() ?? '0') ?? 0)
-                    .toDouble();
-          });
+          try {
+            final data = json.decode(cachedDriverData);
+            setState(() {
+              walletBalance =
+                  (num.tryParse(data['wallet_balance']?.toString() ?? '0') ?? 0)
+                      .toDouble();
+            });
+            debugPrint('[Wallet] Cached balance: $walletBalance');
+          } catch (e) {
+            debugPrint('[Wallet] Error parsing cached data: $e');
+          }
         }
 
         final results = await Future.wait([
@@ -146,16 +154,13 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
         final List allTrips = results[1];
         final List walletTxns = results[2];
 
-        debugPrint('Payments count: ${payments.length}');
-        debugPrint('Trips count: ${allTrips.length}');
-        debugPrint('Wallet Txns count: ${walletTxns.length}');
-        debugPrint('Wallet Txns: $walletTxns');
+        debugPrint('[Wallet] Payments: ${payments.length}, Trips: ${allTrips.length}, Wallet Txns: ${walletTxns.length}');
 
         List<Map<String, dynamic>> transactionHistory = [];
-        Set<String> processedTxnIds = {};
         int completedCount = 0;
 
-        // Process Payments (Top-ups)
+        // Process Payments (Top-ups) from API
+        debugPrint('[Wallet] Processing ${payments.length} payments...');
         for (var payment in payments) {
           final paymentDriverId = payment['driver_id']?.toString();
           if (paymentDriverId == driverId) {
@@ -173,16 +178,15 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
                 'transaction_id': payment['transaction_id'] ?? '',
                 'amount': '+₹${amount.toStringAsFixed(2)}',
                 'type': 'earning',
-                'raw_date': payment['payment_date'] ?? '',
+                'raw_date': payment['payment_date'] ?? DateTime.now().toIso8601String(),
               });
-              if (payment['transaction_id'] != null) {
-                processedTxnIds.add(payment['transaction_id'].toString());
-              }
             }
           }
         }
+        debugPrint('[Wallet] Added ${transactionHistory.length} payment transactions');
 
-        // Process Trips - Only create service fee transactions
+        // Process Trips - Service fee transactions
+        debugPrint('[Wallet] Processing ${allTrips.length} trips...');
         for (var trip in allTrips) {
           if (trip is Map<String, dynamic>) {
             final tripDriverId = (trip['assigned_driver_id'] ??
@@ -193,12 +197,7 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
                 .toString()
                 .toUpperCase();
 
-            bool isMyTrip = false;
-            if (driverId != null && tripDriverId != null) {
-              isMyTrip = tripDriverId.trim().toLowerCase() ==
-                  driverId.trim().toLowerCase();
-            }
-
+            bool isMyTrip = tripDriverId?.trim().toLowerCase() == driverId.trim().toLowerCase();
             bool isCompleted = tripStatus == 'COMPLETED' ||
                 tripStatus == 'CLOSED' ||
                 (trip['is_completed'] == true);
@@ -236,59 +235,70 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             }
           }
         }
+        debugPrint('[Wallet] Added ${completedCount} service fee transactions');
 
-        // Load local transactions from SharedPreferences (user-specific)
+        // Load local transactions (user-specific)
         final localTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
+        debugPrint('[Wallet] Loading ${localTxns.length} local transactions...');
         for (String txnStr in localTxns) {
           try {
             final txn = json.decode(txnStr) as Map<String, dynamic>;
             transactionHistory.add(txn);
           } catch (e) {
-            debugPrint('Error parsing local transaction: $e');
+            debugPrint('[Wallet] Error parsing local transaction: $e');
           }
         }
 
-        // Load admin transactions from SharedPreferences (user-specific)
+        // Load admin transactions (user-specific)
         final adminTxns = prefs.getStringList('admin_transactions_$driverId') ?? [];
-        debugPrint('Loading ${adminTxns.length} admin transactions for driver $driverId');
+        debugPrint('[Wallet] Loading ${adminTxns.length} admin transactions...');
         for (String txnStr in adminTxns) {
           try {
             final txn = json.decode(txnStr) as Map<String, dynamic>;
             transactionHistory.add(txn);
-            debugPrint('Added admin txn: ${txn['title']} - ${txn['amount']}');
           } catch (e) {
-            debugPrint('Error parsing admin transaction: $e');
+            debugPrint('[Wallet] Error parsing admin transaction: $e');
           }
         }
         
-        // Balance already fetched above for comparison
-        final currentApiBalance = (num.tryParse((await ApiService.getDriverDetails(driverId))['wallet_balance']?.toString() ?? '0') ?? 0).toDouble();
-        await prefs.setDouble('last_known_balance', currentApiBalance);
-
+        debugPrint('[Wallet] Total transactions before sort: ${transactionHistory.length}');
+        
         // Sort by date descending
         transactionHistory.sort((a, b) {
-          final dateA = a['raw_date'].toString();
-          final dateB = b['raw_date'].toString();
-          return dateB.compareTo(dateA);
+          try {
+            final dateA = a['raw_date']?.toString() ?? '';
+            final dateB = b['raw_date']?.toString() ?? '';
+            return dateB.compareTo(dateA);
+          } catch (e) {
+            return 0;
+          }
         });
 
-        // Balance already fetched above
-        final newBalance = currentApiBalance;
+        // Fetch latest balance
+        final currentApiBalance = (num.tryParse((await ApiService.getDriverDetails(driverId))['wallet_balance']?.toString() ?? '0') ?? 0).toDouble();
+        await prefs.setDouble('last_known_balance', currentApiBalance);
+        
         final driverData = await ApiService.getDriverDetails(driverId);
         await prefs.setString('driver_data', jsonEncode(driverData));
 
-        setState(() {
-          completedTripsCount = completedCount;
-          transactions = transactionHistory;
-          walletBalance = newBalance;
-          isLoading = false;
-        });
+        debugPrint('[Wallet] Setting state with ${transactionHistory.length} transactions');
+        if (mounted) {
+          setState(() {
+            completedTripsCount = completedCount;
+            transactions = transactionHistory;
+            walletBalance = currentApiBalance;
+            isLoading = false;
+          });
+          debugPrint('[Wallet] State updated. Transactions count: ${transactions.length}');
+        }
       } else {
-        setState(() => isLoading = false);
+        debugPrint('[Wallet] No driver ID found');
+        if (mounted) setState(() => isLoading = false);
       }
-    } catch (e) {
-      debugPrint('Error loading wallet data: $e');
-      setState(() => isLoading = false);
+    } catch (e, stackTrace) {
+      debugPrint('[Wallet] ERROR loading wallet data: $e');
+      debugPrint('[Wallet] Stack trace: $stackTrace');
+      if (mounted) setState(() => isLoading = false);
     }
   }
 

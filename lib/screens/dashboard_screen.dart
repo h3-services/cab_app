@@ -307,6 +307,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           try {
             final tripDetails = await ApiService.getTripDetails(tripId);
             final enhanced = Map<String, dynamic>.from(request);
+            
+            // CRITICAL: Update assigned_driver_id from latest trip details
+            enhanced['assigned_driver_id'] = tripDetails['assigned_driver_id'] ?? tripDetails['driver_id'] ?? request['assigned_driver_id'];
+            
             enhanced['trip_status'] = tripDetails['trip_status'] ?? tripDetails['status'] ?? request['trip_status'];
             enhanced['odo_start'] = tripDetails['odo_start'] ?? request['odo_start'];
             enhanced['vehicle_type'] = tripDetails['vehicle_type'] ?? tripDetails['trip']?['vehicle_type'] ?? request['vehicle_type'] ?? request['trip']?['vehicle_type'];
@@ -316,6 +320,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             
             enhanced['customer_phone'] = tripDetails['customer_phone'] ?? tripDetails['phone'] ?? request['customer_phone'] ?? request['phone'];
             enhanced['phone'] = enhanced['customer_phone'];
+            
+            debugPrint('[Trip $tripId] Assigned to driver: ${enhanced['assigned_driver_id']}, Current driver: $_driverId');
             return enhanced;
           } catch (e) {
             return Map<String, dynamic>.from(request);
