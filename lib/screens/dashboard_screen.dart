@@ -728,35 +728,39 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ),
             Expanded(
               child: selectedTab == 0
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/images/chola_cabs_logo.png',
-                            width: 120,
-                            height: 120,
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            'Availability is turned off. You won\'t receive\nnew trip requests.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
+                  ? SingleChildScrollView(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 40),
+                            Image.asset(
+                              'assets/images/chola_cabs_logo.png',
+                              width: 100,
+                              height: 100,
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'You\'re currently offline.\nTurn on availability to see trips.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.black,
+                            const SizedBox(height: 20),
+                            const Text(
+                              'Availability is turned off. You won\'t receive\nnew trip requests.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            const Text(
+                              'You\'re currently offline.\nTurn on availability to see trips.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
                       ),
                     )
                   : _buildTabContent(),

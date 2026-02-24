@@ -1,23 +1,26 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:volume_controller/volume_controller.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class AudioService {
   static AudioPlayer? _player;
   static double? _originalVolume;
 
-  static AudioPlayer _getPlayer() {
-    // Always create a fresh player to avoid caching issues
-    _player?.dispose();
-    _player = AudioPlayer();
-    return _player!;
-  }
-
   static Future<void> playNotificationSound() async {
     try {
       debugPrint('[AudioService] Starting notification sound');
       
-      final player = _getPlayer();
+      // Dispose any existing player
+      await _player?.dispose();
+      _player = null;
+      
+      // Create completely fresh player
+      _player = AudioPlayer();
+      final player = _player!;
+      
       final VolumeController volumeController = VolumeController();
       
       try {
@@ -26,6 +29,15 @@ class AudioService {
       } catch (e) {
         debugPrint('[AudioService] Volume control error: $e');
       }
+      
+      // Copy asset to temp file to bypass cache
+      final ByteData data = await rootBundle.load('assets/sounds/chola_cabs_notification.mp3');
+      final Directory tempDir = await getTemporaryDirectory();
+      final String tempPath = '${tempDir.path}/chola_notification_${DateTime.now().millisecondsSinceEpoch}.mp3';
+      final File tempFile = File(tempPath);
+      await tempFile.writeAsBytes(data.buffer.asUint8List());
+      
+      debugPrint('[AudioService] Temp audio file created: $tempPath');
       
       await player.setReleaseMode(ReleaseMode.loop);
       await player.setVolume(1.0);
@@ -50,12 +62,12 @@ class AudioService {
         ),
       );
       
-      // Use direct path to ensure fresh audio file is loaded
-      await player.play(AssetSource('sounds/notification_sound.mp3'));
-      debugPrint('[AudioService] ✅ Sound playing from sounds/notification_sound.mp3');
+      // Play from temp file (bypasses all caching)
+      await player.play(DeviceFileSource(tempPath));
+      debugPrint('[AudioService] ✅ NEW AUDIO PLAYING from temp file');
       
-      // Restore volume after 10 seconds
-      Future.delayed(const Duration(seconds: 10), () {
+      // Restore volume and cleanup after 10 seconds
+      Future.delayed(const Duration(seconds: 10), () async {
         if (_originalVolume != null) {
           try {
             volumeController.setVolume(_originalVolume!);
@@ -63,17 +75,18 @@ class AudioService {
             debugPrint('[AudioService] Volume restore error: $e');
           }
         }
+        // Delete temp file
+        try {
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+            debugPrint('[AudioService] Temp file deleted');
+          }
+        } catch (e) {
+          debugPrint('[AudioService] Temp file delete error: $e');
+        }
       });
     } catch (e) {
       debugPrint('[AudioService] ❌ Audio play error: $e');
-      // Try fallback
-      try {
-        final player = _getPlayer();
-        await player.play(AssetSource('notification_sound.mp3'));
-        debugPrint('[AudioService] ✅ Fallback sound playing');
-      } catch (e2) {
-        debugPrint('[AudioService] ❌ Fallback error: $e2');
-      }
     }
   }
   

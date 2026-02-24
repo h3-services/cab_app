@@ -2,7 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 import 'package:volume_controller/volume_controller.dart';
-import 'location_audio_service.dart';
+import 'audio_service.dart';
 
 class NotificationPlugin {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -10,10 +10,7 @@ class NotificationPlugin {
 
   static Future<void> initialize() async {
     try {
-      // Initialize audio service
-      await LocationAudioService.initialize();
-      
-      // Create notification channels
+      // Create notification channels WITHOUT sound (we'll play audio separately)
       const AndroidNotificationChannel locationChannel = AndroidNotificationChannel(
         'location_tracking',
         'Location Tracking',
@@ -29,7 +26,7 @@ class NotificationPlugin {
         description: 'Location updates when app is closed',
         importance: Importance.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification_sound'),
+        sound: RawResourceAndroidNotificationSound('chola_cabs_notification'),
         enableVibration: true,
         enableLights: true,
         showBadge: true,
@@ -42,7 +39,7 @@ class NotificationPlugin {
         description: 'Notifications for new trips and trip updates',
         importance: Importance.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification_sound'),
+        sound: RawResourceAndroidNotificationSound('chola_cabs_notification'),
         enableVibration: true,
         enableLights: true,
         showBadge: true,
@@ -83,21 +80,12 @@ class NotificationPlugin {
     required String source,
   }) async {
     try {
-      // Play audio directly at max volume
-      await LocationAudioService.playLocationSound();
+      // Play NEW audio using AudioService
+      await AudioService.playNotificationSound();
       
-      // Set volume to maximum for notification
-      try {
-        VolumeController().setVolume(1.0, showSystemUI: false);
-        VolumeController().maxVolume();
-      } catch (e) {
-        debugPrint('[NotificationPlugin] Volume control error: $e');
-      }
-
       final now = DateTime.now();
       final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       
-      // Use unique ID based on timestamp
       final notificationId = 1000 + (now.millisecondsSinceEpoch % 1000);
       
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
@@ -107,7 +95,7 @@ class NotificationPlugin {
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('notification_sound'),
+        sound: const RawResourceAndroidNotificationSound('chola_cabs_notification'),
         enableVibration: true,
         vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
         ongoing: false,
@@ -154,18 +142,9 @@ class NotificationPlugin {
     String? payload,
   }) async {
     try {
-      // Don't show notification if title is empty or just "Notification"
       if (title.isEmpty || title == 'Notification' || body.isEmpty) {
         debugPrint('[NotificationPlugin] Skipping empty/default notification');
         return;
-      }
-      
-      // Set volume to maximum for alarm stream
-      try {
-        VolumeController().setVolume(1.0, showSystemUI: false);
-        VolumeController().maxVolume();
-      } catch (e) {
-        debugPrint('[NotificationPlugin] Volume control error: $e');
       }
       
       final AndroidNotificationDetails androidPlatformChannelSpecifics =
@@ -175,8 +154,7 @@ class NotificationPlugin {
         channelDescription: 'Notifications for new trips and trip updates',
         importance: Importance.max,
         priority: Priority.max,
-        playSound: true,
-        sound: const RawResourceAndroidNotificationSound('notification_sound'),
+        playSound: false,
         enableVibration: true,
         enableLights: true,
         ongoing: false,
@@ -187,7 +165,6 @@ class NotificationPlugin {
         ticker: title,
         fullScreenIntent: true,
         visibility: NotificationVisibility.public,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
         category: AndroidNotificationCategory.alarm,
         styleInformation: BigTextStyleInformation(
           body,
@@ -232,6 +209,9 @@ class NotificationPlugin {
   // Test notification to verify notifications are working
   static Future<void> showTestNotification() async {
     try {
+      // Play NEW audio
+      await AudioService.playNotificationSound();
+      
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'terminated_location_v2',
@@ -239,8 +219,7 @@ class NotificationPlugin {
         channelDescription: 'Test notification to verify functionality',
         importance: Importance.max,
         priority: Priority.max,
-        playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification_sound'),
+        playSound: false,
         enableVibration: true,
         ongoing: false,
         autoCancel: true,
