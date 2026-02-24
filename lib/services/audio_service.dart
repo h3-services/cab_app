@@ -31,7 +31,7 @@ class AudioService {
       }
       
       // Copy asset to temp file to bypass cache
-      final ByteData data = await rootBundle.load('assets/sounds/chola_cabs_notification.mp3');
+      final ByteData data = await rootBundle.load('assets/sounds/chola_cabs.mp3');
       final Directory tempDir = await getTemporaryDirectory();
       final String tempPath = '${tempDir.path}/chola_notification_${DateTime.now().millisecondsSinceEpoch}.mp3';
       final File tempFile = File(tempPath);

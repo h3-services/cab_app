@@ -26,7 +26,7 @@ class NotificationPlugin {
         description: 'Location updates when app is closed',
         importance: Importance.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('chola_cabs_notification'),
+        sound: RawResourceAndroidNotificationSound('chola_cabs'),
         enableVibration: true,
         enableLights: true,
         showBadge: true,
@@ -39,7 +39,7 @@ class NotificationPlugin {
         description: 'Notifications for new trips and trip updates',
         importance: Importance.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('chola_cabs_notification'),
+        sound: RawResourceAndroidNotificationSound('chola_cabs'),
         enableVibration: true,
         enableLights: true,
         showBadge: true,
@@ -80,9 +80,6 @@ class NotificationPlugin {
     required String source,
   }) async {
     try {
-      // Play NEW audio using AudioService
-      await AudioService.playNotificationSound();
-      
       final now = DateTime.now();
       final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       
@@ -95,7 +92,7 @@ class NotificationPlugin {
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
-        sound: const RawResourceAndroidNotificationSound('chola_cabs_notification'),
+        sound: const RawResourceAndroidNotificationSound('chola_cabs'),
         enableVibration: true,
         vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
         ongoing: false,
@@ -154,7 +151,8 @@ class NotificationPlugin {
         channelDescription: 'Notifications for new trips and trip updates',
         importance: Importance.max,
         priority: Priority.max,
-        playSound: false,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound('chola_cabs'),
         enableVibration: true,
         enableLights: true,
         ongoing: false,
@@ -165,6 +163,7 @@ class NotificationPlugin {
         ticker: title,
         fullScreenIntent: true,
         visibility: NotificationVisibility.public,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
         category: AndroidNotificationCategory.alarm,
         styleInformation: BigTextStyleInformation(
           body,
@@ -219,12 +218,14 @@ class NotificationPlugin {
         channelDescription: 'Test notification to verify functionality',
         importance: Importance.max,
         priority: Priority.max,
-        playSound: false,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound('chola_cabs'),
         enableVibration: true,
         ongoing: false,
         autoCancel: true,
         showWhen: true,
         icon: '@mipmap/ic_launcher',
+        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       const NotificationDetails platformChannelSpecifics =
