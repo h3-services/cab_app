@@ -175,6 +175,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       _tripStateService.setReadyForTrip(isAvailable);
       setState(() => _isCheckingStatus = false);
       _startAutoRefresh();
+      // Start location tracking
+      await LocationServiceManager.initializeAllServices();
       // Load trips with loading indicator so user knows to wait
       _fetchAvailableTrips(showLoading: true);
     } else if (_driverId != null) {
