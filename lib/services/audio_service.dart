@@ -25,7 +25,9 @@ class AudioService {
       
       try {
         _originalVolume = await volumeController.getVolume();
-        volumeController.setVolume(1.0, showSystemUI: false);
+        // Set to MAXIMUM volume (peak volume)
+        volumeController.maxVolume();
+        debugPrint('[AudioService] Volume set to MAXIMUM');
       } catch (e) {
         debugPrint('[AudioService] Volume control error: $e');
       }
@@ -64,7 +66,7 @@ class AudioService {
       
       // Play from temp file (bypasses all caching)
       await player.play(DeviceFileSource(tempPath));
-      debugPrint('[AudioService] ✅ NEW AUDIO PLAYING from temp file');
+      debugPrint('[AudioService] ✅ NEW AUDIO PLAYING at MAXIMUM VOLUME from temp file');
       
       // Restore volume and cleanup after 10 seconds
       Future.delayed(const Duration(seconds: 10), () async {

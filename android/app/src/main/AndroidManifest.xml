@@ -96,7 +96,7 @@
             android:value="trip_notifications_v3" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_sound"
-            android:resource="@raw/notification_sound" />
+            android:resource="@raw/chola_cabs" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

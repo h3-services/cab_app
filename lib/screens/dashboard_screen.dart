@@ -1,4 +1,5 @@
 import '../services/permission_service.dart';
+import '../services/network_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -55,6 +56,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
     _loadDriverId();
     _requestLocationPermissions();
+    
+    // Initialize network monitoring
+    NetworkService().initialize((isConnected) {
+      if (!isConnected && mounted) {
+        NetworkService.showNoNetworkDialog(context);
+      }
+    });
     
     // Listen for foreground FCM messages to handle rejection
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -156,6 +164,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   void dispose() {
     _shakeController?.dispose();
     _autoRefreshTimer?.cancel();
+    NetworkService().dispose();
     // Don't stop location tracking when leaving dashboard - it should run continuously
     super.dispose();
   }
