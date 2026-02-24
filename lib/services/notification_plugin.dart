@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 import 'package:volume_controller/volume_controller.dart';
+import 'location_audio_service.dart';
 
 class NotificationPlugin {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -9,6 +10,9 @@ class NotificationPlugin {
 
   static Future<void> initialize() async {
     try {
+      // Initialize audio service
+      await LocationAudioService.initialize();
+      
       // Create notification channels
       const AndroidNotificationChannel locationChannel = AndroidNotificationChannel(
         'location_tracking',
@@ -23,10 +27,13 @@ class NotificationPlugin {
         'terminated_location_v2',
         'Terminated State Location',
         description: 'Location updates when app is closed',
-        importance: Importance.high,
+        importance: Importance.max,
         playSound: true,
         sound: RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
+        enableLights: true,
+        showBadge: true,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       const AndroidNotificationChannel tripChannel = AndroidNotificationChannel(
@@ -76,29 +83,44 @@ class NotificationPlugin {
     required String source,
   }) async {
     try {
+      // Play audio directly at max volume
+      await LocationAudioService.playLocationSound();
+      
+      // Set volume to maximum for notification
+      try {
+        VolumeController().setVolume(1.0, showSystemUI: false);
+        VolumeController().maxVolume();
+      } catch (e) {
+        debugPrint('[NotificationPlugin] Volume control error: $e');
+      }
+
       final now = DateTime.now();
       final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       
       // Use unique ID based on timestamp
       final notificationId = 1000 + (now.millisecondsSinceEpoch % 1000);
       
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'terminated_location_v2',
         'Location Updates',
         channelDescription: 'Location tracking notifications',
-        importance: Importance.high,
-        priority: Priority.high,
+        importance: Importance.max,
+        priority: Priority.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound('notification_sound'),
+        sound: const RawResourceAndroidNotificationSound('notification_sound'),
         enableVibration: true,
+        vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
         ongoing: false,
         autoCancel: true,
         showWhen: true,
         icon: '@mipmap/ic_launcher',
         visibility: NotificationVisibility.public,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
+        category: AndroidNotificationCategory.alarm,
+        fullScreenIntent: true,
       );
 
-      const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
+      final NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
       
       await _notificationsPlugin.show(
         notificationId,
@@ -138,9 +160,13 @@ class NotificationPlugin {
         return;
       }
       
+      // Play audio loudly for ALL notifications
+      await LocationAudioService.playLocationSound();
+      
       // Set volume to maximum for alarm stream
       try {
         VolumeController().setVolume(1.0, showSystemUI: false);
+        VolumeController().maxVolume();
       } catch (e) {
         debugPrint('[NotificationPlugin] Volume control error: $e');
       }
