@@ -58,24 +58,31 @@ class AlarmManagerLocationService {
 
       Position position;
       try {
+        // Try high accuracy first
         position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 30),
+          timeLimit: const Duration(seconds: 15),
         );
+        debugPrint('[Alarm] ✅ Got high accuracy position');
       } catch (e) {
-        position = await Geolocator.getLastKnownPosition() ?? 
-          Position(
-            latitude: 0,
-            longitude: 0,
-            timestamp: DateTime.now(),
-            accuracy: 0,
-            altitude: 0,
-            heading: 0,
-            speed: 0,
-            speedAccuracy: 0,
-            altitudeAccuracy: 0,
-            headingAccuracy: 0,
+        debugPrint('[Alarm] ⚠️ High accuracy failed: $e, trying medium...');
+        try {
+          // Fallback to medium accuracy
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 10),
           );
+          debugPrint('[Alarm] ✅ Got medium accuracy position');
+        } catch (e2) {
+          debugPrint('[Alarm] ⚠️ Medium failed: $e2, using last known...');
+          // Final fallback
+          position = await Geolocator.getLastKnownPosition() ?? 
+            await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.low,
+              forceAndroidLocationManager: true,
+            );
+          debugPrint('[Alarm] ✅ Got fallback position');
+        }
       }
 
       await _sendLocationToBackend(driverId, position);
@@ -92,6 +99,12 @@ class AlarmManagerLocationService {
       debugPrint('[Alarm] ✅ Location sent: ${position.latitude}, ${position.longitude}');
     } catch (e) {
       debugPrint('[Alarm] ❌ Error: $e');
+      // Store error for debugging
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('last_alarm_error', '$e');
+        await prefs.setString('last_alarm_error_time', DateTime.now().toIso8601String());
+      } catch (_) {}
     }
   }
 

@@ -36,9 +36,56 @@ class LocationTrackingService {
 
   static Future<void> _captureAndStoreLocation() async {
     try {
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      // Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('[Location] ❌ Location services disabled - requesting enable');
+        // Try to open location settings
+        await Geolocator.openLocationSettings();
+        return;
+      }
+
+      // Check permissions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint('[Location] ❌ Location permission denied');
+          return;
+        }
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('[Location] ❌ Location permission denied forever');
+        await Geolocator.openAppSettings();
+        return;
+      }
+
+      Position position;
+      try {
+        // Try high accuracy first
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 15),
+        );
+      } catch (e) {
+        debugPrint('[Location] ⚠️ High accuracy failed: $e, trying medium...');
+        try {
+          // Fallback to medium accuracy
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 10),
+          );
+        } catch (e2) {
+          debugPrint('[Location] ⚠️ Medium accuracy failed: $e2, using last known...');
+          // Final fallback to last known position
+          position = await Geolocator.getLastKnownPosition() ?? 
+            await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.low,
+              forceAndroidLocationManager: true,
+            );
+        }
+      }
 
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
@@ -48,7 +95,7 @@ class LocationTrackingService {
         'longitude': position.longitude,
         'timestamp': DateTime.now().toIso8601String(),
         'accuracy': position.accuracy,
-        'app_state': 'foreground', // App is running when this service captures
+        'app_state': 'foreground',
       };
 
       await prefs.setString('last_location', jsonEncode(locationData));
@@ -75,6 +122,10 @@ class LocationTrackingService {
       }
     } catch (e) {
       debugPrint('[Location Error] $e');
+      // Store error for debugging
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_location_error', '$e');
+      await prefs.setString('last_location_error_time', DateTime.now().toIso8601String());
     }
   }
 
