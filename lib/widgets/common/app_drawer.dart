@@ -208,7 +208,31 @@ class _AppDrawerState extends State<AppDrawer> {
                               onPressed: () async {
                                 Navigator.pop(context);
                                 final prefs = await SharedPreferences.getInstance();
+                                
+                                // Get driver ID before clearing
+                                final driverId = prefs.getString('driverId');
+                                
+                                // Save transaction data before clearing
+                                List<String>? localTxns;
+                                List<String>? adminTxns;
+                                if (driverId != null) {
+                                  localTxns = prefs.getStringList('local_transactions_$driverId');
+                                  adminTxns = prefs.getStringList('admin_transactions_$driverId');
+                                }
+                                
+                                // Clear all data
                                 await prefs.clear();
+                                
+                                // Restore transaction data
+                                if (driverId != null) {
+                                  if (localTxns != null) {
+                                    await prefs.setStringList('local_transactions_$driverId', localTxns);
+                                  }
+                                  if (adminTxns != null) {
+                                    await prefs.setStringList('admin_transactions_$driverId', adminTxns);
+                                  }
+                                }
+                                
                                 if (context.mounted) {
                                   Navigator.pushNamedAndRemoveUntil(
                                       context, '/login', (route) => false);

@@ -929,8 +929,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           (r['status'] ?? '').toString().toUpperCase();
                       final tripStatus =
                           (r['trip_status'] ?? '').toString().toUpperCase();
+                      final assignedDriverId = r['assigned_driver_id']?.toString();
+                      final isAssignedToMe = assignedDriverId == null || assignedDriverId == _driverId;
 
-                      return (status == 'APPROVED' ||
+                      return isAssignedToMe &&
+                          (status == 'APPROVED' ||
                               status == 'ACCEPTED' ||
                               status == 'STARTED' ||
                               status == 'ON_TRIP' ||
@@ -1930,8 +1933,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     var approvedRequests = _driverRequests.where((r) {
       final status = (r['status'] ?? '').toString().toUpperCase();
       final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
+      final assignedDriverId = r['assigned_driver_id']?.toString();
 
-      return (status == 'APPROVED' ||
+      // CRITICAL: Only show if assigned to THIS driver
+      final isAssignedToMe = assignedDriverId == null || assignedDriverId == _driverId;
+
+      return isAssignedToMe &&
+          (status == 'APPROVED' ||
               status == 'ACCEPTED' ||
               status == 'STARTED' ||
               status == 'ON_TRIP' ||
