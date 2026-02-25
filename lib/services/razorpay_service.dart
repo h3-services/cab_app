@@ -3,9 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
 class RazorpayService {
-  // NOTE: This test key may have expired. Get a new one from:
-  // https://dashboard.razorpay.com/app/keys
-  static const String _razorpayKey = 'rzp_test_1DP5mmOlF5G5ag';
+  static const String _razorpayKey = 'rzp_live_SKLFjywg4u7nzw';
   
   late Razorpay _razorpay;
 
