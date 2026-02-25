@@ -459,8 +459,8 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
           paymentMethod: 'RAZORPAY',
           transactionType: 'ONLINE',
           razorpayPaymentId: response.paymentId!,
-          razorpayOrderId: response.orderId ?? '',
-          razorpaySignature: response.signature ?? '',
+          razorpayOrderId: response.orderId ?? 'N/A',
+          razorpaySignature: response.signature ?? 'N/A',
         );
         debugPrint('[Wallet] Payment record created successfully');
         paymentRecordCreated = true;

@@ -39,14 +39,6 @@ class RazorpayService {
         'theme': {
           'color': '#66BB6A'
         },
-        'config': {
-          'display': {
-            'hide': [],
-            'preferences': {
-              'show_default_blocks': true,
-            }
-          }
-        },
       };
 
       debugPrint('Opening Razorpay with options: $options');

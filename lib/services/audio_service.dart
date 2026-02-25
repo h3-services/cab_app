@@ -26,7 +26,7 @@ class AudioService {
       try {
         _originalVolume = await volumeController.getVolume();
         // Force maximum volume immediately
-        await volumeController.setVolume(1.0);
+        volumeController.setVolume(1.0);
         debugPrint('[AudioService] Volume forced to 100% (was: $_originalVolume)');
       } catch (e) {
         debugPrint('[AudioService] Volume control error: $e');
@@ -67,7 +67,7 @@ class AudioService {
       
       // Boost system volume to 100%
       try {
-        await volumeController.setVolume(1.0);
+        volumeController.setVolume(1.0);
         debugPrint('[AudioService] System volume boosted to 100%');
       } catch (e) {
         debugPrint('[AudioService] Volume boost error: $e');

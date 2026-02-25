@@ -20,26 +20,18 @@ class PaymentService {
     String? razorpaySignature,
     String status = 'SUCCESS',
   }) async {
-    final url = Uri.parse('$baseUrl/api/v1/payments/');
+    final url = Uri.parse('https://api.cholacabs.in/api/v1/payments/');
 
     final body = {
       "driver_id": driverId,
-      "amount": (amount * 100).toInt(), // Convert to paise
-      "payment_method": paymentMethod,
-      "transaction_type": transactionType,
+      "amount": (amount * 100).toInt(),
+      "transaction_type": transactionType == 'ONLINE' ? 'CASH' : transactionType,
       "status": status,
-      "transaction_id":
-          transactionId ?? razorpayPaymentId ?? _generateTransactionId(),
-      "payment_date": DateTime.now().toIso8601String(),
+      "transaction_id": transactionId ?? razorpayPaymentId ?? _generateTransactionId(),
+      "razorpay_payment_id": razorpayPaymentId ?? '',
+      "razorpay_order_id": razorpayOrderId ?? 'N/A',
+      "razorpay_signature": razorpaySignature ?? 'N/A',
     };
-
-    // Add optional fields
-    if (tripId != null) body["trip_id"] = tripId;
-    if (razorpayPaymentId != null)
-      body["razorpay_payment_id"] = razorpayPaymentId;
-    if (razorpayOrderId != null) body["razorpay_order_id"] = razorpayOrderId;
-    if (razorpaySignature != null)
-      body["razorpay_signature"] = razorpaySignature;
 
     try {
       debugPrint('=== PAYMENT API DEBUG ===');
@@ -65,8 +57,14 @@ class PaymentService {
       debugPrint('============================');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('✅ PAYMENT STORED SUCCESSFULLY!');
+        debugPrint('Payment ID: ${jsonDecode(response.body)['payment_id']}');
+        debugPrint('Driver ID: $driverId');
+        debugPrint('Amount: ₹${amount.toStringAsFixed(2)}');
+        debugPrint('Transaction ID: ${jsonDecode(response.body)['transaction_id']}');
         return jsonDecode(response.body);
       } else {
+        debugPrint('❌ PAYMENT STORAGE FAILED!');
         throw Exception(
             'Failed to create payment: ${response.statusCode} - ${response.body}');
       }
@@ -169,7 +167,7 @@ class PaymentService {
     String? description,
     String? paymentId,
   }) async {
-    final url = Uri.parse('$baseUrl/api/v1/wallet-transactions/');
+    final url = Uri.parse('https://api.cholacabs.in/api/v1/wallet-transactions/');
 
     final body = {
       "driver_id": driverId,
@@ -236,7 +234,7 @@ class PaymentService {
   }
 
   static Future<List<Map<String, dynamic>>> getAllPayments() async {
-    final url = Uri.parse('$baseUrl/api/v1/payments/');
+    final url = Uri.parse('https://api.cholacabs.in/api/v1/payments/');
 
     try {
       debugPrint('=== GET PAYMENTS API ===');
