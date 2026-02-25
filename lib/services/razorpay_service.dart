@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
 class RazorpayService {
+  // NOTE: This test key may have expired. Get a new one from:
+  // https://dashboard.razorpay.com/app/keys
   static const String _razorpayKey = 'rzp_test_1DP5mmOlF5G5ag';
   
   late Razorpay _razorpay;
@@ -38,7 +40,15 @@ class RazorpayService {
         },
         'theme': {
           'color': '#66BB6A'
-        }
+        },
+        'config': {
+          'display': {
+            'hide': [],
+            'preferences': {
+              'show_default_blocks': true,
+            }
+          }
+        },
       };
 
       debugPrint('Opening Razorpay with options: $options');

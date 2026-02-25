@@ -29,9 +29,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       await _handleWalletDeduction(message.data, body);
     }
     
-    // Play audio in background/terminated state
+    // Play audio ONCE in background/terminated state
     try {
       await AudioService.playNotificationSound();
+      // Stop after 3 seconds to ensure it doesn't loop
+      Future.delayed(const Duration(seconds: 3), () {
+        AudioService.stopSound();
+      });
       print("[FCM] Background audio played");
     } catch (e) {
       print("[FCM] Background audio error: $e");
@@ -94,9 +98,13 @@ Future<void> initializeFirebaseMessaging() async {
       await _handleWalletDeduction(message.data, body);
     }
     
-    // Play audio FIRST before showing notification
+    // Play audio ONCE before showing notification
     try {
       await AudioService.playNotificationSound();
+      // Stop after 3 seconds to ensure it doesn't loop
+      Future.delayed(const Duration(seconds: 3), () {
+        AudioService.stopSound();
+      });
       print('[FCM] Foreground audio played');
     } catch (e) {
       print('[FCM] Foreground audio error: $e');

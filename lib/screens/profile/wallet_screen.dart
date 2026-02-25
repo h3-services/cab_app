@@ -51,7 +51,10 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       debugPrint('[Wallet] App resumed - refreshing wallet data');
-      _loadWalletData();
+      // Add delay to ensure background processing is complete
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _loadWalletData();
+      });
     }
   }
 
@@ -1133,7 +1136,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
                       else
                         ...transactions.asMap().entries.where((entry) {
                           final transaction = entry.value;
-                          if (walletBalance < 0) return false;
                           if (_transactionFilter == 'All') return true;
                           if (_transactionFilter == 'Top-up') return transaction['title'] == 'Wallet Top-up';
                           if (_transactionFilter == 'Service Fee') return transaction['title'] == 'Service Fee (10%)';

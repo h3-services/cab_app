@@ -41,7 +41,7 @@ class AudioService {
       
       debugPrint('[AudioService] Temp audio file created: $tempPath');
       
-      await player.setReleaseMode(ReleaseMode.loop);
+      await player.setReleaseMode(ReleaseMode.stop);
       await player.setVolume(1.0);
       await player.setPlayerMode(PlayerMode.mediaPlayer);
       
