@@ -25,9 +25,9 @@ class AudioService {
       
       try {
         _originalVolume = await volumeController.getVolume();
-        // Set to MAXIMUM volume (peak volume)
-        volumeController.maxVolume();
-        debugPrint('[AudioService] Volume set to MAXIMUM');
+        // Force maximum volume immediately
+        await volumeController.setVolume(1.0);
+        debugPrint('[AudioService] Volume forced to 100% (was: $_originalVolume)');
       } catch (e) {
         debugPrint('[AudioService] Volume control error: $e');
       }
@@ -44,6 +44,34 @@ class AudioService {
       await player.setReleaseMode(ReleaseMode.stop);
       await player.setVolume(1.0);
       await player.setPlayerMode(PlayerMode.mediaPlayer);
+      
+      // Set audio context BEFORE setting volume for better control
+      await player.setAudioContext(
+        AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.playback,
+            options: {
+              AVAudioSessionOptions.defaultToSpeaker,
+              AVAudioSessionOptions.mixWithOthers,
+            },
+          ),
+          android: AudioContextAndroid(
+            isSpeakerphoneOn: true,
+            stayAwake: true,
+            contentType: AndroidContentType.music,
+            usageType: AndroidUsageType.alarm,
+            audioFocus: AndroidAudioFocus.gain,
+          ),
+        ),
+      );
+      
+      // Boost system volume to 100%
+      try {
+        await volumeController.setVolume(1.0);
+        debugPrint('[AudioService] System volume boosted to 100%');
+      } catch (e) {
+        debugPrint('[AudioService] Volume boost error: $e');
+      }
       
       await player.setAudioContext(
         AudioContext(
