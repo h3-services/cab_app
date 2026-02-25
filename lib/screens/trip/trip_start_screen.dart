@@ -237,11 +237,6 @@ class _TripStartScreenState extends State<TripStartScreen> {
                             if (context.mounted) {
                               Navigator.pop(context);
                               Navigator.pop(context, tripId?.toString());
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Trip started successfully!')),
-                              );
                             }
                           } catch (e) {
                             if (context.mounted) {
@@ -1127,10 +1122,6 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                           }
                           Navigator.popUntil(
                               context, ModalRoute.withName('/dashboard'));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Trip closed successfully!')),
-                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,

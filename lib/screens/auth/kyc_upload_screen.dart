@@ -606,9 +606,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       await prefs.setBool('isLoggedIn', true);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All documents uploaded successfully!')),
-        );
         Navigator.pushReplacementNamed(context, '/approval-pending');
       }
     } catch (e) {

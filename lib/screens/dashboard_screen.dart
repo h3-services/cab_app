@@ -505,11 +505,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       await ApiService.createTripRequest(tripId, _driverId!);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Request Sent Successfully!"),
-            backgroundColor: Colors.green),
-      );
 
       _fetchAvailableTrips();
     } catch (e) {
@@ -650,16 +645,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         try {
                           await ApiService.updateDriverAvailability(
                               _driverId!, value);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(value
-                                  ? 'You are now Online'
-                                  : 'You are now Offline'),
-                              backgroundColor:
-                                  value ? AppColors.greenPrimary : Colors.grey,
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
                         } catch (e) {
                           setState(() {
                             _tripStateService.setReadyForTrip(!value);
@@ -868,15 +853,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       try {
                         await ApiService.updateDriverAvailability(
                             _driverId!, value);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(value
-                                ? 'You are now Online'
-                                : 'You are now Offline'),
-                            backgroundColor: value ? AppColors.greenPrimary : Colors.grey,
-                            duration: const Duration(seconds: 1),
-                          ),
-                        );
                       } catch (e) {
                         // Revert on failure
                         setState(() {

@@ -219,11 +219,7 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
             Navigator.pushReplacementNamed(context, '/dashboard');
           }
         } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Still Pending Approval...')),
-            );
-          }
+          // Removed snackbar
         }
       }
     } catch (e) {
