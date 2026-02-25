@@ -441,8 +441,25 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       String vehicleId = userData?['vehicleId']?.toString() ?? '';
 
       if (_isEditing) {
-        if (driverId.isEmpty || vehicleId.isEmpty) {
-          throw Exception("Cannot update: Missing IDs");
+        if (driverId.isEmpty) {
+          throw Exception("Cannot update: Missing driver ID");
+        }
+
+        // Fetch vehicleId if missing
+        if (vehicleId.isEmpty) {
+          debugPrint('vehicleId is empty, fetching from API...');
+          final vehicles = await ApiService.getVehiclesByDriver(driverId);
+          debugPrint('Fetched vehicles: $vehicles');
+          if (vehicles.isNotEmpty) {
+            vehicleId = vehicles[0]['vehicle_id']?.toString() ?? '';
+            if (vehicleId.isEmpty) {
+              vehicleId = vehicles[0]['id']?.toString() ?? '';
+            }
+            debugPrint('Using vehicleId: $vehicleId');
+          }
+          if (vehicleId.isEmpty) {
+            throw Exception('Vehicle ID not found for driver');
+          }
         }
 
         // Only update driver text details if we have valid data to prevent wiping
@@ -461,18 +478,22 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
 
         // Only update vehicle details if we have valid data
         if ((userData?['vehicleType']?.toString().isNotEmpty ?? false)) {
-          await ApiService.updateVehicle(
-            vehicleId: vehicleId,
-            vehicleType: userData?['vehicleType'] ?? '',
-            vehicleBrand: userData?['vehicleBrand'] ?? '',
-            vehicleModel: userData?['vehicleModel'] ?? '',
-            vehicleColor: userData?['vehicleColor'] ?? '',
-            seatingCapacity:
-                int.tryParse((userData?['seatingCapacity'] ?? 4).toString()) ??
-                    4,
-            rcExpiryDate: userData?['rcExpiryDate'] ?? '',
-            fcExpiryDate: userData?['fcExpiryDate'] ?? '',
-          );
+          if (vehicleId.isEmpty) {
+            debugPrint('Skipping vehicle update: vehicleId is empty');
+          } else {
+            await ApiService.updateVehicle(
+              vehicleId: vehicleId,
+              vehicleType: userData?['vehicleType'] ?? '',
+              vehicleBrand: userData?['vehicleBrand'] ?? '',
+              vehicleModel: userData?['vehicleModel'] ?? '',
+              vehicleColor: userData?['vehicleColor'] ?? '',
+              seatingCapacity:
+                  int.tryParse((userData?['seatingCapacity'] ?? 4).toString()) ??
+                      4,
+              rcExpiryDate: userData?['rcExpiryDate'] ?? '',
+              fcExpiryDate: userData?['fcExpiryDate'] ?? '',
+            );
+          }
         } else {
           debugPrint("Skipping vehicle update: No vehicle data provided");
         }

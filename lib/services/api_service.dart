@@ -346,6 +346,25 @@ class ApiService {
     }
   }
 
+  static Future<List<dynamic>> getVehiclesByDriver(String driverId) async {
+    final url = Uri.parse('$baseUrl/vehicles/driver/$driverId');
+    try {
+      debugPrint('GET Request: $url');
+      final response = await http.get(url);
+      debugPrint('Response Status: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is List) return decoded;
+        return [];
+      }
+      return [];
+    } catch (e) {
+      debugPrint('API Error: $e');
+      return [];
+    }
+  }
+
   static Future<void> updateDriverAvailability(
       String driverId, bool isAvailable) async {
     final url = Uri.parse(

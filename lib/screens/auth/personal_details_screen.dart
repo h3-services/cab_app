@@ -442,7 +442,17 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     vehicleId = args['vehicleId']?.toString();
                                   }
                                   
-                                  if (driverId != null && vehicleId != null) {
+                                  // Fetch vehicleId if still empty
+                                  if ((vehicleId == null || vehicleId.isEmpty) && driverId != null && driverId.isNotEmpty) {
+                                    debugPrint('vehicleId empty, fetching from API...');
+                                    final vehicles = await ApiService.getVehiclesByDriver(driverId);
+                                    if (vehicles.isNotEmpty) {
+                                      vehicleId = vehicles[0]['vehicle_id']?.toString() ?? vehicles[0]['id']?.toString();
+                                      debugPrint('Fetched vehicleId: $vehicleId');
+                                    }
+                                  }
+                                  
+                                  if (driverId != null && driverId.isNotEmpty) {
                                     await ApiService.updateDriver(
                                       driverId: driverId,
                                       name: _nameController.text,
@@ -454,24 +464,30 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                       licenceExpiry: licenseDate,
                                     );
 
-                                    await ApiService.updateVehicle(
-                                      vehicleId: vehicleId,
-                                      vehicleType: _selectedVehicleType!,
-                                      vehicleBrand: _vehicleMakeController.text,
-                                      vehicleModel: _vehicleModelController.text,
-                                      vehicleColor: _vehicleColorController.text,
-                                      seatingCapacity: int.tryParse(
-                                              _selectedSeatingCapacity ?? '4') ??
-                                          4,
-                                      rcExpiryDate: rcDate,
-                                      fcExpiryDate: fcDate,
-                                    );
+                                    if (vehicleId != null && vehicleId.isNotEmpty) {
+                                      await ApiService.updateVehicle(
+                                        vehicleId: vehicleId,
+                                        vehicleType: _selectedVehicleType!,
+                                        vehicleBrand: _vehicleMakeController.text,
+                                        vehicleModel: _vehicleModelController.text,
+                                        vehicleColor: _vehicleColorController.text,
+                                        seatingCapacity: int.tryParse(
+                                                _selectedSeatingCapacity ?? '4') ??
+                                            4,
+                                        rcExpiryDate: rcDate,
+                                        fcExpiryDate: fcDate,
+                                      );
+                                    } else {
+                                      debugPrint('Skipping vehicle update: vehicleId is empty');
+                                    }
                                     
                                     // Save IDs to prefs
                                     await prefs.setString('driverId', driverId);
-                                    await prefs.setString('vehicleId', vehicleId);
+                                    if (vehicleId != null && vehicleId.isNotEmpty) {
+                                      await prefs.setString('vehicleId', vehicleId);
+                                    }
                                   } else {
-                                    throw Exception('Cannot update: Missing IDs');
+                                    throw Exception('Cannot update: Missing driver ID');
                                   }
                                 }
 
