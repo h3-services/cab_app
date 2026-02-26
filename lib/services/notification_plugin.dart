@@ -30,7 +30,6 @@ class NotificationPlugin {
         enableVibration: true,
         enableLights: true,
         showBadge: true,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       const AndroidNotificationChannel tripChannel = AndroidNotificationChannel(
@@ -43,7 +42,6 @@ class NotificationPlugin {
         enableVibration: true,
         enableLights: true,
         showBadge: true,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       final androidPlugin = _notificationsPlugin
@@ -100,9 +98,7 @@ class NotificationPlugin {
         showWhen: true,
         icon: '@mipmap/ic_launcher',
         visibility: NotificationVisibility.public,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
         category: AndroidNotificationCategory.alarm,
-        fullScreenIntent: true,
       );
 
       final NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
@@ -161,9 +157,7 @@ class NotificationPlugin {
         channelShowBadge: true,
         icon: '@mipmap/ic_launcher',
         ticker: title,
-        fullScreenIntent: true,
         visibility: NotificationVisibility.public,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
         category: AndroidNotificationCategory.alarm,
         styleInformation: BigTextStyleInformation(
           body,
@@ -225,7 +219,6 @@ class NotificationPlugin {
         autoCancel: true,
         showWhen: true,
         icon: '@mipmap/ic_launcher',
-        audioAttributesUsage: AudioAttributesUsage.alarm,
       );
 
       const NotificationDetails platformChannelSpecifics =

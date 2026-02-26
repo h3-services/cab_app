@@ -29,30 +29,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       await _handleWalletDeduction(message.data, body);
     }
     
-    // Play audio ONCE in background/terminated state
-    try {
-      await AudioService.playNotificationSound();
-      // Stop after 3 seconds to ensure it doesn't loop
-      Future.delayed(const Duration(seconds: 3), () {
-        AudioService.stopSound();
-      });
-      print("[FCM] Background audio played");
-    } catch (e) {
-      print("[FCM] Background audio error: $e");
-    }
-    
-    // Only show notification if Firebase didn't already show it (data-only messages)
-    if (message.notification == null) {
-      await NotificationPlugin.showNotification(
-        id: message.hashCode,
-        title: title,
-        body: body,
-        payload: jsonEncode(message.data),
-      );
-      print("[FCM] Background notification shown (data-only)");
-    } else {
-      print("[FCM] Background notification saved (Firebase auto-shown)");
-    }
+    // DON'T play audio here - let notification sound handle it
+    print("[FCM] Background notification saved (audio via notification channel)");
   } catch (e) {
     print("[FCM] Background handler error: $e");
   }
@@ -81,7 +59,7 @@ Future<void> initializeFirebaseMessaging() async {
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // Foreground - save, show notification, and play audio
+  // Foreground - save and show notification
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     print('[FCM] Foreground message: ${message.messageId}');
     print('[FCM] Notification: ${message.notification?.title}');
@@ -98,19 +76,7 @@ Future<void> initializeFirebaseMessaging() async {
       await _handleWalletDeduction(message.data, body);
     }
     
-    // Play audio ONCE before showing notification
-    try {
-      await AudioService.playNotificationSound();
-      // Stop after 3 seconds to ensure it doesn't loop
-      Future.delayed(const Duration(seconds: 3), () {
-        AudioService.stopSound();
-      });
-      print('[FCM] Foreground audio played');
-    } catch (e) {
-      print('[FCM] Foreground audio error: $e');
-    }
-    
-    // Show notification in foreground
+    // Show notification in foreground (sound plays via notification channel)
     await NotificationPlugin.showNotification(
       id: message.hashCode,
       title: title,
