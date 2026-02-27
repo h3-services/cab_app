@@ -43,6 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   List<dynamic>? _cachedHistoryTrips; // Cache for history trips
   AnimationController? _shakeController;
   Animation<double>? _shakeAnimation;
+  Set<String> _requestingTripIds = {}; // Track trips being requested
 
   @override
   void initState() {
@@ -500,6 +501,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Future<void> _requestTrip(String tripId) async {
     if (_driverId == null) return;
+    
+    // Mark trip as being requested
+    setState(() {
+      _requestingTripIds.add(tripId);
+    });
 
     try {
       await ApiService.createTripRequest(tripId, _driverId!);
@@ -1146,6 +1152,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Widget _buildTripCard(Map<String, dynamic> trip) {
+    final tripId = trip['trip_id']?.toString();
+    final isRequesting = tripId != null && _requestingTripIds.contains(tripId);
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -1369,7 +1378,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: isRequesting ? null : () {
                         if (trip['trip_id'] != null) {
                           _requestTrip(trip['trip_id']);
                         } else {
@@ -1384,11 +1393,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           borderRadius: BorderRadius.circular(8),
                         ),
                         padding: EdgeInsets.zero,
+                        disabledBackgroundColor: Colors.transparent,
                       ),
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.greenPrimary, AppColors.greenDark],
+                            colors: isRequesting 
+                                ? [Colors.grey.shade400, Colors.grey.shade600]
+                                : [AppColors.greenPrimary, AppColors.greenDark],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
@@ -1396,14 +1408,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         ),
                         padding:
                             const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.check, color: Colors.white, size: 16),
-                            SizedBox(width: 4),
+                            Icon(
+                              isRequesting ? Icons.check_circle : Icons.check,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
                             Text(
-                              'Request Ride',
-                              style: TextStyle(color: Colors.white),
+                              isRequesting ? 'Requested' : 'Request Ride',
+                              style: const TextStyle(color: Colors.white),
                             ),
                           ],
                         ),

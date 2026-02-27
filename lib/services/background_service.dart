@@ -43,6 +43,10 @@ Future<void> initializeService() async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  if (service is AndroidServiceInstance) {
+    service.setAsForegroundService();
+  }
+  
   try {
     await dotenv.load();
   } catch (e) {
@@ -52,8 +56,6 @@ void onStart(ServiceInstance service) async {
   await NotificationPlugin.initialize();
 
   if (service is AndroidServiceInstance) {
-    // CRITICAL: Set as foreground immediately to avoid crash
-    service.setAsForegroundService();
     
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();

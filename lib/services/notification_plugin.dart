@@ -78,6 +78,8 @@ class NotificationPlugin {
     required String source,
   }) async {
     try {
+      await AudioService.playNotificationSound();
+      
       final now = DateTime.now();
       final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       
@@ -139,6 +141,8 @@ class NotificationPlugin {
         debugPrint('[NotificationPlugin] Skipping empty/default notification');
         return;
       }
+      
+      await AudioService.playNotificationSound();
       
       final AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(

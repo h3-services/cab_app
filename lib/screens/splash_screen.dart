@@ -48,7 +48,9 @@ class _SplashScreenState extends State<SplashScreen> {
       } catch (e) {
         debugPrint('Status Check Failed: $e');
         if (e.toString().contains('404')) {
-          await prefs.clear();
+          await prefs.remove('isLoggedIn');
+          await prefs.remove('driverId');
+          await prefs.remove('isKycSubmitted');
           if (mounted) Navigator.pushReplacementNamed(context, '/login');
         } else {
           if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
