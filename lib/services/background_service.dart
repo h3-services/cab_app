@@ -20,17 +20,17 @@ Future<void> initializeService() async {
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
       isForegroundMode: true,
-      autoStart: true,
+      autoStart: false,
       notificationChannelId: 'location_tracking',
       initialNotificationTitle: 'Chola Cabs Driver',
       initialNotificationContent: 'Location tracking active',
       foregroundServiceNotificationId: 888,
-      autoStartOnBoot: true,
+      autoStartOnBoot: false,
     ),
     iosConfiguration: IosConfiguration(
       onForeground: onStart,
       onBackground: onIosBackground,
-      autoStart: true,
+      autoStart: false,
     ),
   );
 
