@@ -59,31 +59,24 @@ class AlarmManagerLocationService {
 
       Position position;
       try {
-        // Try high accuracy first
         position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 15),
         );
-        debugPrint('[Alarm] ✅ Got high accuracy position');
+        debugPrint('[Alarm] ✅ Got position: ${position.latitude}, ${position.longitude}');
       } catch (e) {
-        debugPrint('[Alarm] ⚠️ High accuracy failed: $e, trying medium...');
-        try {
-          // Fallback to medium accuracy
-          position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.medium,
-            timeLimit: const Duration(seconds: 10),
+        debugPrint('[Alarm] ⚠️ High accuracy failed: $e, trying last known...');
+        position = await Geolocator.getLastKnownPosition() ?? 
+          await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.low,
+            forceAndroidLocationManager: true,
           );
-          debugPrint('[Alarm] ✅ Got medium accuracy position');
-        } catch (e2) {
-          debugPrint('[Alarm] ⚠️ Medium failed: $e2, using last known...');
-          // Final fallback
-          position = await Geolocator.getLastKnownPosition() ?? 
-            await Geolocator.getCurrentPosition(
-              desiredAccuracy: LocationAccuracy.low,
-              forceAndroidLocationManager: true,
-            );
-          debugPrint('[Alarm] ✅ Got fallback position');
-        }
+        debugPrint('[Alarm] ✅ Got fallback position: ${position.latitude}, ${position.longitude}');
+      }
+
+      if (position.latitude == 0.0 && position.longitude == 0.0) {
+        debugPrint('[Alarm] ❌ Invalid position (0,0), skipping');
+        return;
       }
 
       await _sendLocationToBackend(driverId, position);
