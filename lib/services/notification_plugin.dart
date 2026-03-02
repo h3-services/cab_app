@@ -3,11 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 import 'package:volume_controller/volume_controller.dart';
 import 'audio_service.dart';
-
 class NotificationPlugin {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
-
   static Future<void> initialize() async {
     try {
       // Create notification channels WITHOUT sound (we'll play audio separately)
@@ -19,7 +17,6 @@ class NotificationPlugin {
         playSound: false,
         enableVibration: false,
       );
-      
       const AndroidNotificationChannel terminatedChannel = AndroidNotificationChannel(
         'terminated_location_v2',
         'Terminated State Location',
@@ -31,7 +28,6 @@ class NotificationPlugin {
         enableLights: true,
         showBadge: true,
       );
-
       const AndroidNotificationChannel tripChannel = AndroidNotificationChannel(
         'trip_notifications_v3',
         'Trip Notifications',
@@ -43,35 +39,25 @@ class NotificationPlugin {
         enableLights: true,
         showBadge: true,
       );
-
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      
       await androidPlugin?.createNotificationChannel(locationChannel);
       await androidPlugin?.createNotificationChannel(terminatedChannel);
       await androidPlugin?.createNotificationChannel(tripChannel);
-
       // Initialize plugin
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
-      
       const InitializationSettings initializationSettings = InitializationSettings(
         android: initializationSettingsAndroid,
       );
-      
       await _notificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          debugPrint('Notification clicked: ${response.payload}');
-        },
+          },
       );
-
-      debugPrint('[NotificationPlugin] Initialized successfully');
-    } catch (e) {
-      debugPrint('[NotificationPlugin] Initialization error: $e');
-    }
+      } catch (e) {
+      }
   }
-
   static Future<void> showLocationCapturedNotification({
     required double latitude,
     required double longitude,
@@ -79,12 +65,9 @@ class NotificationPlugin {
   }) async {
     try {
       await AudioService.playNotificationSound();
-      
       final now = DateTime.now();
       final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-      
       final notificationId = 1000 + (now.millisecondsSinceEpoch % 1000);
-      
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'terminated_location_v2',
         'Location Updates',
@@ -102,22 +85,17 @@ class NotificationPlugin {
         visibility: NotificationVisibility.public,
         category: AndroidNotificationCategory.alarm,
       );
-
       final NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
-      
       await _notificationsPlugin.show(
         notificationId,
         '📍 Location Captured - $source',
         'Time: $timeStr | Lat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
         platformDetails,
       );
-      
       debugPrint('[NotificationPlugin] ✅ Location notification shown (ID: $notificationId, Source: $source)');
     } catch (e) {
-      debugPrint('[NotificationPlugin] ❌ Location notification error: $e');
-    }
+      }
   }
-
   // Backward compatibility
   static Future<void> showTerminatedLocationNotification({
     required double latitude,
@@ -129,7 +107,6 @@ class NotificationPlugin {
       source: 'Background',
     );
   }
-
   static Future<void> showNotification({
     required int id,
     required String title,
@@ -138,12 +115,9 @@ class NotificationPlugin {
   }) async {
     try {
       if (title.isEmpty || title == 'Notification' || body.isEmpty) {
-        debugPrint('[NotificationPlugin] Skipping empty/default notification');
         return;
       }
-      
       await AudioService.playNotificationSound();
-      
       final AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'trip_notifications_v3',
@@ -169,10 +143,8 @@ class NotificationPlugin {
         ),
         vibrationPattern: Int64List.fromList([0, 1000, 500, 1000, 500, 1000]),
       );
-
       final NotificationDetails platformChannelSpecifics =
           NotificationDetails(android: androidPlatformChannelSpecifics);
-
       await _notificationsPlugin.show(
         id,
         title,
@@ -180,35 +152,26 @@ class NotificationPlugin {
         platformChannelSpecifics,
         payload: payload,
       );
-      
-      debugPrint('[NotificationPlugin] Notification shown: $title');
-    } catch (e) {
-      debugPrint('[NotificationPlugin] Show notification error: $e');
-    }
+      } catch (e) {
+      }
   }
-
   static Future<void> cancelNotification(int id) async {
     try {
       await _notificationsPlugin.cancel(id);
     } catch (e) {
-      debugPrint('[NotificationPlugin] Cancel notification error: $e');
-    }
+      }
   }
-
   static Future<void> cancelAllNotifications() async {
     try {
       await _notificationsPlugin.cancelAll();
     } catch (e) {
-      debugPrint('[NotificationPlugin] Cancel all notifications error: $e');
-    }
+      }
   }
-
   // Test notification to verify notifications are working
   static Future<void> showTestNotification() async {
     try {
       // Play NEW audio
       await AudioService.playNotificationSound();
-      
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'terminated_location_v2',
@@ -224,20 +187,15 @@ class NotificationPlugin {
         showWhen: true,
         icon: '@mipmap/ic_launcher',
       );
-
       const NotificationDetails platformChannelSpecifics =
           NotificationDetails(android: androidPlatformChannelSpecifics);
-
       await _notificationsPlugin.show(
         888,
         '🔔 Test Notification',
         'This is a test notification to verify notifications are working',
         platformChannelSpecifics,
       );
-      
-      print('[NotificationPlugin] ✅ Test notification shown');
-    } catch (e) {
-      print('[NotificationPlugin] ❌ Test notification error: $e');
-    }
+      } catch (e) {
+      }
   }
 }

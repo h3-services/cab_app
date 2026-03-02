@@ -8,18 +8,14 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../admin/device_blocked_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
-
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
-
   Future<String> _getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
     try {
@@ -31,36 +27,29 @@ class _LoginScreenState extends State<LoginScreen> {
         return iosInfo.identifierForVendor ?? 'unknown';
       }
     } catch (e) {
-      debugPrint('Error getting device ID: $e');
-    }
+      }
     return 'unknown';
   }
-
   Future<void> _checkAndUpdateFcmToken(String driverId, Map<String, dynamic> driverData) async {
     try {
       final currentFcmToken = await FirebaseMessaging.instance.getToken();
       final storedFcmToken = driverData['fcm_token']?.toString();
-      
       if (currentFcmToken != null && currentFcmToken != storedFcmToken) {
         await ApiService.addFcmToken(driverId, currentFcmToken);
       }
     } catch (e) {
-      debugPrint('Error updating FCM token: $e');
-    }
+      }
   }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final padding = MediaQuery.of(context).padding;
     final viewInsets = MediaQuery.of(context).viewInsets;
-
     final availableHeight =
         screenHeight - padding.top - padding.bottom - viewInsets.bottom;
     final logoSize = screenWidth * 0.5;
     final horizontalPadding = screenWidth * 0.08;
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Container(
@@ -229,18 +218,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _isLoading ? null : () async {
                                 if (_phoneController.text.length == 10) {
                                   setState(() => _isLoading = true);
-                                  
                                   try {
                                     final response = await ApiService.checkPhoneExists(_phoneController.text);
-                                    
                                     if (response['exists'] == true) {
                                       // Existing user - login directly
                                       final currentDeviceId = await _getDeviceId();
                                       final driverId = response['driver_id'].toString();
-                                      
                                       final driverData = await ApiService.getDriverDetails(driverId);
                                       final registeredDeviceId = driverData['device_id']?.toString();
-                                      
                                       if (registeredDeviceId != null && 
                                           registeredDeviceId.isNotEmpty && 
                                           registeredDeviceId != 'unknown' &&
@@ -252,29 +237,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                         );
                                         return;
                                       }
-                                      
                                       if (registeredDeviceId == null || registeredDeviceId.isEmpty || registeredDeviceId == 'unknown') {
                                         await ApiService.updateDriverDeviceId(driverId, currentDeviceId);
                                       }
-                                      
                                       await _checkAndUpdateFcmToken(driverId, driverData);
-                                      
                                       final prefs = await SharedPreferences.getInstance();
                                       await prefs.setString('phoneNumber', _phoneController.text);
                                       await prefs.setString('driverId', driverId);
                                       await prefs.setBool('isLoggedIn', true);
                                       await prefs.setBool('isKycSubmitted', true);
-                                      
                                       // Cache driver data for profile, personal details, KYC
                                       await prefs.setString('driver_data', jsonEncode(driverData));
                                       await prefs.setString('vehicleId', driverData['vehicle_id']?.toString() ?? '');
-                                      
                                       if (!mounted) return;
                                       Navigator.pushReplacementNamed(context, '/dashboard');
                                     } else {
                                       // New user - send OTP and go to verification
                                       await ApiService.sendOtp(_phoneController.text);
-                                      
                                       if (!mounted) return;
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
@@ -337,9 +316,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-
-
   @override
   void dispose() {
     _phoneController.dispose();

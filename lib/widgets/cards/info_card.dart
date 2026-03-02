@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-
 class InfoCard extends StatelessWidget {
   final String title;
   final Widget child;
   final EdgeInsetsGeometry? padding;
-  
   const InfoCard({
     super.key,
     required this.title,
     required this.child,
     this.padding,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(

@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
-
 class PaymentSuccessDialog extends StatelessWidget {
   final String amount;
   final String paymentTime;
   final String paymentMethod;
-
   const PaymentSuccessDialog({
     super.key,
     required this.amount,
     required this.paymentTime,
     required this.paymentMethod,
   });
-
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -85,7 +82,6 @@ class PaymentSuccessDialog extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildDetailRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

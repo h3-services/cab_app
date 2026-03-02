@@ -1,28 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
-
 class TripDrawer extends StatefulWidget {
   final VoidCallback onMenuItemTap;
   final bool blockNavigation;
-  
   const TripDrawer({super.key, required this.onMenuItemTap, this.blockNavigation = false});
-
   @override
   State<TripDrawer> createState() => _TripDrawerState();
 }
-
 class _TripDrawerState extends State<TripDrawer> {
   String _name = 'Driver';
   String? _profilePhotoPath;
   String? _profilePhotoUrl;
-
   @override
   void initState() {
     super.initState();
     _loadUserData();
   }
-
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -31,7 +25,6 @@ class _TripDrawerState extends State<TripDrawer> {
       _profilePhotoUrl = prefs.getString('profile_photo_url');
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -91,7 +84,6 @@ class _TripDrawerState extends State<TripDrawer> {
       ),
     );
   }
-
   Widget _buildDrawerMenuItem(BuildContext context, IconData icon, String title, {bool isSignOut = false}) {
     return Container(
       padding: const EdgeInsets.all(16),

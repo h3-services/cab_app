@@ -2,35 +2,28 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
-
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
     _checkLoginStatus();
   }
-
   Future<void> _checkLoginStatus() async {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-
     final prefs = await SharedPreferences.getInstance();
     final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     final String? driverId = prefs.getString('driverId');
     final bool isKycSubmitted = prefs.getBool('isKycSubmitted') ?? false;
-
     if (!isLoggedIn || driverId == null || driverId.isEmpty) {
       if (mounted) Navigator.pushReplacementNamed(context, '/login');
       return;
     }
-
     if (isKycSubmitted) {
       try {
         final driverData = await ApiService.getDriverDetails(driverId).timeout(
@@ -39,14 +32,12 @@ class _SplashScreenState extends State<SplashScreen> {
         );
         final bool isApproved = driverData['is_approved'] == true;
         final String kycVerified = (driverData['kyc_verified'] ?? '').toString().toLowerCase();
-
         if (isApproved && (kycVerified == 'verified' || kycVerified == 'approved')) {
           if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
         } else {
           if (mounted) Navigator.pushReplacementNamed(context, '/approval-pending');
         }
       } catch (e) {
-        debugPrint('Status Check Failed: $e');
         if (e.toString().contains('404')) {
           await prefs.remove('isLoggedIn');
           await prefs.remove('driverId');
@@ -60,7 +51,6 @@ class _SplashScreenState extends State<SplashScreen> {
       if (mounted) Navigator.pushReplacementNamed(context, '/personal-details');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

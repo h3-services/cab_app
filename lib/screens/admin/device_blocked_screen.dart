@@ -2,30 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../constants/app_colors.dart';
 import '../../services/device_service.dart';
-
 class DeviceBlockedScreen extends StatefulWidget {
   const DeviceBlockedScreen({super.key});
-
   @override
   State<DeviceBlockedScreen> createState() => _DeviceBlockedScreenState();
 }
-
 class _DeviceBlockedScreenState extends State<DeviceBlockedScreen> {
   String _deviceId = 'Loading...';
-
   @override
   void initState() {
     super.initState();
     _loadDeviceId();
   }
-
   Future<void> _loadDeviceId() async {
     final deviceId = await DeviceService.getDeviceId();
     setState(() {
       _deviceId = deviceId;
     });
   }
-
   void _copyDeviceId() {
     Clipboard.setData(ClipboardData(text: _deviceId));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -36,7 +30,6 @@ class _DeviceBlockedScreenState extends State<DeviceBlockedScreen> {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,12 +1,9 @@
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'api_service.dart';
-
 class RazorpayService {
   static const String _razorpayKey = 'rzp_live_SKLFjywg4u7nzw';
-  
   late Razorpay _razorpay;
-
   RazorpayService({
     required Function(PaymentSuccessResponse) onSuccess,
     required Function(PaymentFailureResponse) onError,
@@ -17,7 +14,6 @@ class RazorpayService {
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, onError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, onWallet);
   }
-
   void openCheckout({
     required double amount,
     required String name,
@@ -40,15 +36,11 @@ class RazorpayService {
           'color': '#66BB6A'
         },
       };
-
-      debugPrint('Opening Razorpay with options: $options');
       _razorpay.open(options);
     } catch (e) {
-      debugPrint('Razorpay error: $e');
       rethrow;
     }
   }
-
   static Future<bool> savePaymentDetails({
     required double amount,
     required String razorpayPaymentId,
@@ -67,11 +59,9 @@ class RazorpayService {
       );
       return true;
     } catch (e) {
-      debugPrint('Error saving payment: $e');
       return false;
     }
   }
-
   void dispose() {
     _razorpay.clear();
   }

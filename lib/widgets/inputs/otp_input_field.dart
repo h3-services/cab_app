@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 class OtpInputField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final Function(String) onChanged;
-
   const OtpInputField({
     super.key,
     required this.controller,
     required this.focusNode,
     required this.onChanged,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(

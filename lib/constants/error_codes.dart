@@ -39,6 +39,5 @@ class ErrorCodes {
     3007: 'RC expiry date mismatch or expired',
     3008: 'FC expiry date mismatch or expired',
   };
-
   static String getMessage(int code) => errors[code] ?? 'Unknown error';
 }

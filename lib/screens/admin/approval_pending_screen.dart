@@ -4,19 +4,15 @@ import '../../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
-
 class ApprovalPendingScreen extends StatefulWidget {
   const ApprovalPendingScreen({super.key});
-
   @override
   State<ApprovalPendingScreen> createState() => _ApprovalPendingScreenState();
 }
-
 class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   bool _isLoading = false;
   Map<String, dynamic>? _driverProfileData;
   Timer? _autoReloadTimer;
-
   /// Save all driver and vehicle data to SharedPreferences
   Future<void> _saveDriverDataToPrefs(
       SharedPreferences prefs, Map<String, dynamic> driverData) async {
@@ -40,7 +36,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
     if (driverData['licence_expiry_date'] != null)
       await prefs.setString(
           'licenceExpiry', driverData['licence_expiry_date'].toString());
-
     // Vehicle data
     final vehicle = driverData['vehicle'];
     if (vehicle != null && vehicle is Map) {
@@ -71,55 +66,39 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
         await prefs.setString(
             'fcExpiryDate', vehicle['fc_expiry_date'].toString());
     }
-
-    debugPrint("=== Saved driver data to SharedPreferences ===");
-  }
-
+    }
   Future<void> _checkStatus() async {
     setState(() {
       _isLoading = true;
     });
-
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? driverId = prefs.getString('driverId');
-
       if (driverId != null) {
         final driverData = await ApiService.getDriverDetails(driverId);
         final bool isApproved = driverData['is_approved'] == true;
         final String kycVerified =
             (driverData['kyc_verified'] ?? '').toString().toLowerCase();
-
-        debugPrint(
-            "Status Check: isApproved=$isApproved, kycStatus=$kycVerified");
-
         // If vehicle data not in driver response, fetch it separately
         if (driverData['vehicle'] == null ||
             (driverData['vehicle'] is Map &&
                 (driverData['vehicle'] as Map).isEmpty)) {
           final String? vehicleId = prefs.getString('vehicleId');
           if (vehicleId != null && vehicleId.isNotEmpty) {
-            debugPrint("Fetching vehicle details for vehicleId: $vehicleId");
             final vehicleData = await ApiService.getVehicleByDriverId(driverId);
             if (vehicleData != null) {
               driverData['vehicle'] = vehicleData;
-              debugPrint("Vehicle data fetched and merged: $vehicleData");
-            }
+              }
           }
         }
-
         _driverProfileData = driverData;
-
         // Save all driver and vehicle data to SharedPreferences for persistence
         await _saveDriverDataToPrefs(prefs, driverData);
-
         if (kycVerified == 'rejected') {
           List<String> errorFields = [];
-
           final errors = driverData['errors'];
           if (errors != null) {
             Map<String, dynamic>? details;
-
             if (errors is Map) {
               if (errors['details'] != null && errors['details'] is Map) {
                 details = errors['details'];
@@ -129,7 +108,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                     .remove('details'); // Clean up if it was a nested structure
               }
             }
-
             if (details != null) {
               details.forEach((code, errorData) {
                 int codeInt = int.tryParse(code.toString()) ?? 0;
@@ -189,13 +167,8 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
               });
             }
           }
-
           // Directly navigate to fix issues instead of showing rejection screen
           if (mounted) {
-            debugPrint(
-                "Application REJECTED - Navigating directly to fix issues");
-            debugPrint("Error Fields: $errorFields");
-
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Application Rejected. Please fix the issues.'),
@@ -203,7 +176,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                 duration: Duration(seconds: 2),
               ),
             );
-
             // Navigate directly to personal details to fix issues
             _navigateToFixIssues(errorFields);
           }
@@ -244,25 +216,20 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       }
     }
   }
-
   /// Navigate directly to personal details to fix rejected issues
   Future<void> _navigateToFixIssues(List<String> errorFields) async {
     // Stop auto-reload timer before navigating
     _autoReloadTimer?.cancel();
-    
     final prefs = await SharedPreferences.getInstance();
-
     // Use fresh API data if available, otherwise fall back to Prefs
     final driver = _driverProfileData ?? {};
     final vehicle = driver['vehicle'] ?? {};
-
     // Helper to get value from either source
     String val(String key, String prefKey) {
       return (driver[key] ?? driver[prefKey] ?? prefs.getString(prefKey))
               ?.toString() ??
           '';
     }
-
     // Vehicle helper
     String vVal(String key, String prefKey) {
       if (vehicle is Map) {
@@ -272,7 +239,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       }
       return (prefs.getString(prefKey))?.toString() ?? '';
     }
-
     final Map<String, dynamic> args = {
       'isEditing': true,
       'driverId': val('driver_id', 'driverId'),
@@ -284,7 +250,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       'licenceNumber': val('licence_number', 'licenseNumber'),
       'aadharNumber': val('aadhaar_number', 'aadhaarNumber'),
       'licenceExpiry': val('licence_expiry_date', 'licenceExpiry'),
-
       // Vehicle details
       'vehicleType': vVal('vehicle_type', 'vehicleType'),
       'vehicleBrand': vVal('vehicle_brand', 'vehicleBrand') == ''
@@ -300,27 +265,22 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       'seatingCapacity': vVal('seating_capacity', 'seatingCapacity'),
       'rcExpiryDate': vVal('rc_expiry_date', 'rcExpiryDate'),
       'fcExpiryDate': vVal('fc_expiry_date', 'fcExpiryDate'),
-
       'errorFields': errorFields,
     };
-
     if (mounted) {
       // Navigate to personal-details to fix the rejected issues
       Navigator.pushReplacementNamed(context, '/personal-details',
           arguments: args);
     }
   }
-
   @override
   void initState() {
     super.initState();
     _checkStatus();
-    
     // Auto-reload every 2 seconds
     _autoReloadTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       _checkStatus();
     });
-    
     // Listen for foreground FCM messages to trigger status check
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final type = message.data['type'] as String?;
@@ -329,13 +289,11 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       }
     });
   }
-
   @override
   void dispose() {
     _autoReloadTimer?.cancel();
     super.dispose();
   }
-
 @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -444,30 +402,20 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       ),
     );
   }
-
   /// Navigate to Personal Details screen to review/update all AI-entered data
   Future<void> _handleUpdateApplication() async {
     // Stop auto-reload timer before navigating
     _autoReloadTimer?.cancel();
-    
     final prefs = await SharedPreferences.getInstance();
-
     // Use fresh API data if available, otherwise fall back to Prefs
     final driver = _driverProfileData ?? {};
     final vehicle = driver['vehicle'] ?? {};
-
-    debugPrint("\n=== DEBUG: NAVIGATING TO PERSONAL DETAILS ===");
-    debugPrint("Driver Data: $driver");
-    debugPrint("Vehicle Data: $vehicle");
-    debugPrint("==============================================\n");
-
     // Helper to get value from either source
     String val(String key, String prefKey) {
       return (driver[key] ?? driver[prefKey] ?? prefs.getString(prefKey))
               ?.toString() ??
           '';
     }
-
     // Vehicle helper
     String vVal(String key, String prefKey) {
       if (vehicle is Map) {
@@ -477,7 +425,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       }
       return (prefs.getString(prefKey))?.toString() ?? '';
     }
-
     final Map<String, dynamic> args = {
       'isEditing': true,
       'driverId': val('driver_id', 'driverId'),
@@ -489,7 +436,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       'licenceNumber': val('licence_number', 'licenseNumber'),
       'aadharNumber': val('aadhaar_number', 'aadhaarNumber'),
       'licenceExpiry': val('licence_expiry_date', 'licenceExpiry'),
-
       // Vehicle details
       'vehicleType': vVal('vehicle_type', 'vehicleType'),
       'vehicleBrand': vVal('vehicle_brand', 'vehicleBrand') == ''
@@ -505,10 +451,8 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
       'seatingCapacity': vVal('seating_capacity', 'seatingCapacity'),
       'rcExpiryDate': vVal('rc_expiry_date', 'rcExpiryDate'),
       'fcExpiryDate': vVal('fc_expiry_date', 'fcExpiryDate'),
-
       'errorFields': [], // No specific error fields for general update
     };
-
     if (mounted) {
       // Navigate to personal-details to show all AI-entered data
       Navigator.pushNamed(context, '/personal-details', arguments: args);

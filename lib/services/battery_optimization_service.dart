@@ -1,14 +1,11 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
-
 class BatteryOptimizationService {
   static Future<bool> isIgnoringBatteryOptimizations() async {
     return await Permission.ignoreBatteryOptimizations.isGranted;
   }
-
   static Future<void> requestIgnoreBatteryOptimizations(BuildContext context) async {
     final status = await Permission.ignoreBatteryOptimizations.status;
-    
     if (!status.isGranted) {
       final shouldRequest = await showDialog<bool>(
         context: context,
@@ -31,13 +28,11 @@ class BatteryOptimizationService {
           ],
         ),
       );
-
       if (shouldRequest == true) {
         await Permission.ignoreBatteryOptimizations.request();
       }
     }
   }
-
   static Future<void> ensureBatteryOptimizationDisabled(BuildContext context) async {
     final isIgnoring = await isIgnoringBatteryOptimizations();
     if (!isIgnoring) {

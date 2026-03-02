@@ -6,14 +6,11 @@ import '../../widgets/widgets.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
-
 class KycUploadScreen extends StatefulWidget {
   const KycUploadScreen({super.key});
-
   @override
   State<KycUploadScreen> createState() => _KycUploadScreenState();
 }
-
 class _KycUploadScreenState extends State<KycUploadScreen> {
   final Map<String, bool> _uploadedDocuments = {
     'Driving License': false,
@@ -28,7 +25,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     'Right Side View': false,
     'Inside View': false,
   };
-
   final Map<String, File?> _uploadedImages = {};
   Map<String, dynamic>? userData;
   bool _isEditing = false;
@@ -36,31 +32,23 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   bool _isTestMode = false;
   List<String> _errorFields = [];
   final Map<String, String> _errorMessages = {};
-
   bool get _allDocumentsUploaded =>
       _uploadedDocuments.values.every((uploaded) => uploaded);
-
   bool _isInitialized = false;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInitialized) return;
     _isInitialized = true;
-
     userData =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-
     _isEditing = userData?['isEditing'] == true;
-
     if (userData?['errorFields'] != null) {
       _errorFields = List<String>.from(userData!['errorFields']);
     }
-
     if (_isEditing) {
       setState(() {
         _uploadedDocuments.updateAll((key, value) => true);
-
         for (var field in _errorFields) {
           if (_uploadedDocuments.containsKey(field)) {
             _uploadedDocuments[field] = false;
@@ -69,7 +57,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       });
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -263,7 +250,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                             bool allSelected =
                                 _uploadedDocuments.length == 11 &&
                                     _uploadedDocuments.values.every((v) => v);
-
                             if (allSelected) {
                               _submitAllDocuments();
                             } else {
@@ -306,12 +292,10 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       ),
     );
   }
-
   Widget _buildUploadItem(String title, String subtitle, IconData icon) {
     bool isSelected = _uploadedDocuments[title] ?? false;
     File? selectedFile = _uploadedImages[title];
     bool hasError = _errorFields.contains(title) && !isSelected;
-
     return GestureDetector(
       onTap: () async {
         if (_isTestMode) {
@@ -325,7 +309,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
               });
               index++;
             }
-
             for (var key in _uploadedDocuments.keys) {
               if (index >= images.length) break;
               if (key != title && _uploadedDocuments[key] == false) {
@@ -430,38 +413,30 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       ),
     );
   }
-
   Future<void> _submitAllDocuments() async {
     setState(() {
       _isSubmitting = true;
     });
-
     try {
       String driverId = userData?['driverId']?.toString() ?? '';
       String vehicleId = userData?['vehicleId']?.toString() ?? '';
-
       if (_isEditing) {
         if (driverId.isEmpty) {
           throw Exception("Cannot update: Missing driver ID");
         }
-
         // Fetch vehicleId if missing
         if (vehicleId.isEmpty) {
-          debugPrint('vehicleId is empty, fetching from API...');
           final vehicles = await ApiService.getVehiclesByDriver(driverId);
-          debugPrint('Fetched vehicles: $vehicles');
           if (vehicles.isNotEmpty) {
             vehicleId = vehicles[0]['vehicle_id']?.toString() ?? '';
             if (vehicleId.isEmpty) {
               vehicleId = vehicles[0]['id']?.toString() ?? '';
             }
-            debugPrint('Using vehicleId: $vehicleId');
-          }
+            }
           if (vehicleId.isEmpty) {
             throw Exception('Vehicle ID not found for driver');
           }
         }
-
         // Only update driver text details if we have valid data to prevent wiping
         if ((userData?['name']?.toString().isNotEmpty ?? false) &&
             (userData?['email']?.toString().isNotEmpty ?? false)) {
@@ -475,12 +450,10 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             licenceExpiry: userData?['licenceExpiry'] ?? '',
           );
         }
-
         // Only update vehicle details if we have valid data
         if ((userData?['vehicleType']?.toString().isNotEmpty ?? false)) {
           if (vehicleId.isEmpty) {
-            debugPrint('Skipping vehicle update: vehicleId is empty');
-          } else {
+            } else {
             await ApiService.updateVehicle(
               vehicleId: vehicleId,
               vehicleType: userData?['vehicleType'] ?? '',
@@ -495,9 +468,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             );
           }
         } else {
-          debugPrint("Skipping vehicle update: No vehicle data provided");
-        }
-
+          }
         final prefs = await SharedPreferences.getInstance();
         if ((userData?['name']?.toString().isNotEmpty ?? false)) {
           await prefs.setString('name', userData?['name'] ?? '');
@@ -512,19 +483,13 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
               'fcExpiryDate', userData?['fcExpiryDate'] ?? '');
         }
       } else if (driverId.isEmpty) {
-        debugPrint("ERROR: Driver ID missing in KYC screen flow.");
         throw Exception(
             'Driver ID missing. Please restart the registration process.');
       }
-
       if (driverId.isEmpty) throw Exception('Driver ID missing. Restart flow.');
-
       for (var entry in _uploadedImages.entries) {
         String title = entry.key;
         File file = entry.value!;
-
-        debugPrint('Uploading $title...');
-
         switch (title) {
           case 'Driving License':
             if (_isEditing) {
@@ -614,18 +579,13 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             break;
         }
       }
-
       if (_isEditing) {
-        debugPrint('Clearing previous errors...');
         await ApiService.clearDriverErrors(driverId);
-        debugPrint('Updating KYC status to pending for re-review...');
         await ApiService.updateKycStatus(driverId, 'pending');
       }
-
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isKycSubmitted', true);
       await prefs.setBool('isLoggedIn', true);
-
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/approval-pending');
       }

@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
-
 class TripDetailsDialog extends StatelessWidget {
   final Map<String, dynamic> trip;
-
   const TripDetailsDialog({
     super.key,
     required this.trip,
   });
-
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -138,7 +135,6 @@ class TripDetailsDialog extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildLocationSection() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -224,7 +220,6 @@ class TripDetailsDialog extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildCompactSection(String title, List<Widget> details) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +246,6 @@ class TripDetailsDialog extends StatelessWidget {
       ],
     );
   }
-
   Widget _buildCompactRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -282,7 +276,6 @@ class TripDetailsDialog extends StatelessWidget {
       ),
     );
   }
-
   String _formatDateTime(dynamic dateStr) {
     if (dateStr == null) return '-';
     try {
@@ -292,7 +285,6 @@ class TripDetailsDialog extends StatelessWidget {
       return dateStr.toString();
     }
   }
-
   String _getTripStatus() {
     final status = (trip['trip_status'] ?? trip['status'] ?? '').toString().toUpperCase();
     if (status == 'APPROVED' || status == 'PENDING') {

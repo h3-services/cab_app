@@ -8,20 +8,15 @@ import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../services/image_picker_service.dart';
 import 'trip_details_input_screen.dart';
-
 class TripStartScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
-
   const TripStartScreen({super.key, required this.tripData});
-
   @override
   State<TripStartScreen> createState() => _TripStartScreenState();
 }
-
 class _TripStartScreenState extends State<TripStartScreen> {
   final TextEditingController _startingKmController = TextEditingController();
   File? _odometerImage;
-
   Widget _buildOdometerUpload() {
     return GestureDetector(
       onTap: () async {
@@ -89,7 +84,6 @@ class _TripStartScreenState extends State<TripStartScreen> {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -200,10 +194,8 @@ class _TripStartScreenState extends State<TripStartScreen> {
                           );
                           return;
                         }
-
                         final tripId = widget.tripData['trip_id'];
                         final requestId = widget.tripData['request_id'];
-
                         try {
                           showDialog(
                             context: context,
@@ -211,29 +203,23 @@ class _TripStartScreenState extends State<TripStartScreen> {
                             builder: (c) => const Center(
                                 child: CircularProgressIndicator()),
                           );
-
                           if (tripId != null) {
                             await ApiService.updateOdometerStart(
                                 tripId.toString(),
                                 int.parse(_startingKmController.text));
-
                             await ApiService.uploadOdometerStart(
                                 tripId.toString(), _odometerImage!);
-
                               if (requestId != null) {
                                 try {
                                   await ApiService.updateRequestStatus(
                                       requestId.toString(), "STARTED");
                                 } catch (e) {
-                                  debugPrint(
-                                      "Syncing request status failed: $e");
-                                }
+                                  }
                               }
                             } else {
                               throw Exception(
                                   "Missing Trip Information: trip_id is required");
                             }
-
                             if (context.mounted) {
                               Navigator.pop(context);
                               Navigator.pop(context, tripId?.toString());
@@ -241,7 +227,6 @@ class _TripStartScreenState extends State<TripStartScreen> {
                           } catch (e) {
                             if (context.mounted) {
                               Navigator.pop(context);
-
                               if (e.toString().contains(
                                   "Cannot start trip with status STARTED")) {
                                 if (requestId != null) {
@@ -258,7 +243,6 @@ class _TripStartScreenState extends State<TripStartScreen> {
                                 );
                                 return;
                               }
-
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                     content: Text('Failed to start trip: $e')),
@@ -298,22 +282,17 @@ class _TripStartScreenState extends State<TripStartScreen> {
     );
   }
 }
-
 class TripCompletedScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
-
   const TripCompletedScreen(
       {super.key, required this.tripData, required this.startingKm});
-
   @override
   State<TripCompletedScreen> createState() => _TripCompletedScreenState();
 }
-
 class _TripCompletedScreenState extends State<TripCompletedScreen> {
   final TextEditingController _endingKmController = TextEditingController();
   File? _odometerImage;
-
   Widget _buildOdometerUpload() {
     return GestureDetector(
       onTap: () async {
@@ -381,7 +360,6 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -478,7 +456,6 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                           );
                           return;
                         }
-
                         try {
                           final endingKm =
                               num.tryParse(_endingKmController.text);
@@ -489,7 +466,6 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                             );
                             return;
                           }
-                          
                           // Validate ending KM is greater than starting KM
                           final startingKm = num.tryParse(widget.startingKm) ?? 0;
                           if (endingKm <= startingKm) {
@@ -565,25 +541,20 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                             );
                             return;
                           }
-
                             showDialog(
                               context: context,
                               barrierDismissible: false,
                               builder: (c) => const Center(
                                   child: CircularProgressIndicator()),
                             );
-
                             final tripId = widget.tripData['trip_id'];
                             if (tripId != null) {
                               await ApiService.updateOdometerEnd(
                                   tripId.toString(), endingKm);
-
                               await ApiService.uploadOdometerEnd(
                                   tripId.toString(), _odometerImage!);
-
                               if (!context.mounted) return;
                               Navigator.pop(context);
-
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -597,7 +568,6 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                             } else {
                               if (!context.mounted) return;
                               Navigator.pop(context);
-
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -650,7 +620,6 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
     );
   }
 }
-
 class TripSummaryScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
@@ -659,7 +628,6 @@ class TripSummaryScreen extends StatefulWidget {
   final num? distance;
   final num? fare;
   final Map<String, String>? previousInputs;
-
   const TripSummaryScreen({
     super.key,
     required this.tripData,
@@ -670,40 +638,24 @@ class TripSummaryScreen extends StatefulWidget {
     this.fare,
     this.previousInputs,
   });
-
   @override
   State<TripSummaryScreen> createState() => _TripSummaryScreenState();
 }
-
 class _TripSummaryScreenState extends State<TripSummaryScreen> {
   num? fare;
   num? totalAmount;
   bool isLoading = true;
   Map<String, dynamic>? tripDetails;
-
   @override
   void initState() {
     super.initState();
-    debugPrint('\n========== TRIP SUMMARY INIT ==========');
-    debugPrint('tripDetails provided: ${widget.tripDetails != null}');
     if (widget.tripDetails != null) {
-      debugPrint('Using provided tripDetails');
-      debugPrint('Data: ${widget.tripDetails}');
-    }
-    debugPrint('=======================================\n');
+      }
     _fetchTripData();
   }
-
   Future<void> _fetchTripData() async {
     final tripId = widget.tripData['trip_id'];
-    
-    debugPrint('\n========== FETCH TRIP DATA ==========');
-    debugPrint('Trip ID: $tripId');
-    debugPrint('widget.tripDetails: ${widget.tripDetails}');
-    debugPrint('widget.tripData: ${widget.tripData}');
-    
     if (tripId == null) {
-      debugPrint('No trip_id, using fallback');
       setState(() {
         fare = widget.fare ?? 0;
         totalAmount = widget.fare ?? 0;
@@ -711,45 +663,33 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
       });
       return;
     }
-
     if (widget.tripDetails != null) {
       debugPrint('Using provided tripDetails (skipping API call)');
-      debugPrint('Full tripDetails: ${widget.tripDetails}');
       setState(() {
         tripDetails = widget.tripDetails;
         fare = tripDetails?['fare'] ?? 0;
         totalAmount = tripDetails?['total_amount'] ?? 0;
         isLoading = false;
       });
-      debugPrint('Fare: $fare, Total: $totalAmount');
-      debugPrint('Waiting Charges: ${tripDetails?['waiting_charges']}');
-      debugPrint('Toll Charges: ${tripDetails?['toll_charges']}');
-      debugPrint('=====================================\n');
       return;
     }
-
     try {
       debugPrint('Calling API: getTripDetails($tripId)');
       final details = await ApiService.getTripDetails(tripId.toString());
-      debugPrint('API Response: $details');
       setState(() {
         tripDetails = details;
         fare = details['fare'] ?? 0;
         totalAmount = details['total_amount'] ?? 0;
         isLoading = false;
       });
-      debugPrint('Fare: $fare, Total: $totalAmount');
-    } catch (e) {
-      debugPrint('API Error: $e');
+      } catch (e) {
       setState(() {
         fare = widget.fare ?? 0;
         totalAmount = widget.fare ?? 0;
         isLoading = false;
       });
     }
-    debugPrint('=====================================\n');
-  }
-
+    }
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -759,11 +699,9 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-
     final startKm = num.tryParse(widget.startingKm) ?? 0;
     final endKm = num.tryParse(widget.endingKm) ?? 0;
     final dist = widget.distance ?? (endKm - startKm).abs();
-
     return WillPopScope(
       onWillPop: () async {
         _showCloseTripDialog(context, _calculateTotalCost());
@@ -812,11 +750,6 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                         _buildSummaryRow('Distance Traveled', '${tripDetails?['distance_km'] ?? dist} km'),
                         _buildSummaryRow('Tariff Type', () {
                           final vehicleType = tripDetails?['vehicle_type'] ?? widget.tripData['vehicle_type'];
-                          debugPrint('\n=== TARIFF TYPE DEBUG ===');
-                          debugPrint('tripDetails vehicle_type: ${tripDetails?['vehicle_type']}');
-                          debugPrint('widget.tripData vehicle_type: ${widget.tripData['vehicle_type']}');
-                          debugPrint('Final vehicleType: $vehicleType');
-                          debugPrint('========================\n');
                           return vehicleType ?? 'N/A';
                         }()),
                         const SizedBox(height: 8),
@@ -936,14 +869,9 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
       ),
     );
   }
-
   double _calculateTotalCost() {
-    debugPrint('\n========== CALCULATE TOTAL ==========');
-    debugPrint('tripDetails: $tripDetails');
-    
     final backendTotal = (tripDetails?['total_amount'] ?? 0).toDouble();
     final fare = (tripDetails?['fare'] ?? 0).toDouble();
-    
     final calculatedTotal = (
       (tripDetails?['fare'] ?? 0) +
       _getChargeNumValue('waiting_charges', 'waitingCharges') +
@@ -954,22 +882,12 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
       _getChargeNumValue('toll_charges', 'tollCharge') +
       _getChargeNumValue('night_allowance', 'nightAllowance')
     ).toDouble();
-    
-    debugPrint('Backend total_amount: $backendTotal');
-    debugPrint('Fare: $fare');
-    debugPrint('Calculated total: $calculatedTotal');
-    
     if (backendTotal == fare && calculatedTotal > fare) {
       debugPrint('Using calculated total (backend bug)');
-      debugPrint('=====================================\n');
       return calculatedTotal;
     }
-    
-    debugPrint('Using backend total');
-    debugPrint('=====================================\n');
     return backendTotal > 0 ? backendTotal : calculatedTotal;
   }
-
   String _getChargeValue(String apiKey, String inputKey) {
     final apiValue = tripDetails?[apiKey];
     if (apiValue != null && apiValue != 0) {
@@ -981,7 +899,6 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     }
     return '0.00';
   }
-
   num _getChargeNumValue(String apiKey, String inputKey) {
     final apiValue = tripDetails?[apiKey];
     if (apiValue != null && apiValue != 0) {
@@ -993,7 +910,6 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
     }
     return 0;
   }
-
   Widget _buildSummaryRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -1020,7 +936,6 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
       ),
     );
   }
-
   void _showCloseTripDialog(BuildContext context, double totalCost) {
     showDialog(
       context: context,
@@ -1116,9 +1031,7 @@ class _TripSummaryScreenState extends State<TripSummaryScreen> {
                               await ApiService.completeTripStatus(
                                   tripId.toString());
                             } catch (e) {
-                              debugPrint(
-                                  'Failed to mark trip as completed: $e');
-                            }
+                              }
                           }
                           Navigator.popUntil(
                               context, ModalRoute.withName('/dashboard'));

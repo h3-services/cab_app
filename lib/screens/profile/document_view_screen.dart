@@ -4,29 +4,23 @@ import 'dart:io';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
-
 class DocumentViewScreen extends StatefulWidget {
   const DocumentViewScreen({super.key});
-
   @override
   State<DocumentViewScreen> createState() => _DocumentViewScreenState();
 }
-
 class _DocumentViewScreenState extends State<DocumentViewScreen> {
   Map<String, String> _personalDetails = {};
   Map<String, String> _vehicleDetails = {};
   Map<String, String> _documentPaths = {};
-
   @override
   void initState() {
     super.initState();
     _loadAllData();
   }
-
   Future<void> _loadAllData() async {
     final prefs = await SharedPreferences.getInstance();
     final driverId = prefs.getString('driverId');
-    
     // Load cached data first
     setState(() {
       _personalDetails = {
@@ -37,7 +31,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
         'License Number': prefs.getString('licenseNumber') ?? 'Not provided',
         'Aadhaar Number': prefs.getString('aadhaarNumber') ?? 'Not provided',
       };
-
       _vehicleDetails = {
         'Vehicle Type': prefs.getString('vehicleType') ?? 'Not provided',
         'Vehicle Brand': prefs.getString('vehicleBrand') ?? 'Not provided',
@@ -46,18 +39,15 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
         'Vehicle Color': prefs.getString('vehicleColor') ?? 'Not provided',
         'Seating Capacity': prefs.getString('seatingCapacity') ?? 'Not provided',
       };
-
       _documentPaths = {
         'Profile Photo': prefs.getString('profile_photo_path') ?? '',
         'Vehicle Photo': prefs.getString('vehicle_photo_path') ?? '',
       };
     });
-    
     // Fetch fresh data from API if driver ID exists
     if (driverId != null) {
       try {
         final driverData = await ApiService.getDriverDetails(driverId);
-        
         // Update personal details from API
         setState(() {
           _personalDetails = {
@@ -72,7 +62,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
             'Approval Status': (driverData['is_approved'] == true) ? 'Approved' : 'Pending',
           };
         });
-        
         // Update vehicle details from cached data
         final vehicleData = await ApiService.getVehicleByDriverId(driverId);
         if (vehicleData != null) {
@@ -89,7 +78,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
             };
           });
         }
-        
         // Update document URLs from cached vehicle data
         Map<String, String> apiDocuments = {
           'Profile Photo': driverData['photo_url'] ?? '',
@@ -97,7 +85,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
           'Aadhaar Document': driverData['aadhar_url'] ?? '',
           'Police Verification': driverData['police_verification_url'] ?? '',
         };
-        
         if (vehicleData != null) {
           apiDocuments.addAll({
             'Vehicle Photo': vehicleData['vehicle_front_url'] ?? '',
@@ -110,7 +97,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
             'Vehicle Inside': vehicleData['vehicle_inside_url'] ?? '',
           });
         }
-        
         // Merge with local paths, prioritizing API URLs
         setState(() {
           _documentPaths = {
@@ -118,14 +104,11 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
             ...apiDocuments,
           };
         });
-        
       } catch (e) {
-        debugPrint('Error fetching driver details: $e');
         // Continue with cached data if API fails
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,7 +135,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
       ),
     );
   }
-
   Widget _buildSection(String title, Map<String, String> details) {
     return Container(
       width: double.infinity,
@@ -185,7 +167,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
       ),
     );
   }
-
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -218,7 +199,6 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
       ),
     );
   }
-
   Widget _buildDocumentSection() {
     return Container(
       width: double.infinity,
@@ -265,11 +245,9 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
       ),
     );
   }
-
   Widget _buildDocumentCard(String title, String imagePath) {
     final bool hasImage = imagePath.isNotEmpty;
     final bool isNetworkImage = imagePath.startsWith('http');
-    
     return GestureDetector(
       onTap: hasImage ? () => _showFullScreenImage(imagePath, title) : null,
       child: Container(
@@ -354,10 +332,8 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
       ),
     );
   }
-
   void _showFullScreenImage(String imagePath, String title) {
     final bool isNetworkImage = imagePath.startsWith('http');
-    
     showDialog(
       context: context,
       builder: (context) => Dialog(

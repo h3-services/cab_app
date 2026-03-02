@@ -23,40 +23,28 @@ import 'services/permission_service.dart';
 import 'services/notification_plugin.dart';
 import 'services/connectivity_service.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
-
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    debugPrint("Warning: .env file not found: $e");
-  }
-
+    }
   // Initialize notification plugin first
   await NotificationPlugin.initialize();
-
   try {
     await Firebase.initializeApp();
     await initializeFirebaseMessaging();
   } catch (e) {
-    debugPrint("Firebase init error: $e");
-  }
-
+    }
   await ConnectivityService().initialize();
-
   runApp(const MyApp());
 }
-
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
-
   @override
   State<MyApp> createState() => _MyAppState();
 }
-
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
@@ -88,7 +76,6 @@ class _MyAppState extends State<MyApp> {
         '/dashboard': (context) => const DashboardScreen(),
         '/wallet': (context) => const WalletScreen(),
         '/profile': (context) => const ProfileScreen(),
-
         '/notifications': (context) => const NotificationsScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/approval-pending': (context) => const ApprovalPendingScreen(),

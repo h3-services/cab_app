@@ -4,24 +4,19 @@ import '../../constants/app_colors.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/common/app_drawer.dart';
 import '../../widgets/bottom_navigation.dart';
-
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
-
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
-
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _locationTracking = true;
-
   @override
   void initState() {
     super.initState();
     _loadSettings();
   }
-
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -29,13 +24,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _locationTracking = prefs.getBool('location_tracking') ?? true;
     });
   }
-
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications_enabled', _notificationsEnabled);
     await prefs.setBool('location_tracking', _locationTracking);
   }
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -133,7 +126,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
   Widget _buildSettingsSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +158,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
   }
-
   Widget _buildSwitchTile(
     String title,
     String subtitle,
@@ -210,7 +201,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
   Widget _buildActionTile(
     String title,
     String subtitle,
@@ -263,7 +253,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
   void _showHelpDialog() {
     showDialog(
       context: context,
@@ -284,7 +273,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
   void _showPrivacyDialog() {
     showDialog(
       context: context,
@@ -303,6 +291,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
-
 }

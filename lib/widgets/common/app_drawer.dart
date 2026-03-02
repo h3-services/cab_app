@@ -1,27 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
-
 class AppDrawer extends StatefulWidget {
   final bool hideProfile;
   final bool hideSettings;
   const AppDrawer({super.key, this.hideProfile = false, this.hideSettings = false});
-
   @override
   State<AppDrawer> createState() => _AppDrawerState();
 }
-
 class _AppDrawerState extends State<AppDrawer> {
   String _name = 'Driver';
   String? _profilePhotoPath;
   String? _profilePhotoUrl;
-
   @override
   void initState() {
     super.initState();
     _loadUserData();
   }
-
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -30,7 +25,6 @@ class _AppDrawerState extends State<AppDrawer> {
       _profilePhotoUrl = prefs.getString('profile_photo_url');
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -108,7 +102,6 @@ class _AppDrawerState extends State<AppDrawer> {
       ),
     );
   }
-
   Widget _buildDrawerMenuItem(
     BuildContext context,
     IconData icon,
@@ -208,10 +201,8 @@ class _AppDrawerState extends State<AppDrawer> {
                               onPressed: () async {
                                 Navigator.pop(context);
                                 final prefs = await SharedPreferences.getInstance();
-                                
                                 // Get driver ID before clearing
                                 final driverId = prefs.getString('driverId');
-                                
                                 // Save transaction data before clearing
                                 List<String>? localTxns;
                                 List<String>? adminTxns;
@@ -219,10 +210,8 @@ class _AppDrawerState extends State<AppDrawer> {
                                   localTxns = prefs.getStringList('local_transactions_$driverId');
                                   adminTxns = prefs.getStringList('admin_transactions_$driverId');
                                 }
-                                
                                 // Clear all data
                                 await prefs.clear();
-                                
                                 // Restore transaction data
                                 if (driverId != null) {
                                   if (localTxns != null) {
@@ -232,7 +221,6 @@ class _AppDrawerState extends State<AppDrawer> {
                                     await prefs.setStringList('admin_transactions_$driverId', adminTxns);
                                   }
                                 }
-                                
                                 if (context.mounted) {
                                   Navigator.pushNamedAndRemoveUntil(
                                       context, '/login', (route) => false);

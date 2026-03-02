@@ -5,13 +5,11 @@ import '../../constants/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../widgets/common/trip_drawer.dart';
 import 'trip_start_screen.dart';
-
 class TripDetailsInputScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
   final String endingKm;
   final Map<String, String>? previousInputs;
-
   const TripDetailsInputScreen({
     super.key,
     required this.tripData,
@@ -19,11 +17,9 @@ class TripDetailsInputScreen extends StatefulWidget {
     required this.endingKm,
     this.previousInputs,
   });
-
   @override
   State<TripDetailsInputScreen> createState() => _TripDetailsInputScreenState();
 }
-
 class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _distanceController;
@@ -34,18 +30,14 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
   final _petCostController = TextEditingController();
   final _tollChargeController = TextEditingController();
   final _nightAllowanceController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
-    debugPrint('TripDetailsInputScreen - tripData: ${widget.tripData}');
-    
     // Calculate distance from starting and ending KM
     final startKm = double.tryParse(widget.startingKm) ?? 0;
     final endKm = double.tryParse(widget.endingKm) ?? 0;
     final distance = (endKm - startKm).abs();
     _distanceController = TextEditingController(text: widget.previousInputs?['distance'] ?? distance.toString());
-    
     // Restore previous inputs if available
     _waitingChargesController.text = widget.previousInputs?['waitingCharges'] ?? '';
     _interStatePermitController.text = widget.previousInputs?['interStatePermit'] ?? '';
@@ -55,7 +47,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
     _tollChargeController.text = widget.previousInputs?['tollCharge'] ?? '';
     _nightAllowanceController.text = widget.previousInputs?['nightAllowance'] ?? '';
   }
-
   void _showCloseTripDialog() {
     showDialog(
       context: context,
@@ -71,7 +62,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
 // ignore: deprecated_member_use
@@ -179,7 +169,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
       ),
     );
   }
-
   Widget _buildInputField(String label, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -220,9 +209,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
       ),
     );
   }
-
-
-
   void _onCalculatePressed() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -233,12 +219,9 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
             child: CircularProgressIndicator(),
           ),
         );
-
         final tripId = widget.tripData['trip_id']?.toString() ?? widget.tripData['id']?.toString();
         final endingKm = num.tryParse(widget.endingKm);
-        
         Map<String, dynamic>? updatedTripData;
-        
         if (tripId != null && endingKm != null) {
           updatedTripData = await ApiService.updateOdometerEnd(
             tripId,
@@ -252,9 +235,7 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
             nightAllowance: _nightAllowanceController.text.isEmpty ? 0 : num.tryParse(_nightAllowanceController.text),
           );
         }
-        
         if (mounted) Navigator.pop(context);
-        
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -291,7 +272,6 @@ class _TripDetailsInputScreenState extends State<TripDetailsInputScreen> {
       }
     }
   }
-
   @override
   void dispose() {
     _distanceController.dispose();

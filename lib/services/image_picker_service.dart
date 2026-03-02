@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-
 class ImagePickerService {
   static final ImagePicker _picker = ImagePicker();
-
   static Future<File?> showImageSourceDialog(BuildContext context) async {
     // 1. Ask user for source
     final ImageSource? source = await showDialog<ImageSource>(
@@ -30,7 +28,6 @@ class ImagePickerService {
         );
       },
     );
-
     // 2. If source selected, pick image
     if (source != null) {
       try {
@@ -42,8 +39,7 @@ class ImagePickerService {
           return File(image.path);
         }
       } catch (e) {
-        debugPrint('Image Picker Error: $e');
-      }
+        }
     }
     return null;
   }

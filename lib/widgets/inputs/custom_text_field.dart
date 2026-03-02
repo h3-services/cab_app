@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 class CustomTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -11,7 +10,6 @@ class CustomTextField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final Widget? suffixIcon;
-  
   const CustomTextField({
     super.key,
     required this.label,
@@ -24,11 +22,9 @@ class CustomTextField extends StatelessWidget {
     this.onTap,
     this.suffixIcon,
   });
-
   @override
   Widget build(BuildContext context) {
     bool isRequired = label.contains('*');
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -10,19 +10,15 @@ import '../../widgets/bottom_navigation.dart';
 import '../../widgets/common/app_drawer.dart';
 import '../trip/trip_start_screen.dart';
 import '../../services/firebase_messaging_service.dart';
-
 import '../../widgets/dialogs/payment_success_dialog.dart';
 import '../../services/razorpay_service.dart';
 import '../../services/payment_service.dart';
 import '../../services/api_service.dart';
-
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
-
   @override
   State<WalletScreen> createState() => _WalletScreenState();
 }
-
 class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver {
   bool isLoading = false;
   double walletBalance = 0.0;
@@ -35,7 +31,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
   StreamSubscription<bool>? _walletUpdateSubscription;
   bool _isSelectionMode = false;
   Set<int> _selectedIndices = {};
-
   @override
   void initState() {
     super.initState();
@@ -45,19 +40,16 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
     _setupFCMListener();
     _setupWalletUpdateListener();
   }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      debugPrint('[Wallet] App resumed - refreshing wallet data');
       // Add delay to ensure background processing is complete
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) _loadWalletData();
       });
     }
   }
-
   void _setupWalletUpdateListener() {
     _walletUpdateSubscription = walletUpdateController.stream.listen((_) {
       if (mounted) {
@@ -65,7 +57,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       }
     });
   }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -73,20 +64,16 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       _loadWalletData();
     });
   }
-
   void _setupFCMListener() {
     _fcmSubscription = FirebaseMessaging.onMessage.listen((message) async {
       final type = message.data['type'];
       final title = message.notification?.title ?? '';
-      debugPrint('[Wallet] FCM message received: $type, title: $title');
-      
       if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
           title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
         await _loadWalletData();
       }
     });
   }
-
   void _initRazorpay() {
     _razorpayService = RazorpayService(
       onSuccess: _handlePaymentSuccess,
@@ -94,7 +81,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       onWallet: _handleExternalWallet,
     );
   }
-
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -103,7 +89,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
     _walletUpdateSubscription?.cancel();
     super.dispose();
   }
-
   Future<List<Map<String, dynamic>>> _safeGetAllPayments() async {
     try {
       return await PaymentService.getAllPayments();
@@ -112,24 +97,18 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       return [];
     }
   }
-
   Future<List<Map<String, dynamic>>> _safeGetWalletTransactions(String driverId) async {
     try {
       return await PaymentService.getWalletTransactions(driverId);
     } catch (e) {
-      debugPrint('Wallet transactions API failed: $e');
       return [];
     }
   }
-
   Future<void> _loadWalletData() async {
-    debugPrint('[Wallet] Loading wallet data...');
     setState(() => isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
-      debugPrint('[Wallet] Driver ID: $driverId');
-
       if (driverId != null) {
         // Load cached balance first for quick display
         final cachedDriverData = prefs.getString('driver_data');
@@ -141,29 +120,20 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
                   (num.tryParse(data['wallet_balance']?.toString() ?? '0') ?? 0)
                       .toDouble();
             });
-            debugPrint('[Wallet] Cached balance: $walletBalance');
-          } catch (e) {
-            debugPrint('[Wallet] Error parsing cached data: $e');
-          }
+            } catch (e) {
+            }
         }
-
         final results = await Future.wait([
           _safeGetAllPayments(),
           ApiService.getAllTrips(),
           _safeGetWalletTransactions(driverId),
         ]);
-
         final List payments = results[0];
         final List allTrips = results[1];
         final List walletTxns = results[2];
-
-        debugPrint('[Wallet] Payments: ${payments.length}, Trips: ${allTrips.length}, Wallet Txns: ${walletTxns.length}');
-
         List<Map<String, dynamic>> transactionHistory = [];
         int completedCount = 0;
-
         // Process Payments (Top-ups) from API
-        debugPrint('[Wallet] Processing ${payments.length} payments...');
         for (var payment in payments) {
           final paymentDriverId = payment['driver_id']?.toString();
           if (paymentDriverId == driverId) {
@@ -171,7 +141,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
                 (num.tryParse(payment['amount']?.toString() ?? '0') ?? 0) /
                     100.0;
             final type = payment['transaction_type'] ?? '';
-
             if (type == 'ONLINE') {
               transactionHistory.add({
                 'title': 'Wallet Top-up',
@@ -186,10 +155,7 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             }
           }
         }
-        debugPrint('[Wallet] Added ${transactionHistory.length} payment transactions');
-
         // Process Trips - Service fee transactions
-        debugPrint('[Wallet] Processing ${allTrips.length} trips...');
         for (var trip in allTrips) {
           if (trip is Map<String, dynamic>) {
             final tripDriverId = (trip['assigned_driver_id'] ??
@@ -199,12 +165,10 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             final tripStatus = (trip['trip_status'] ?? trip['status'] ?? '')
                 .toString()
                 .toUpperCase();
-
             bool isMyTrip = tripDriverId?.trim().toLowerCase() == driverId.trim().toLowerCase();
             bool isCompleted = tripStatus == 'COMPLETED' ||
                 tripStatus == 'CLOSED' ||
                 (trip['is_completed'] == true);
-
             if (isMyTrip && isCompleted) {
               completedCount++;
               final fare = (num.tryParse(trip['fare']?.toString() ??
@@ -215,7 +179,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
                           '0') ??
                       0)
                   .toDouble();
-
               if (fare > 0) {
                 final date = trip['completed_at'] ??
                     trip['created_at'] ??
@@ -223,7 +186,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
                 final displayDate = date.toString().split('T')[0];
                 final tripIdVisible = (trip['trip_id'] ?? 'TRIP').toString();
                 final serviceFee = fare * 0.10;
-
                 transactionHistory.add({
                   'title': 'Service Fee (10%)',
                   'date': displayDate,
@@ -238,34 +200,24 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             }
           }
         }
-        debugPrint('[Wallet] Added ${completedCount} service fee transactions');
-
         // Load local transactions (user-specific)
         final localTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
-        debugPrint('[Wallet] Loading ${localTxns.length} local transactions...');
         for (String txnStr in localTxns) {
           try {
             final txn = json.decode(txnStr) as Map<String, dynamic>;
             transactionHistory.add(txn);
           } catch (e) {
-            debugPrint('[Wallet] Error parsing local transaction: $e');
-          }
+            }
         }
-
         // Load admin transactions (user-specific)
         final adminTxns = prefs.getStringList('admin_transactions_$driverId') ?? [];
-        debugPrint('[Wallet] Loading ${adminTxns.length} admin transactions...');
         for (String txnStr in adminTxns) {
           try {
             final txn = json.decode(txnStr) as Map<String, dynamic>;
             transactionHistory.add(txn);
           } catch (e) {
-            debugPrint('[Wallet] Error parsing admin transaction: $e');
-          }
+            }
         }
-        
-        debugPrint('[Wallet] Total transactions before sort: ${transactionHistory.length}');
-        
         // Sort by date descending
         transactionHistory.sort((a, b) {
           try {
@@ -276,15 +228,11 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             return 0;
           }
         });
-
         // Fetch latest balance
         final currentApiBalance = (num.tryParse((await ApiService.getDriverDetails(driverId))['wallet_balance']?.toString() ?? '0') ?? 0).toDouble();
         await prefs.setDouble('last_known_balance', currentApiBalance);
-        
         final driverData = await ApiService.getDriverDetails(driverId);
         await prefs.setString('driver_data', jsonEncode(driverData));
-
-        debugPrint('[Wallet] Setting state with ${transactionHistory.length} transactions');
         if (mounted) {
           setState(() {
             completedTripsCount = completedCount;
@@ -292,19 +240,14 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             walletBalance = currentApiBalance;
             isLoading = false;
           });
-          debugPrint('[Wallet] State updated. Transactions count: ${transactions.length}');
-        }
+          }
       } else {
-        debugPrint('[Wallet] No driver ID found');
         if (mounted) setState(() => isLoading = false);
       }
     } catch (e, stackTrace) {
-      debugPrint('[Wallet] ERROR loading wallet data: $e');
-      debugPrint('[Wallet] Stack trace: $stackTrace');
       if (mounted) setState(() => isLoading = false);
     }
   }
-
   void _showPaymentDialog() {
     final amountController = TextEditingController();
     showDialog(
@@ -353,7 +296,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
                     color: Colors.black,
                   ),
                   decoration: const InputDecoration(
-                   
                     prefixText: '₹ ',
                     prefixStyle: TextStyle(
                       fontSize: 24,
@@ -433,24 +375,16 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    debugPrint('[Wallet] Payment success handler called');
     setState(() => isLoading = true);
-
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
-      debugPrint('[Wallet] Driver ID: $driverId');
-
       if (driverId == null || driverId.isEmpty) {
         throw Exception('Driver ID not found. Please login again.');
       }
-
       final amount = _currentPaymentAmount;
-      debugPrint('[Wallet] Payment amount: $amount');
       bool paymentRecordCreated = false;
-
       // Try to create payment record, but don't fail if API doesn't exist
       try {
         await PaymentService.createPayment(
@@ -462,28 +396,20 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
           razorpayOrderId: response.orderId ?? 'N/A',
           razorpaySignature: response.signature ?? 'N/A',
         );
-        debugPrint('[Wallet] Payment record created successfully');
         paymentRecordCreated = true;
       } catch (paymentApiError) {
         debugPrint('[Wallet] Payment API failed (continuing anyway): $paymentApiError');
       }
-
       // Update wallet balance directly
-      debugPrint('[Wallet] Fetching current balance...');
       final currentData = await ApiService.getDriverDetails(driverId);
       final currentBalance =
           (num.tryParse(currentData['wallet_balance']?.toString() ?? '0') ?? 0)
               .toDouble();
       final newBalance = currentBalance + amount;
-      debugPrint('[Wallet] Old balance: $currentBalance, New balance: $newBalance');
-
       await ApiService.updateWalletBalance(driverId, newBalance);
-      debugPrint('[Wallet] Balance updated on server');
-
       setState(() => walletBalance = newBalance);
       currentData['wallet_balance'] = newBalance;
       await prefs.setString('driver_data', jsonEncode(currentData));
-
       // Always add transaction locally to ensure it shows in history
       final now = DateTime.now();
       final localTransaction = {
@@ -495,23 +421,15 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
         'type': 'earning',
         'raw_date': now.toIso8601String(),
       };
-      
-      debugPrint('[Wallet] Saving transaction locally...');
       final existingTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
       existingTxns.insert(0, jsonEncode(localTransaction));
       await prefs.setStringList('local_transactions_$driverId', existingTxns);
-      debugPrint('[Wallet] Transaction saved. Total local transactions: ${existingTxns.length}');
-      
       setState(() {
         transactions.insert(0, localTransaction);
       });
-      debugPrint('[Wallet] Transaction added to UI list');
-
       if (mounted) {
         final paymentTime =
             '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}, ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
-        debugPrint('[Wallet] Showing success dialog...');
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -521,13 +439,9 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             paymentMethod: 'Razorpay',
           ),
         );
-        debugPrint('[Wallet] Success dialog shown');
-      }
-
+        }
       await _loadWalletData();
-      debugPrint('[Wallet] Wallet data reloaded');
-    } catch (e) {
-      debugPrint('[Wallet] ERROR in payment success handler: $e');
+      } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -540,11 +454,9 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       if (mounted) setState(() => isLoading = false);
     }
   }
-
   void _handlePaymentError(PaymentFailureResponse response) {
     _showPaymentFailedDialog(response.message ?? 'Payment failed');
   }
-
   void _handleExternalWallet(ExternalWalletResponse response) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -552,7 +464,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   void _showInvalidAmountDialog() {
     showDialog(
       context: context,
@@ -620,7 +531,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   void _showPaymentFailedDialog(String errorMessage) {
     showDialog(
       context: context,
@@ -714,7 +624,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   void _showTransactionFilterDialog() {
     showDialog(
       context: context,
@@ -803,7 +712,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   Widget _buildTransactionFilterOption(String title, String value) {
     return GestureDetector(
       onTap: () {
@@ -854,7 +762,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
 // ignore: deprecated_member_use
@@ -1169,14 +1076,12 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   Widget _buildTransactionItem(
       String title, String date, String tripId, String amount, String type, Map<String, dynamic>? trip, int index) {
     bool isEarning = type == 'earning';
     String subtitle = tripId != 'N/A' ? 'Trip ID: $tripId' : '';
     bool isServiceFee = title == 'Service Fee (10%)';
     bool isSelected = _selectedIndices.contains(index);
-
     return GestureDetector(
       onTap: _isSelectionMode
           ? () {
@@ -1307,18 +1212,14 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   Future<void> _deleteTransaction(int index) async {
     final transaction = transactions[index];
     final title = transaction['title'];
-    
     setState(() {
       transactions.removeAt(index);
     });
-    
     final prefs = await SharedPreferences.getInstance();
     final driverId = prefs.getString('driverId');
-    
     if (driverId != null) {
       if (title == 'Admin Credit' || title == 'Admin Deduction') {
         final adminTxns = prefs.getStringList('admin_transactions_$driverId') ?? [];
@@ -1331,7 +1232,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       }
     }
   }
-
   void _showClearAllDialog() {
     showDialog(
       context: context,
@@ -1354,10 +1254,8 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   Future<void> _deleteSelectedTransactions() async {
     if (_selectedIndices.isEmpty) return;
-    
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1375,18 +1273,14 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
         ],
       ),
     );
-
     if (confirmed != true) return;
-
     final prefs = await SharedPreferences.getInstance();
     final indicesToDelete = _selectedIndices.toList()..sort((a, b) => b.compareTo(a));
-
     final driverId = prefs.getString('driverId');
     if (driverId != null) {
       for (int index in indicesToDelete) {
         final transaction = transactions[index];
         final title = transaction['title'];
-
         if (title == 'Admin Credit' || title == 'Admin Deduction') {
           final adminTxns = prefs.getStringList('admin_transactions_$driverId') ?? [];
           adminTxns.removeWhere((txn) => jsonDecode(txn)['raw_date'] == transaction['raw_date']);
@@ -1398,7 +1292,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
         }
       }
     }
-
     setState(() {
       for (int index in indicesToDelete) {
         transactions.removeAt(index);
@@ -1407,16 +1300,13 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       _selectedIndices.clear();
     });
   }
-
   Future<void> _clearAllTransactions() async {
     final prefs = await SharedPreferences.getInstance();
     final driverId = prefs.getString('driverId');
-    
     if (driverId != null) {
       await prefs.remove('admin_transactions_$driverId');
       await prefs.remove('local_transactions_$driverId');
     }
-    
     setState(() {
       transactions.removeWhere((t) => 
         t['title'] == 'Admin Credit' || 
@@ -1424,7 +1314,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
         t['title'] == 'Wallet Top-up'
       );
     });
-    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('All transactions cleared'),
@@ -1432,7 +1321,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   String _formatTime(String date) {
     try {
       final dateTime = DateTime.parse(date);
@@ -1443,7 +1331,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       return '';
     }
   }
-
   void _navigateToTripCompleted(Map<String, dynamic> trip) {
     final startingKm = (trip['odo_start'] ?? trip['starting_km'] ?? '0').toString();
     final endingKm = (trip['odo_end'] ?? trip['ending_km'] ?? '0').toString();
@@ -1468,7 +1355,6 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
       ),
     );
   }
-
   List<Widget> _buildCompletedTrips() {
     final completedTrips = transactions.where((t) => t['title'] == 'Service Fee (10%)').toList();
     if (completedTrips.isEmpty) {
@@ -1498,26 +1384,22 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
     )).toList();
   }
 }
-
 class _ReadOnlyTripSummary extends StatelessWidget {
   final Map<String, dynamic> tripData;
   final String startingKm;
   final String endingKm;
   final Map<String, dynamic>? tripDetails;
-
   const _ReadOnlyTripSummary({
     required this.tripData,
     required this.startingKm,
     required this.endingKm,
     this.tripDetails,
   });
-
   @override
   Widget build(BuildContext context) {
     final startKm = num.tryParse(startingKm) ?? 0;
     final endKm = num.tryParse(endingKm) ?? 0;
     final dist = (endKm - startKm).abs();
-
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
@@ -1639,7 +1521,6 @@ class _ReadOnlyTripSummary extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildSummaryRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),

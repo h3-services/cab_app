@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
-
 class GradientButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
   final double height;
   final double? width;
-  
   const GradientButton({
     super.key,
     required this.text,
@@ -14,7 +12,6 @@ class GradientButton extends StatelessWidget {
     this.height = 50,
     this.width,
   });
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(

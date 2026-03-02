@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-
 class NoNetworkScreen extends StatelessWidget {
   const NoNetworkScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

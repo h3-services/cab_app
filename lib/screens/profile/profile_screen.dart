@@ -7,14 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import '../../services/api_service.dart';
 import 'document_view_screen.dart';
-
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
-
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
-
 class _ProfileScreenState extends State<ProfileScreen> {
   // Personal Details
   String _name = 'Loading...';
@@ -25,7 +22,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _aadhaarNumber = '';
   String? _profilePhotoPath;
   String? _profilePhotoUrl;
-
   // Vehicle Details
   String _vehicleType = '';
   String _vehicleBrand = '';
@@ -33,16 +29,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _vehicleNumber = '';
   String _vehicleColor = '';
   String _seatingCapacity = '';
-
   bool _isApprovedDriver = true; // Default to true, but checked in initState
-
   @override
   void initState() {
     super.initState();
     _loadProfileData();
     _checkApprovalStatus();
   }
-
   Future<void> _checkApprovalStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -52,7 +45,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final bool isApproved = driverData['is_approved'] == true;
         final String kycVerified =
             (driverData['kyc_verified'] ?? '').toString().toLowerCase();
-
         if (mounted) {
           setState(() {
             _isApprovedDriver = (isApproved &&
@@ -70,11 +62,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) setState(() => _isApprovedDriver = false);
     }
   }
-
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     final driverId = prefs.getString('driverId');
-    
     // Load cached data first
     setState(() {
       _name = prefs.getString('name') ?? 'Driver';
@@ -86,12 +76,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _profilePhotoPath = prefs.getString('profile_photo_path');
       _profilePhotoUrl = prefs.getString('profile_photo_url');
     });
-    
     // Fetch fresh data from API if driver ID exists
     if (driverId != null) {
       try {
         final driverData = await ApiService.getDriverDetails(driverId);
-        
         // Update personal details
         setState(() {
           _name = driverData['name'] ?? 'Driver';
@@ -102,10 +90,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _aadhaarNumber = driverData['aadhar_number'] ?? '';
           _profilePhotoUrl = driverData['photo_url'];
         });
-        
         // Get vehicle details from cached data
         final vehicleData = await ApiService.getVehicleByDriverId(driverId);
-        
         // Update vehicle details from cached data
         if (vehicleData != null) {
           setState(() {
@@ -116,7 +102,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _vehicleColor = vehicleData['vehicle_color'] ?? '';
             _seatingCapacity = (vehicleData['seating_capacity'] ?? '').toString();
           });
-          
           // Store vehicle details in SharedPreferences
           await prefs.setString('vehicleType', _vehicleType);
           await prefs.setString('vehicleBrand', _vehicleBrand);
@@ -125,7 +110,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           await prefs.setString('vehicleColor', _vehicleColor);
           await prefs.setString('seatingCapacity', _seatingCapacity);
         }
-        
         // Store updated personal details
         await prefs.setString('name', _name);
         await prefs.setString('phoneNumber', _phoneNumber);
@@ -137,7 +121,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           await prefs.setString('profile_photo_url', _profilePhotoUrl!);
         }
       } catch (e) {
-        debugPrint('Error fetching driver details: $e');
         // Continue with cached data if API fails
       }
     } else {
@@ -152,7 +135,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -267,7 +249,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-
               // Personal Details Section
               Container(
                 margin: const EdgeInsets.all(16),
@@ -302,7 +283,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-
               // Vehicle Details Section
               Container(
                 margin: const EdgeInsets.all(16),
@@ -339,7 +319,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-
               // KYC Status Section
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -378,9 +357,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
-
               // View Document Button
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -429,7 +406,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
             ],
           ),
@@ -440,7 +416,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
   Widget _buildDetailRow(String label, String value, {bool isLink = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -473,7 +448,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
   Widget _buildVehicleDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -500,7 +474,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
   Widget _buildKYCItem(String title, String status, IconData icon) {
     return Column(
       children: [

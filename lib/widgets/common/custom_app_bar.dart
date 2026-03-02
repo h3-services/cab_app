@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
-
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final bool showMenuIcon;
@@ -10,7 +9,6 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final String? title;
   final VoidCallback? onProfileTap;
-
   const CustomAppBar(
       {super.key,
       this.showBackButton = false,
@@ -20,24 +18,19 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
       this.onBack,
       this.title,
       this.onProfileTap});
-
   @override
   State<CustomAppBar> createState() => _CustomAppBarState();
-
   @override
   Size get preferredSize => const Size.fromHeight(80);
 }
-
 class _CustomAppBarState extends State<CustomAppBar> {
   String? _profilePhotoPath;
   String? _profilePhotoUrl;
-
   @override
   void initState() {
     super.initState();
     _loadProfilePhoto();
   }
-
   Future<void> _loadProfilePhoto() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -45,7 +38,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
       _profilePhotoUrl = prefs.getString('profile_photo_url');
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return AppBar(

@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 class PhoneInputField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
-  
   const PhoneInputField({
     super.key,
     required this.controller,
     this.label = 'Phone Number',
   });
-
   @override
   Widget build(BuildContext context) {
     return Column(

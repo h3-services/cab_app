@@ -5,14 +5,11 @@ import '../../services/device_service.dart';
 import '../../services/api_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
-
   @override
   State<PersonalDetailsScreen> createState() => _PersonalDetailsScreenState();
 }
-
 class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -27,7 +24,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   final _vehicleMakeController = TextEditingController();
   final _vehicleModelController = TextEditingController();
   final _vehicleColorController = TextEditingController();
-
   String? _selectedVehicleType;
   String? _selectedSeatingCapacity;
   String? phoneNumber;
@@ -36,28 +32,18 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   // Logic from KYC screen: track which fields are valid/modified
   // false = Error/Rejection, true = Correct/Modified
   final Map<String, bool> _fieldStatuses = {};
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)!.settings.arguments;
-
-    debugPrint("\n=== PERSONAL DETAILS: didChangeDependencies ===");
-    debugPrint("Args Type: ${args.runtimeType}");
-    debugPrint("Args Content: $args");
-
     if (args is Map && args['isEditing'] == true) {
       if (!_isDataLoaded) {
-        debugPrint("First time load: Calling _loadSavedData");
         _loadSavedData();
         _isDataLoaded = true;
       }
-
       if (args['errorFields'] != null) {
         final List<String> incomingErrors =
             List<String>.from(args['errorFields']);
-        debugPrint("Informing Error Fields to Highlight: $incomingErrors");
-
         // Populate field statuses
         for (var field in incomingErrors) {
           final normalized = field.toLowerCase().trim();
@@ -65,18 +51,14 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           if (!_fieldStatuses.containsKey(normalized) ||
               _fieldStatuses[normalized] == false) {
             _fieldStatuses[normalized] = false;
-            debugPrint("Marked for RED highlight: '$normalized'");
-          }
+            }
         }
       }
     } else if (args is String) {
       phoneNumber = args;
     }
-
     _ensurePhoneNumber();
-    debugPrint("==============================================\n");
-  }
-
+    }
   Future<void> _ensurePhoneNumber() async {
     if (phoneNumber == null || phoneNumber!.isEmpty) {
       final prefs = await SharedPreferences.getInstance();
@@ -88,14 +70,12 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       }
     }
   }
-
   Future<void> _loadSavedData() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     final args = ModalRoute.of(context)?.settings.arguments;
     final Map<String, dynamic> data =
         (args is Map<String, dynamic>) ? args : {};
-
     setState(() {
       // Prioritize args, then Prefs
       phoneNumber = data['phoneNumber'] ?? prefs.getString('phoneNumber');
@@ -107,7 +87,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           data['licenceNumber'] ?? prefs.getString('licenseNumber') ?? '';
       _aadharController.text =
           data['aadharNumber'] ?? prefs.getString('aadhaarNumber') ?? '';
-
       _vehicleMakeController.text =
           data['vehicleBrand'] ?? prefs.getString('vehicleBrand') ?? '';
       _vehicleModelController.text =
@@ -116,7 +95,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           data['vehicleNumber'] ?? prefs.getString('vehicleNumber') ?? '';
       _vehicleColorController.text =
           data['vehicleColor'] ?? prefs.getString('vehicleColor') ?? '';
-
       String? rawVehicleType =
           data['vehicleType'] ?? prefs.getString('vehicleType');
       if (['SUV', 'Innova', 'Sedan'].contains(rawVehicleType)) {
@@ -124,7 +102,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       } else {
         _selectedVehicleType = null;
       }
-
       String? rawSeating =
           data['seatingCapacity'] ?? prefs.getString('seatingCapacity');
       if (['4', '6', '7'].contains(rawSeating)) {
@@ -132,7 +109,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       } else {
         _selectedSeatingCapacity = '4'; // Default safe fallback
       }
-
       _drivingLicenseExpiryController.text = _formatDateForDisplay(
           data['licenceExpiry'] ?? prefs.getString('licenceExpiry'));
       _rcExpiryController.text = _formatDateForDisplay(
@@ -141,7 +117,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           data['fcExpiryDate'] ?? prefs.getString('fcExpiryDate'));
     });
   }
-
   String _formatDateForDisplay(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return '';
     try {
@@ -152,7 +127,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     } catch (_) {}
     return dateStr; // Fallback
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,26 +134,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
         showBackButton: false,
         showMenuIcon: false,
         showProfileIcon: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              _loadSavedData();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Reloaded saved data'),
-                    duration: Duration(seconds: 1)),
-              );
-            },
-          ),
-          TextButton(
-            onPressed: _fillSampleData,
-            child: const Text(
-              'Test Data',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -328,7 +282,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                 builder: (context) => const Center(
                                     child: CircularProgressIndicator()),
                               );
-
                               try {
                                 String licenseDate = _formatDateForApi(
                                     _drivingLicenseExpiryController.text);
@@ -344,19 +297,8 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                   fcmToken = await FirebaseMessaging.instance
                                       .getToken();
                                 } catch (e) {
-                                  debugPrint("Note: Token fetch error: $e");
-                                }
-
+                                  }
                                 // VISIBLE TERMINAL BLOCK
-                                debugPrint(
-                                    "\n##########################################");
-                                debugPrint(
-                                    "PERSONAL DETAILS - STORING TO BACKEND:");
-                                debugPrint("HARDWARE DEVICE ID: $realDeviceId");
-                                debugPrint("FCM TOKEN: ${fcmToken ?? 'NULL'}");
-                                debugPrint(
-                                    "##########################################\n");
-
                                 // 2. PREPARE IDs
                                 final prefs =
                                     await SharedPreferences.getInstance();
@@ -368,12 +310,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     ModalRoute.of(context)!.settings.arguments;
                                 bool isEditing =
                                     (args is Map && args['isEditing'] == true);
-
                                 // 3. PERFORM STORAGE (Register or Update)
                                 if (!isEditing &&
                                     (driverId == null || driverId.isEmpty)) {
-                                  debugPrint("Performing new Registration...");
-
                                   // Register Driver
                                   final driverRes =
                                       await ApiService.registerDriver(
@@ -387,22 +326,16 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     licenceExpiry: licenseDate,
                                     deviceId: realDeviceId,
                                   );
-
                                   driverId = driverRes['id']?.toString() ??
                                       driverRes['driver_id']?.toString();
-
                                   if (driverId != null) {
                                     await prefs.setString('driverId', driverId);
-
                                     // 4. EXPLICITLY STORE FCM TOKEN IN DEDICATED CALL
                                     // (Device ID is already stored in Step 3 above via registerDriver)
                                     if (fcmToken != null) {
-                                      debugPrint(
-                                          "Storing FCM Token to dedicated endpoint...");
                                       await ApiService.addFcmToken(
                                           driverId, fcmToken);
                                     }
-
                                     // 5. Register Vehicle
                                     final vehicleRes =
                                         await ApiService.registerVehicle(
@@ -422,18 +355,14 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                       rcExpiryDate: rcDate,
                                       fcExpiryDate: fcDate,
                                     );
-
                                     vehicleId = vehicleRes['id']?.toString() ??
                                         vehicleRes['vehicle_id']?.toString();
-
                                     if (vehicleId != null) {
                                       await prefs.setString(
                                           'vehicleId', vehicleId);
                                     }
                                   }
                                 } else if (isEditing) {
-                                  debugPrint("Updating existing details...");
-                                  
                                   // Get IDs from args if not in prefs
                                   if (driverId == null && args is Map) {
                                     driverId = args['driverId']?.toString();
@@ -441,17 +370,13 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                   if (vehicleId == null && args is Map) {
                                     vehicleId = args['vehicleId']?.toString();
                                   }
-                                  
                                   // Fetch vehicleId if still empty
                                   if ((vehicleId == null || vehicleId.isEmpty) && driverId != null && driverId.isNotEmpty) {
-                                    debugPrint('vehicleId empty, fetching from API...');
                                     final vehicles = await ApiService.getVehiclesByDriver(driverId);
                                     if (vehicles.isNotEmpty) {
                                       vehicleId = vehicles[0]['vehicle_id']?.toString() ?? vehicles[0]['id']?.toString();
-                                      debugPrint('Fetched vehicleId: $vehicleId');
-                                    }
+                                      }
                                   }
-                                  
                                   if (driverId != null && driverId.isNotEmpty) {
                                     await ApiService.updateDriver(
                                       driverId: driverId,
@@ -463,7 +388,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                       aadharNumber: _aadharController.text,
                                       licenceExpiry: licenseDate,
                                     );
-
                                     if (vehicleId != null && vehicleId.isNotEmpty) {
                                       await ApiService.updateVehicle(
                                         vehicleId: vehicleId,
@@ -478,9 +402,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                         fcExpiryDate: fcDate,
                                       );
                                     } else {
-                                      debugPrint('Skipping vehicle update: vehicleId is empty');
-                                    }
-                                    
+                                      }
                                     // Save IDs to prefs
                                     await prefs.setString('driverId', driverId);
                                     if (vehicleId != null && vehicleId.isNotEmpty) {
@@ -490,7 +412,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     throw Exception('Cannot update: Missing driver ID');
                                   }
                                 }
-
                                 Map<String, dynamic> userData = {
                                   'name': _nameController.text,
                                   'phoneNumber': phoneNumber ?? '',
@@ -519,7 +440,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                       ? args['errorFields']
                                       : null,
                                 };
-
                                 // Save ALL user data to SharedPreferences for persistence
                                 await prefs.setString(
                                     'name', _nameController.text);
@@ -547,19 +467,13 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                                     _selectedSeatingCapacity ?? '4');
                                 await prefs.setString('rcExpiryDate', rcDate);
                                 await prefs.setString('fcExpiryDate', fcDate);
-                                
                                 // Set login state for new registrations
                                 if (!isEditing) {
                                   await prefs.setBool('isLoggedIn', true);
                                 }
-                                
-                                debugPrint(
-                                    "=== Saved all user data to SharedPreferences ===");
-
                                 // Hide loading before navigating
                                 if (context.mounted) {
                                   Navigator.pop(context);
-
                                   Navigator.pushNamed(
                                     context,
                                     '/kyc_upload',
@@ -569,7 +483,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                               } catch (e) {
                                 // Hide loading
                                 if (context.mounted) Navigator.pop(context);
-
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -615,49 +528,37 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       ),
     );
   }
-
   void _fillSampleData() {
     final random = DateTime.now().millisecondsSinceEpoch.toString();
     final randomSuffix = random.substring(random.length - 6);
-
     setState(() {
       // Only set random phone if we don't have a verified one
       if (phoneNumber == null || phoneNumber!.isEmpty) {
         phoneNumber = "9823$randomSuffix";
       }
-
       _nameController.text = "Driver $randomSuffix";
       _emailController.text = "driver$randomSuffix@test.com";
       _licenseController.text = "DL$randomSuffix";
-
       // Ensure 12 digits for Aadhaar
       _aadharController.text = "123456$randomSuffix";
-
       _primaryLocationController.text = "Chennai, India";
-
       _drivingLicenseExpiryController.text = "19/01/2030";
       _fcExpiryController.text = "19/01/2030";
       _rcExpiryController.text = "19/01/2030";
-
       _selectedVehicleType = "Sedan";
-
       _vehicleNumberController.text = "TN01$randomSuffix";
       _vehicleMakeController.text = "Toyota";
       _vehicleModelController.text = "Etios";
       _vehicleColorController.text = "White";
-
       _selectedSeatingCapacity = "4";
     });
   }
-
   Widget _buildTextField(String label, TextEditingController controller) {
     bool isRequired = label.contains('*');
     String cleanLabel = label.replaceAll('*', '').trim();
-
     // Logic from KYC: Check if this specific field has an active error
     final normalizedLabel = cleanLabel.toLowerCase().trim();
     bool hasError = _fieldStatuses[normalizedLabel] == false;
-
     // Fallback for slight naming inconsistencies
     if (!hasError) {
       if (normalizedLabel == 'license number')
@@ -665,11 +566,8 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       if (normalizedLabel == 'licence number')
         hasError = _fieldStatuses['license number'] == false;
     }
-
     if (hasError) {
-      debugPrint("BUILDING: '$normalizedLabel' is RED");
-    }
-
+      }
     return ValueListenableBuilder(
       valueListenable: controller,
       builder: (context, value, child) {
@@ -680,7 +578,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
         Color labelColor = hasError
             ? Colors.red
             : (isFilled ? AppColors.greenLight : Colors.black87);
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -769,16 +666,13 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       },
     );
   }
-
   Widget _buildDateField(String label, TextEditingController controller,
       [bool isRequired = false]) {
     bool hasAsterisk = label.contains('*');
     String cleanLabel = label.replaceAll('*', '').trim();
-
     // Logic from KYC screen
     final normalizedLabel = cleanLabel.toLowerCase().trim();
     bool hasError = _fieldStatuses[normalizedLabel] == false;
-
     // Fallback for common date label variations
     if (!hasError) {
       if (normalizedLabel.contains('license') || normalizedLabel.contains('licence'))
@@ -791,7 +685,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
         hasError = _fieldStatuses['fc certificate'] == false ||
                    _fieldStatuses['fc expiry date'] == false;
     }
-
     return ValueListenableBuilder(
       valueListenable: controller,
       builder: (context, value, child) {
@@ -802,7 +695,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
         Color labelColor = hasError
             ? Colors.red
             : (isFilled ? AppColors.greenLight : Colors.black87);
-
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -884,7 +776,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                   'licence expiry date',
                   'license expiry date'
                 ];
-                
                 bool hadError = false;
                 for (String key in possibleKeys) {
                   if (_fieldStatuses[key] == false) {
@@ -892,11 +783,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                     _fieldStatuses[key] = true;
                   }
                 }
-                
                 if (hadError) {
                   setState(() {});
                 }
-                
                 final date = await showDatePicker(
                   context: context,
                   initialDate: DateTime.now(),
@@ -906,7 +795,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
                 if (date != null) {
                   controller.text =
                       '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-                  
                   // Ensure all possible field variations are marked as fixed
                   setState(() {
                     for (String key in possibleKeys) {
@@ -921,30 +809,25 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       },
     );
   }
-
   Widget _buildDropdownField(String label, String? value, List<String> items,
       Function(String?) onChanged) {
     bool isRequired = label.contains('*');
     String cleanLabel = label.replaceAll('*', '').trim();
     bool isFilled = value != null && value.isNotEmpty;
-
     // Logic from KYC Screen
     final normalizedLabel = cleanLabel.toLowerCase().trim();
     bool hasError = _fieldStatuses[normalizedLabel] == false;
-
     if (!hasError) {
       if (normalizedLabel.contains('vehicle type'))
         hasError = _fieldStatuses['vehicle type'] == false;
       if (normalizedLabel.contains('seating'))
         hasError = _fieldStatuses['seating capacity'] == false;
     }
-
     Color borderColor =
         hasError ? Colors.red : (isFilled ? AppColors.greenLight : Colors.grey);
     Color labelColor = hasError
         ? Colors.red
         : (isFilled ? AppColors.greenLight : Colors.black87);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1012,7 +895,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       ],
     );
   }
-
   String _formatDateForApi(String dateText) {
     try {
       final dateParts = dateText.split('/');
@@ -1026,7 +908,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     } catch (_) {}
     return DateTime.now().toIso8601String().split('T')[0];
   }
-
   @override
   void dispose() {
     _nameController.dispose();

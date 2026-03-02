@@ -7,21 +7,16 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../admin/device_blocked_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
-
   const OtpVerificationScreen({super.key, required this.phoneNumber});
-
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
-
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final List<TextEditingController> _otpControllers = List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
@@ -31,7 +26,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       });
     }
   }
-
   Future<String> _getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
     try {
@@ -43,24 +37,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         return iosInfo.identifierForVendor ?? 'unknown';
       }
     } catch (e) {
-      debugPrint('Error getting device ID: $e');
-    }
+      }
     return 'unknown';
   }
-
   Future<void> _checkAndUpdateFcmToken(String driverId, Map<String, dynamic> driverData) async {
     try {
       final currentFcmToken = await FirebaseMessaging.instance.getToken();
       final storedFcmToken = driverData['fcm_token']?.toString();
-      
       if (currentFcmToken != null && currentFcmToken != storedFcmToken) {
         await ApiService.addFcmToken(driverId, currentFcmToken);
       }
     } catch (e) {
-      debugPrint('Error updating FCM token: $e');
-    }
+      }
   }
-
   Future<void> _verifyOtp() async {
     final otp = _otpControllers.map((c) => c.text).join();
     if (otp.length != 6) {
@@ -69,12 +58,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       );
       return;
     }
-
     setState(() => _isLoading = true);
-
     try {
       await ApiService.verifyOtp(widget.phoneNumber, otp);
-      
       if (!mounted) return;
       Navigator.pushNamed(context, '/registration', arguments: widget.phoneNumber);
     } catch (e) {
@@ -158,12 +144,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             final navigator = Navigator.of(context);
                             final messenger = ScaffoldMessenger.of(context);
                             navigator.pop();
-                            
                             for (var controller in _otpControllers) {
                               controller.clear();
                             }
                             if (mounted) setState(() {});
-                            
                             try {
                               await ApiService.sendOtp(widget.phoneNumber);
                               if (!mounted) return;
@@ -210,18 +194,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final padding = MediaQuery.of(context).padding;
     final viewInsets = MediaQuery.of(context).viewInsets;
-
     final availableHeight = screenHeight - padding.top - padding.bottom - viewInsets.bottom;
     final logoSize = screenWidth * 0.6;
     final horizontalPadding = screenWidth * 0.08;
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Container(
@@ -378,7 +359,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                       controller.clear();
                                     }
                                     setState(() {});
-                                    
                                     try {
                                       await ApiService.sendOtp(widget.phoneNumber);
                                       if (!mounted) return;
@@ -463,7 +443,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       ),
     );
   }
-
   @override
   void dispose() {
     for (var controller in _otpControllers) {

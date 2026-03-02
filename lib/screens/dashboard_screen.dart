@@ -19,14 +19,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
-
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
-
 class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
   final TripStateService _tripStateService = TripStateService();
   int selectedTab = 0; // 0: Available, 1: Pending, 2: Approved, 3: History
@@ -44,7 +41,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   AnimationController? _shakeController;
   Animation<double>? _shakeAnimation;
   Set<String> _requestingTripIds = {}; // Track trips being requested
-
   @override
   void initState() {
     super.initState();
@@ -57,14 +53,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
     _loadDriverId();
     _requestLocationPermissions();
-    
     // Initialize network monitoring
     NetworkService().initialize((isConnected) {
       if (!isConnected && mounted) {
         NetworkService.showNoNetworkDialog(context);
       }
     });
-    
     // Listen for foreground FCM messages to handle rejection
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final type = message.data['type'] as String?;
@@ -73,36 +67,26 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       }
     });
   }
-
   Future<void> _requestLocationPermissions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
       // Check if permissions were already requested in this app session
       final permissionsRequested = prefs.getBool('permissions_requested_once') ?? false;
       if (permissionsRequested) {
-        debugPrint('Permissions already requested, skipping...');
         return;
       }
-      
       final lastPermissionCheck = prefs.getInt('last_permission_check') ?? 0;
       final now = DateTime.now().millisecondsSinceEpoch;
-      
       // Only check permissions once per day to avoid repeated prompts
       if (now - lastPermissionCheck < 86400000) { // 24 hours in milliseconds
-        debugPrint('Permission check skipped - checked recently');
         return;
       }
-      
       final backgroundGranted = prefs.getBool('background_location_granted') ?? false;
       final dontShowAgain = prefs.getBool('dont_show_permission_dialog') ?? false;
-      
       // If background permission was granted and user chose not to see dialog again, skip
       if (backgroundGranted && dontShowAgain) {
-        debugPrint('Background permission already granted, skipping dialog');
         return;
       }
-      
       // Check current permission status
       bool hasPermissions = await PermissionService.checkLocationPermissions();
       if (hasPermissions) {
@@ -111,26 +95,20 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         await prefs.setBool('dont_show_permission_dialog', true);
         await prefs.setInt('last_permission_check', now);
         await prefs.setBool('permissions_requested_once', true);
-        debugPrint('All permissions already granted');
         return;
       }
-      
       // Only show dialog if we don't have permissions and user hasn't opted out
       if (!dontShowAgain) {
         await prefs.setInt('last_permission_check', now);
         await PermissionService.showPermissionDialog(context);
       }
     } catch (e) {
-      debugPrint('Permission error: $e');
-    }
-    
+      }
     // Request battery optimization exemption
     if (mounted) {
       await BatteryOptimizationService.ensureBatteryOptimizationDisabled(context);
     }
   }
-
-
   void _showBackgroundPermissionDialog() {
     showDialog(
       context: context,
@@ -152,7 +130,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   void _startAutoRefresh() {
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted && selectedTab != 3) {
@@ -160,7 +137,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       }
     });
   }
-
   @override
   void dispose() {
     _shakeController?.dispose();
@@ -169,17 +145,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     // Don't stop location tracking when leaving dashboard - it should run continuously
     super.dispose();
   }
-
   Future<void> _loadDriverId() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _driverId = prefs.getString('driverId');
     });
-
     // Check if we already have cached data (returning from another screen)
     final cachedDriverData = prefs.getString('driver_data');
     final isAvailable = prefs.getBool('is_available') ?? false;
-    
     if (_driverId != null && cachedDriverData != null) {
       // Skip full approval check, show UI immediately and load trips with loading indicator
       _tripStateService.setReadyForTrip(isAvailable);
@@ -196,18 +169,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       setState(() => _isCheckingStatus = false);
     }
   }
-
   Future<void> _checkApprovalStatus(String driverId) async {
     try {
       final driverData = await ApiService.getDriverDetails(driverId);
-
       // Cache all vehicles data on app start
       await ApiService.getAllVehicles(forceRefresh: true);
-
       // Store driver data for immediate access in other screens (like Wallet)
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('driver_data', jsonEncode(driverData));
-
       // Store individual fields for Profile and Drawer screens
       await prefs.setString('name', driverData['name'] ?? 'Driver');
       await prefs.setString('phoneNumber', driverData['phone_number'] ?? '');
@@ -217,7 +186,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       await prefs.setString(
           'licenseNumber', driverData['licence_number'] ?? '');
       await prefs.setString('aadhaarNumber', driverData['aadhar_number'] ?? '');
-
       // Store vehicle details from cached data
       final vehicleData = await ApiService.getVehicleByDriverId(driverId);
       if (vehicleData != null) {
@@ -229,19 +197,15 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         await prefs.setString(
             'seatingCapacity', (vehicleData['seating_capacity'] ?? '').toString());
       }
-
       // Photo handling fallback (if needed)
       if (driverData['photo_url'] != null) {
         await prefs.setString('profile_photo_url', driverData['photo_url']);
       }
-
       final bool isApproved = driverData['is_approved'] == true;
       final String kycVerified =
           (driverData['kyc_verified'] ?? '').toString().toLowerCase();
-      
       // Get locally stored availability preference (user's last choice)
       final isAvailable = prefs.getBool('is_available') ?? false;
-
       // Check if rejected
       if (kycVerified == 'rejected') {
         if (mounted) {
@@ -249,7 +213,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         }
         return;
       }
-
       if (!isApproved ||
           (kycVerified != 'verified' && kycVerified != 'approved')) {
         if (mounted) {
@@ -258,13 +221,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       } else {
         // Approved! Start location tracking and load trips
         await LocationServiceManager.initializeAllServices();
-        
         if (mounted) {
           _tripStateService.setReadyForTrip(isAvailable);
-
-          debugPrint('Main Loading: Fetching initial trips...');
           await _fetchAvailableTrips();
-
           if (mounted) {
             setState(() => _isCheckingStatus = false);
             _startAutoRefresh();
@@ -272,7 +231,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         }
       }
     } catch (e) {
-      debugPrint('Approval check error: $e');
       // On network error, allow user to continue but show offline state
       if (mounted) {
         setState(() => _isCheckingStatus = false);
@@ -285,33 +243,27 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       }
     }
   }
-
   Future<void> _fetchAvailableTrips({bool showLoading = true}) async {
     if (!mounted) return;
     if (showLoading) {
       setState(() => _isLoadingTrips = true);
     }
-
     try {
       // Always fetch fresh driver data to get latest wallet balance
       if (_driverId != null) {
         final driverData = await ApiService.getDriverDetails(_driverId!);
         _walletBalance = (driverData['wallet_balance'] ?? 0.0).toDouble();
-        
         // Update cached driver data
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('driver_data', jsonEncode(driverData));
       }
-
       // Fetch only essential data in parallel
       final results = await Future.wait([
         ApiService.getAvailableTrips(),
         _driverId != null ? ApiService.getDriverRequests(_driverId!) : Future.value([]),
       ]);
-      
       final trips = results[0] as List<dynamic>;
       final requests = results[1] as List<dynamic>;
-
       // Enhance requests with latest trip status
       final enhancedRequests = await Future.wait(requests.map((request) async {
         final tripId = request['trip_id']?.toString();
@@ -319,21 +271,15 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           try {
             final tripDetails = await ApiService.getTripDetails(tripId);
             final enhanced = Map<String, dynamic>.from(request);
-            
             // CRITICAL: Update assigned_driver_id from latest trip details
             enhanced['assigned_driver_id'] = tripDetails['assigned_driver_id'] ?? tripDetails['driver_id'] ?? request['assigned_driver_id'];
-            
             enhanced['trip_status'] = tripDetails['trip_status'] ?? tripDetails['status'] ?? request['trip_status'];
             enhanced['odo_start'] = tripDetails['odo_start'] ?? request['odo_start'];
             enhanced['vehicle_type'] = tripDetails['vehicle_type'] ?? tripDetails['trip']?['vehicle_type'] ?? request['vehicle_type'] ?? request['trip']?['vehicle_type'];
             debugPrint('Enhanced vehicle_type: ${enhanced['vehicle_type']} (tripDetails: ${tripDetails['vehicle_type']}, tripDetails.trip: ${tripDetails['trip']?['vehicle_type']}, request: ${request['vehicle_type']}, request.trip: ${request['trip']?['vehicle_type']})');
-            
             enhanced['trip_type'] = tripDetails['trip_type'] ?? tripDetails['trip']?['trip_type'] ?? request['trip_type'] ?? request['trip']?['trip_type'];
-            
             enhanced['customer_phone'] = tripDetails['customer_phone'] ?? tripDetails['phone'] ?? request['customer_phone'] ?? request['phone'];
             enhanced['phone'] = enhanced['customer_phone'];
-            
-            debugPrint('[Trip $tripId] Assigned to driver: ${enhanced['assigned_driver_id']}, Current driver: $_driverId');
             return enhanced;
           } catch (e) {
             return Map<String, dynamic>.from(request);
@@ -341,22 +287,18 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         }
         return Map<String, dynamic>.from(request);
       }));
-
       // Filter available trips
       final requestedTripIds = enhancedRequests
           .where((r) => (r['status'] ?? '').toString().toUpperCase() != 'CANCELLED')
           .map((r) => r['trip_id'].toString())
           .toSet();
-
       final openTrips = trips.where((t) {
         final status = (t['trip_status'] ?? t['status'] ?? '').toString();
         return status.trim().toUpperCase() == 'OPEN';
       }).toList();
-
       final filteredTrips = openTrips
           .where((t) => !requestedTripIds.contains(t['trip_id'].toString()))
           .toList();
-
       if (mounted) {
         setState(() {
           _allTrips = openTrips;
@@ -366,13 +308,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         });
       }
     } catch (e) {
-      debugPrint("Error fetching trips: $e");
       if (mounted) {
         setState(() => _isLoadingTrips = false);
       }
     }
   }
-
   void _showCancelTripDialog(String requestId) {
     showDialog(
       context: context,
@@ -470,7 +410,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Future<void> _performCancelRequest(String requestId) async {
     setState(() {
       final index = _driverRequests
@@ -479,15 +418,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         _driverRequests[index]['status'] = 'CANCELLED';
       }
     });
-
     try {
       await ApiService.updateRequestStatus(requestId, "CANCELLED");
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Trip cancelled")));
-      
       await _fetchAvailableTrips();
-      
       if (!mounted) return;
       setState(() {
         selectedTab = 0;
@@ -498,33 +434,26 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           content: Text("Failed to cancel: $e"), backgroundColor: Colors.red));
     }
   }
-
   Future<void> _requestTrip(String tripId) async {
     if (_driverId == null) return;
-    
     // Mark trip as being requested
     setState(() {
       _requestingTripIds.add(tripId);
     });
-
     try {
       await ApiService.createTripRequest(tripId, _driverId!);
-
       if (!mounted) return;
-
       _fetchAvailableTrips();
     } catch (e) {
       if (e.toString().contains("Request already exists")) {
         final existingIndex = _driverRequests.indexWhere(
           (r) => r['trip_id'].toString() == tripId,
         );
-
         if (existingIndex != -1) {
           final existingRequest = _driverRequests[existingIndex];
           try {
             await ApiService.updateRequestStatus(
                 existingRequest['request_id'].toString(), "PENDING");
-
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -544,7 +473,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           }
         }
       }
-
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -553,7 +481,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       );
     }
   }
-
   @override
   Widget build(BuildContext context) {
     if (_isCheckingStatus) {
@@ -571,7 +498,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
       );
     }
-
     if (!_tripStateService.isReadyForTrip) {
       return Scaffold(
         backgroundColor: const Color(0xFFB0B0B0),
@@ -770,7 +696,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
       );
     }
-
     return Scaffold(
       backgroundColor: const Color(0xFFB0B0B0),
       appBar: const CustomAppBar(),
@@ -850,12 +775,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         );
                         return;
                       }
-
                       // Optimistic update
                       setState(() {
                         _tripStateService.setReadyForTrip(value);
                       });
-
                       try {
                         await ApiService.updateDriverAvailability(
                             _driverId!, value);
@@ -879,7 +802,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ],
             ),
           ),
-
           // Tab Buttons Section
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -913,7 +835,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           (r['trip_status'] ?? '').toString().toUpperCase();
                       final assignedDriverId = r['assigned_driver_id']?.toString();
                       final isAssignedToMe = assignedDriverId == null || assignedDriverId == _driverId;
-
                       return isAssignedToMe &&
                           (status == 'APPROVED' ||
                               status == 'ACCEPTED' ||
@@ -941,21 +862,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ],
             ),
           ),
-
           const SizedBox(height: 20),
-
           // Content based on selected tab
           Expanded(
             child: _buildTabContent(),
           ),
-
           // Bottom Navigation
           BottomNavigation(currentRoute: '/dashboard'),
         ],
       ),
     );
   }
-
   Widget _buildTabButton(String text, int index, Color color) {
     bool isSelected = selectedTab == index;
     return Expanded(
@@ -999,7 +916,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildHistoryButton() {
     bool isSelected = selectedTab == 3;
     return GestureDetector(
@@ -1029,7 +945,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildTabContent() {
     // Check if wallet balance is negative
     if (_walletBalance < 0) {
@@ -1039,12 +954,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       }
       return _buildWalletTopUpMessage();
     }
-    
     // Show loading only when loading AND no cached data available
     if (_isLoadingTrips && _availableTrips.isEmpty && _driverRequests.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
-    
     switch (selectedTab) {
       case 0:
         return _buildAvailableContent();
@@ -1058,7 +971,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         return _buildAvailableContent();
     }
   }
-
   Widget _buildWalletTopUpMessage() {
     return Center(
       child: Column(
@@ -1129,7 +1041,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildAvailableContent() {
     return RefreshIndicator(
       onRefresh: _fetchAvailableTrips,
@@ -1150,11 +1061,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ),
     );
   }
-
   Widget _buildTripCard(Map<String, dynamic> trip) {
     final tripId = trip['trip_id']?.toString();
     final isRequesting = tripId != null && _requestingTripIds.contains(tripId);
-    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -1373,7 +1282,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     ],
                   ),
                 ), 
-                
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -1433,7 +1341,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
       );
   }
-
   String _formatTripTime(String? dateStr) {
     if (dateStr == null) return '';
     try {
@@ -1457,7 +1364,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       return dateStr;
     }
   }
-
   String _formatPickupTime(String? dateStr) {
     if (dateStr == null) return '';
     try {
@@ -1470,13 +1376,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       return '';
     }
   }
-
   Widget _buildPendingContent() {
     final pendingRequests = _driverRequests
         .where((r) {
           final status = (r['status'] ?? '').toString().toUpperCase();
           final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
-          
           // Only show truly pending requests, exclude completed, cancelled, assigned, and started trips
           return status == 'PENDING' && 
                  tripStatus != 'COMPLETED' && 
@@ -1488,7 +1392,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                  tripStatus != 'IN_PROGRESS';
         })
         .toList();
-
     if (pendingRequests.isEmpty) {
       return RefreshIndicator(
         onRefresh: _fetchAvailableTrips,
@@ -1515,24 +1418,20 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           final request = pendingRequests[index];
           final tripId = request['trip_id']?.toString();
           final assignedDriverId = request['assigned_driver_id'] ?? request['trip']?['assigned_driver_id'];
-
           // Show "assigned to other" only if explicitly assigned to different driver
           if (assignedDriverId != null && assignedDriverId != _driverId) {
             return _buildAssignedToOtherCard(request);
           }
-          
           // Check if trip is still OPEN
           final tripStillOpen = _allTrips.any((t) => t['trip_id']?.toString() == tripId);
           if (!tripStillOpen) {
             return _buildAssignedToOtherCard(request);
           }
-          
           return _buildRequestCard(request);
         },
       ),
     );
   }
-
   Widget _buildRequestCard(Map<String, dynamic> request) {
     return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1785,7 +1684,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         )
         );
   }
-
   Widget _buildAssignedToOtherCard(Map<String, dynamic> request) {
     return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1920,16 +1818,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           ),
         );
   }
-
   Widget _buildApprovedContent() {
     var approvedRequests = _driverRequests.where((r) {
       final status = (r['status'] ?? '').toString().toUpperCase();
       final tripStatus = (r['trip_status'] ?? '').toString().toUpperCase();
       final assignedDriverId = r['assigned_driver_id']?.toString();
-
       // CRITICAL: Only show if assigned to THIS driver
       final isAssignedToMe = assignedDriverId == null || assignedDriverId == _driverId;
-
       return isAssignedToMe &&
           (status == 'APPROVED' ||
               status == 'ACCEPTED' ||
@@ -1950,7 +1845,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           tripStatus != 'COMPLETED' &&
           status != 'COMPLETED';
     }).toList();
-
     // Apply filter
     if (_approvedFilter != 'All') {
       approvedRequests = approvedRequests.where((r) {
@@ -1968,7 +1862,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         return true;
       }).toList();
     }
-
     // Sort by trip status: STARTED/ONGOING first, then ASSIGNED, then COMPLETED, CANCELLED
     approvedRequests.sort((a, b) {
       final statusA = (a['trip_status'] ?? a['status'] ?? 'ASSIGNED')
@@ -1977,7 +1870,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       final statusB = (b['trip_status'] ?? b['status'] ?? 'ASSIGNED')
           .toString()
           .toUpperCase();
-
       const statusOrder = {
         'STARTED': 0,
         'ON_TRIP': 0,
@@ -1991,10 +1883,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       };
       final orderA = statusOrder[statusA] ?? 4;
       final orderB = statusOrder[statusB] ?? 4;
-
       return orderA.compareTo(orderB);
     });
-
     if (approvedRequests.isEmpty) {
       return Column(
         children: [
@@ -2067,7 +1957,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ],
       );
     }
-
     return RefreshIndicator(
       onRefresh: _fetchAvailableTrips,
       child: SingleChildScrollView(
@@ -2124,7 +2013,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   .trim();
               final displayPhone =
                   customerPhone.isEmpty ? 'No Phone' : customerPhone;
-
               return Column(
                 children: [
                   _buildApprovedCard(
@@ -2154,7 +2042,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildApprovedCard({
     required String pickup,
     required String drop,
@@ -2172,7 +2059,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     String buttonText;
     Color buttonColor;
     bool isEnabled;
-
     // Check for various started statuses
     bool isTripStarted = tripStatus == 'STARTED' ||
         tripStatus == 'IN_PROGRESS' ||
@@ -2181,7 +2067,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         tripStatus == 'ONWAY' ||
         tripStatus.contains('STARTED') ||
         tripStatus.contains('PROGRESS');
-
     // Check if trip_status is COMPLETED or CANCELLED directly
     if (tripStatus == 'COMPLETED') {
       buttonText = 'Trip Completed';
@@ -2200,7 +2085,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       buttonColor = const Color(0xFF1565C0);
       isEnabled = true;
     }
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -2345,7 +2229,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   ],
                 ),
               ),
-             
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -2415,10 +2298,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     child: ElevatedButton(
                       onPressed: isEnabled
                           ? () async {
-                              debugPrint('\n=== TRIP DATA DEBUG ===');
-                              debugPrint('vehicleType parameter: $vehicleType');
-                              debugPrint('type parameter: $type');
-                              debugPrint('=======================\n');
                               if (isTripStarted) {
                                 Navigator.push(
                                   context,
@@ -2521,7 +2400,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Future<void> _makePhoneCall(String phoneNumber) async {
     if (phoneNumber.isEmpty || phoneNumber == 'No Phone') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2532,12 +2410,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       );
       return;
     }
-
     final Uri launchUri = Uri(
       scheme: 'tel',
       path: phoneNumber.replaceAll(RegExp(r'[^0-9+]'), ''),
     );
-
     try {
       if (await canLaunchUrl(launchUri)) {
         await launchUrl(launchUri);
@@ -2562,7 +2438,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       }
     }
   }
-
   Widget _buildSquareActionButton(IconData icon, Color color,
       {VoidCallback? onTap}) {
     return GestureDetector(
@@ -2589,7 +2464,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   void _showHistoryFilterDialog() {
     showDialog(
       context: context,
@@ -2674,7 +2548,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   void _showApprovedFilterDialog() {
     showDialog(
       context: context,
@@ -2759,7 +2632,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildFilterOption(String title, String value) {
     return GestureDetector(
       onTap: () {
@@ -2810,7 +2682,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildApprovedFilterOption(String title, String value) {
     return GestureDetector(
       onTap: () {
@@ -2861,7 +2732,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildHistoryContent() {
     // If we have cached data, show it immediately and fetch in background
     if (_cachedHistoryTrips != null) {
@@ -2873,10 +2743,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           });
         }
       });
-      
       return _buildHistoryTable(_cachedHistoryTrips!);
     }
-    
     // First load - show loading indicator
     return FutureBuilder<List<dynamic>>(
       future: ApiService.getAllTrips(),
@@ -2884,23 +2752,19 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-
         if (snapshot.hasError) {
           return const Center(
             child: Text('Error loading trip history',
                 style: TextStyle(color: Colors.red)),
           );
         }
-
         final trips = snapshot.data ?? [];
         _cachedHistoryTrips = trips;
         return _buildHistoryTable(trips);
       },
     );
   }
-  
   Widget _buildHistoryTable(List<dynamic> allTrips) {
-
         // Filter for completed trips assigned to this driver
         var completedTrips = allTrips.where((trip) {
           final status = (trip['trip_status'] ?? trip['status'] ?? '')
@@ -2909,14 +2773,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           final assignedDriverId = trip['assigned_driver_id']?.toString();
           return status == 'COMPLETED' && assignedDriverId == _driverId;
         }).toList();
-
         // Apply date filter
         if (_historyFilter != 'All') {
           final now = DateTime.now();
           completedTrips = completedTrips.where((trip) {
             final dateStr = trip['completed_at'] ?? trip['created_at'];
             if (dateStr == null) return false;
-            
             try {
               final tripDate = DateTime.parse(dateStr.toString());
               if (_historyFilter == 'Week') {
@@ -2932,7 +2794,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             return true;
           }).toList();
         }
-
         // Sort by completion date (most recent first)
         completedTrips.sort((a, b) {
           final dateA =
@@ -2941,7 +2802,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               b['completed_at'] ?? b['updated_at'] ?? b['created_at'] ?? '';
           return dateB.toString().compareTo(dateA.toString());
         });
-
         if (completedTrips.isEmpty) {
           return const Center(
             child: Column(
@@ -2957,7 +2817,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ),
           );
         }
-
         return Column(
           children: [
             Padding(
@@ -3042,7 +2901,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           ...completedTrips.asMap().entries.map((entry) {
                             final index = entry.key;
                             final trip = entry.value;
-
                             // Original fields
                             final dateStr =
                                 trip['completed_at'] ?? trip['created_at'];
@@ -3056,13 +2914,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                                     'COMPLETED')
                                 .toString()
                                 .toUpperCase();
-
                             // Odometer readings
                             final startKm =
                                 trip['odo_start'] ?? trip['starting_km'] ?? '0';
                             final endKm =
                                 trip['odo_end'] ?? trip['ending_km'] ?? '0';
-
                             // New/Calculated values
                             final totalCost = (trip['fare'] ??
                                     trip['total_fare'] ??
@@ -3073,7 +2929,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                             final serviceFee = totalCost * 0.10;
                             final distance =
                                 trip['distance'] ?? trip['distance_km'] ?? 5;
-
                             return TableRow(
                               decoration: BoxDecoration(
                                 color: index % 2 == 0
@@ -3106,7 +2961,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           ],
         );
   }
-
   void _showApprovedCancelDialog(BuildContext context, String tripId) {
     showDialog(
       context: context,
@@ -3217,7 +3071,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildTableHeader(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 12.0),
@@ -3228,7 +3081,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   Widget _buildTableCell(String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 12.0),
@@ -3239,7 +3091,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
-
   IconData _getVehicleIcon(String vehicleType) {
     final type = vehicleType.toUpperCase();
     if (type.contains('SUV')) return Icons.directions_car;
@@ -3252,7 +3103,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     if (type.contains('BIKE') || type.contains('MOTORCYCLE')) return Icons.two_wheeler;
     return Icons.directions_car;
   }
-
   String _formatTripType(String? tripType) {
     if (tripType == null || tripType.isEmpty) return 'One-way';
     final type = tripType.toUpperCase();
@@ -3261,14 +3111,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     return tripType;
   }
 }
-
 class MountainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = const Color(0xFFB8860B)
       ..style = PaintingStyle.fill;
-
     final path = Path();
     path.moveTo(0, size.height);
     path.lineTo(size.width * 0.2, size.height * 0.3);
@@ -3278,42 +3126,33 @@ class MountainPainter extends CustomPainter {
     path.lineTo(size.width * 0.8, size.height * 0.3);
     path.lineTo(size.width, size.height);
     path.close();
-
     canvas.drawPath(path, paint);
   }
-
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
-
 class CircularTextPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 8;
-
     const textStyle = TextStyle(
       fontSize: 10,
       fontWeight: FontWeight.bold,
       color: Color(0xFF8B4513),
     );
-
     _drawTextOnCircle(canvas, 'CHOLA CABS', center, radius, textStyle, -1.5);
   }
-
   void _drawTextOnCircle(Canvas canvas, String text, Offset center,
       double radius, TextStyle style, double startAngle) {
     final angleStep = 6.28 / text.length;
-
     for (int i = 0; i < text.length; i++) {
       final angle = startAngle + (i * angleStep);
       final x = center.dx + radius * math.cos(angle);
       final y = center.dy + radius * math.sin(angle);
-
       canvas.save();
       canvas.translate(x, y);
       canvas.rotate(angle + 1.57);
-
       final textPainter = TextPainter(
         text: TextSpan(text: text[i], style: style),
         textDirection: TextDirection.ltr,
@@ -3321,11 +3160,9 @@ class CircularTextPainter extends CustomPainter {
       textPainter.layout();
       textPainter.paint(
           canvas, Offset(-textPainter.width / 2, -textPainter.height / 2));
-
       canvas.restore();
     }
   }
-
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

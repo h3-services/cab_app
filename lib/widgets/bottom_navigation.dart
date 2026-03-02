@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-
 class BottomNavigation extends StatelessWidget {
   final String currentRoute;
   final Function(String)? onTap;
-
   const BottomNavigation({
     super.key,
     required this.currentRoute,
     this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -57,7 +54,6 @@ class BottomNavigation extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildNavItem(
       IconData icon, String label, bool isActive, VoidCallback onTap) {
     return GestureDetector(

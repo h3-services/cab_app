@@ -2,24 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../constants/app_colors.dart';
-
 class ContactAdminScreen extends StatelessWidget {
   const ContactAdminScreen({super.key});
-
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
     }
   }
-
   Future<void> _sendEmail(String email) async {
     final Uri launchUri = Uri(scheme: 'mailto', path: email);
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,7 +119,6 @@ class ContactAdminScreen extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildContactCard({
     required IconData icon,
     required String title,
@@ -204,7 +199,6 @@ class ContactAdminScreen extends StatelessWidget {
       ),
     );
   }
-
   Future<void> _launchWhatsApp() async {
     const phoneNumber = '+919876543210';
     final Uri launchUri = Uri.parse('https://wa.me/$phoneNumber');

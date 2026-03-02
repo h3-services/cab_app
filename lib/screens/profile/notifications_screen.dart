@@ -2,33 +2,26 @@ import 'package:flutter/material.dart';
 import '../../services/notification_service.dart';
 import '../../constants/app_colors.dart';
 import '../../widgets/common/app_drawer.dart';
-
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
-
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
-
 class _NotificationsScreenState extends State<NotificationsScreen> {
   late Future<List<NotificationModel>> _notificationsFuture;
-
   @override
   void initState() {
     super.initState();
     _loadNotifications();
   }
-
   void _loadNotifications() {
     _notificationsFuture = NotificationService.getNotifications();
   }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _loadNotifications();
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,7 +37,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
               child: Column(
@@ -57,7 +49,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             );
           }
-
           final notifications = snapshot.data!;
           return ListView.builder(
             itemCount: notifications.length,
@@ -89,11 +80,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
     );
   }
-
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inMinutes < 60) {

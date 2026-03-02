@@ -4,22 +4,17 @@ import '../../widgets/bottom_navigation.dart';
 import '../../widgets/common/app_drawer.dart';
 import '../../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 class TripProcessScreen extends StatefulWidget {
   final Map<String, dynamic> tripData;
-
   const TripProcessScreen({super.key, required this.tripData});
-
   @override
   State<TripProcessScreen> createState() => _TripProcessScreenState();
 }
-
 class _TripProcessScreenState extends State<TripProcessScreen> {
   int currentStep = 0; // 0: Start KM, 1: End KM, 2: Summary
   final TextEditingController _kmController = TextEditingController();
   String startKm = '';
   String endKm = '';
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,7 +56,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
               ),
             ),
           ),
-          
           // Back arrow and title section
           Container(
             color: const Color(0xFFB0B0B0),
@@ -88,18 +82,15 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
               ],
             ),
           ),
-          
           Expanded(
             child: _buildStepContent(),
           ),
-          
           // Bottom Navigation
           const BottomNavigation(currentRoute: '/dashboard'),
         ],
       ),
     );
   }
-
   String _getStepTitle() {
     switch (currentStep) {
       case 0:
@@ -112,7 +103,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
         return 'Trip Process';
     }
   }
-
   Widget _buildStepContent() {
     switch (currentStep) {
       case 0:
@@ -147,7 +137,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
         return Container();
     }
   }
-
   Widget _buildKmInputStep({
     required String title,
     required String label,
@@ -179,7 +168,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
                 // Label with icon
                 Row(
                   children: [
@@ -200,7 +188,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                
                 // Input field matching the image exactly
                 Container(
                   decoration: BoxDecoration(
@@ -245,9 +232,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
               ],
             ),
           ),
-          
           const Spacer(),
-          
           // Bottom buttons matching the image exactly
           Padding(
             padding: const EdgeInsets.only(bottom: 32.0),
@@ -266,7 +251,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
                     ),
                   ),
                 ),
-                
                 // Start Ride / Calculate Cost button
                 ElevatedButton(
                   onPressed: onPressed,
@@ -305,7 +289,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
       ),
     );
   }
-
   Widget _buildSummaryStep() {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -370,9 +353,7 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
               ],
             ),
           ),
-          
           const Spacer(),
-          
           // Bottom buttons
           Padding(
             padding: const EdgeInsets.only(bottom: 32.0),
@@ -423,7 +404,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
       ),
     );
   }
-
   Widget _buildSummaryRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -450,7 +430,6 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
       ),
     );
   }
-
   void _showCloseConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -533,25 +512,20 @@ class _TripProcessScreenState extends State<TripProcessScreen> {
       ),
     );
   }
-
   Future<void> _completeTrip() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverId = prefs.getString('driverId');
-      
       if (driverId != null) {
         // Calculate wallet deduction (10% of trip cost)
         final tripCost = 8908.0; // Updated total cost
         final walletFee = tripCost * 0.10;
-        
         // Get current wallet balance
         final driverDetails = await ApiService.getDriverDetails(driverId);
         final currentBalance = (driverDetails['wallet_balance'] ?? 0.0).toDouble();
         final newBalance = currentBalance - walletFee;
-        
         // Update wallet balance
         await ApiService.updateWalletBalance(driverId, newBalance);
-        
         // Navigate back to dashboard
         if (mounted) {
           Navigator.pop(context);

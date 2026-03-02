@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
-
 class AppColors {
   // Blue colors
   static const Color bluePrimary = Color(0xFF105BFF);
   static const Color blueDark = Color(0xFF053867);
-  
   // Green colors
   static const Color greenPrimary = Color(0xFF4F884F);
   static const Color greenDark = Color(0xFF2B4E2B);
-  
   // Orange/Gold colors
   static const Color orangePrimary = Color(0xFFD0911C);
   static const Color orangeDark = Color(0xFF886119);
-  
   // Gray colors
   static const Color grayPrimary = Color(0xFF565656);
   static const Color black = Color(0xFF000000);
-  
   // Legacy colors (kept for compatibility)
   static const Color appGradientStart = Color(0xFFFFFFFF);
   static const Color appGradientEnd = Color.fromARGB(255, 202, 200, 200);

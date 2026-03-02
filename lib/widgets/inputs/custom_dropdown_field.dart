@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-
 class CustomDropdownField extends StatelessWidget {
   final String label;
   final String? value;
   final List<String> items;
   final Function(String?) onChanged;
-  
   const CustomDropdownField({
     super.key,
     required this.label,
@@ -13,11 +11,9 @@ class CustomDropdownField extends StatelessWidget {
     required this.items,
     required this.onChanged,
   });
-
   @override
   Widget build(BuildContext context) {
     bool isRequired = label.contains('*');
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

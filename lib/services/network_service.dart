@@ -1,45 +1,36 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-
 class NetworkService {
   static final NetworkService _instance = NetworkService._internal();
   factory NetworkService() => _instance;
   NetworkService._internal();
-
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
   bool _isConnected = true;
   Function(bool)? _onConnectivityChanged;
-
   bool get isConnected => _isConnected;
-
   void initialize(Function(bool) onConnectivityChanged) {
     _onConnectivityChanged = onConnectivityChanged;
     _checkInitialConnection();
     _subscription = _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
   }
-
   Future<void> _checkInitialConnection() async {
     final results = await _connectivity.checkConnectivity();
     _updateConnectionStatus(results);
   }
-
   void _updateConnectionStatus(List<ConnectivityResult> results) {
     final hasConnection = results.any((result) => 
       result != ConnectivityResult.none
     );
-    
     if (_isConnected != hasConnection) {
       _isConnected = hasConnection;
       _onConnectivityChanged?.call(_isConnected);
     }
   }
-
   void dispose() {
     _subscription?.cancel();
   }
-
   static void showNoNetworkDialog(BuildContext context) {
     showDialog(
       context: context,
