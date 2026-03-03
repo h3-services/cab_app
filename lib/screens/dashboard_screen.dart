@@ -8,7 +8,6 @@ import 'trip/trip_start_screen.dart';
 import '../widgets/common/custom_app_bar.dart';
 import '../widgets/common/app_drawer.dart';
 import '../widgets/bottom_navigation.dart';
-import '../widgets/dialogs/trip_details_dialog.dart';
 import '../services/trip_state_service.dart';
 import '../services/api_service.dart';
 import '../services/location_service_manager.dart';
@@ -275,6 +274,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             enhanced['assigned_driver_id'] = tripDetails['assigned_driver_id'] ?? tripDetails['driver_id'] ?? request['assigned_driver_id'];
             enhanced['trip_status'] = tripDetails['trip_status'] ?? tripDetails['status'] ?? request['trip_status'];
             enhanced['odo_start'] = tripDetails['odo_start'] ?? request['odo_start'];
+            enhanced['planned_start_at'] = tripDetails['planned_start_at'] ?? request['planned_start_at'];
             enhanced['vehicle_type'] = tripDetails['vehicle_type'] ?? tripDetails['trip']?['vehicle_type'] ?? request['vehicle_type'] ?? request['trip']?['vehicle_type'];
             debugPrint('Enhanced vehicle_type: ${enhanced['vehicle_type']} (tripDetails: ${tripDetails['vehicle_type']}, tripDetails.trip: ${tripDetails['trip']?['vehicle_type']}, request: ${request['vehicle_type']}, request.trip: ${request['trip']?['vehicle_type']})');
             enhanced['trip_type'] = tripDetails['trip_type'] ?? tripDetails['trip']?['trip_type'] ?? request['trip_type'] ?? request['trip']?['trip_type'];
@@ -1345,7 +1345,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     if (dateStr == null) return '';
     try {
       DateTime dt;
-      if (dateStr.endsWith('Z') || dateStr.contains('+') || dateStr.contains('T') && dateStr.length > 19) {
+      if (dateStr.endsWith('Z') || dateStr.contains('+')) {
         dt = DateTime.parse(dateStr).toLocal();
       } else {
         dt = DateTime.parse(dateStr + 'Z').toLocal();
@@ -1373,7 +1373,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     if (dateStr == null) return '';
     try {
       DateTime dt;
-      if (dateStr.endsWith('Z') || dateStr.contains('+') || dateStr.contains('T') && dateStr.length > 19) {
+      if (dateStr.endsWith('Z') || dateStr.contains('+')) {
         dt = DateTime.parse(dateStr).toLocal();
       } else {
         dt = DateTime.parse(dateStr + 'Z').toLocal();

@@ -33,30 +33,49 @@ Future<void> initializeService() async {
 }
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  if (service is AndroidServiceInstance) {
-    service.setAsForegroundService();
-    service.setForegroundNotificationInfo(
-      title: "Chola Cabs Driver",
-      content: "Location tracking active",
-    );
-  }
   try {
-    await dotenv.load();
-  } catch (e) {
-    }
-  await NotificationPlugin.initialize();
-  if (service is AndroidServiceInstance) {
-    service.on('setAsForeground').listen((event) {
+    if (service is AndroidServiceInstance) {
       service.setAsForegroundService();
+      service.setForegroundNotificationInfo(
+        title: "Chola Cabs Driver",
+        content: "Starting...",
+      );
+    }
+    
+    if (service is AndroidServiceInstance) {
+      service.on('setAsForeground').listen((event) {
+        try {
+          service.setAsForegroundService();
+        } catch (e) {}
+      });
+      service.on('setAsBackground').listen((event) {
+        try {
+          service.setAsBackgroundService();
+        } catch (e) {}
+      });
+    }
+    service.on('stopService').listen((event) {
+      try {
+        service.stopSelf();
+      } catch (e) {}
     });
-    service.on('setAsBackground').listen((event) {
-      service.setAsBackgroundService();
-    });
-  }
-  service.on('stopService').listen((event) {
-    service.stopSelf();
-  });
-  Timer.periodic(const Duration(minutes: 5), (timer) async {
+    
+    try {
+      await dotenv.load();
+    } catch (e) {}
+    
+    try {
+      await NotificationPlugin.initialize();
+    } catch (e) {}
+    
+    if (service is AndroidServiceInstance) {
+      service.setForegroundNotificationInfo(
+        title: "Chola Cabs Driver",
+        content: "Location tracking active",
+      );
+    }
+    
+    Timer.periodic(const Duration(minutes: 5), (timer) async {
     try {
       debugPrint('📍 Background location update at ${DateTime.now()}');
       Position position = await Geolocator.getCurrentPosition(
@@ -78,10 +97,20 @@ void onStart(ServiceInstance service) async {
         if (lastPosition != null) {
           await sendLocationToServer(lastPosition.latitude, lastPosition.longitude, service);
         }
-      } catch (fallbackError) {
-        }
+      } catch (fallbackError) {}
     }
   });
+  } catch (e) {
+    if (service is AndroidServiceInstance) {
+      try {
+        service.setAsForegroundService();
+        service.setForegroundNotificationInfo(
+          title: "Chola Cabs Driver",
+          content: "Service error - retrying",
+        );
+      } catch (notificationError) {}
+    }
+  }
 }
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {

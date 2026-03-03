@@ -56,11 +56,21 @@
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:foregroundServiceType="location|dataSync"
             android:exported="false"
+            android:enabled="true"
             android:stopWithTask="false"
+            android:directBootAware="true"
             tools:replace="android:exported" />
         <service
             android:name="id.flutter.flutter_background_service.IsolateHolderService"
             android:exported="false" />
+        <service
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+            android:exported="false"
+            android:directBootAware="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
         <receiver
             android:name="id.flutter.flutter_background_service.BootReceiver"
             android:exported="true">
