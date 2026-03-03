@@ -2209,13 +2209,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        'Pickup at ${_formatTripTime(request?['planned_start_at'] ?? request?['created_at'])}',
+                        'Pickup Date : ${_formatTripTime(request?['planned_start_at'] ?? request?['created_at'])}',
                         style: const TextStyle(
                             color: Colors.black54,
                             fontSize: 13,
                             fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text('customer : $customer',
+                    Text('Pickup Time : ${_formatPickupTime(request?['planned_start_at'] ?? request?['created_at'])}',
                         style: const TextStyle(
                             color: Colors.black54,
                             fontSize: 13,
