@@ -1344,7 +1344,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   String _formatTripTime(String? dateStr) {
     if (dateStr == null) return '';
     try {
-      final dt = DateTime.parse(dateStr);
+      DateTime dt;
+      if (dateStr.endsWith('Z') || dateStr.contains('+') || dateStr.contains('T') && dateStr.length > 19) {
+        dt = DateTime.parse(dateStr).toLocal();
+      } else {
+        dt = DateTime.parse(dateStr + 'Z').toLocal();
+      }
       const months = [
         'Jan',
         'Feb',
@@ -1367,7 +1372,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   String _formatPickupTime(String? dateStr) {
     if (dateStr == null) return '';
     try {
-      final dt = DateTime.parse(dateStr);
+      DateTime dt;
+      if (dateStr.endsWith('Z') || dateStr.contains('+') || dateStr.contains('T') && dateStr.length > 19) {
+        dt = DateTime.parse(dateStr).toLocal();
+      } else {
+        dt = DateTime.parse(dateStr + 'Z').toLocal();
+      }
       final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
       final minute = dt.minute.toString().padLeft(2, '0');
       final period = dt.hour >= 12 ? 'PM' : 'AM';

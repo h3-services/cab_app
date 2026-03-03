@@ -22,6 +22,7 @@ Future<void> initializeService() async {
       initialNotificationContent: 'Location tracking active',
       foregroundServiceNotificationId: 888,
       autoStartOnBoot: false,
+      foregroundServiceTypes: [AndroidForegroundType.location, AndroidForegroundType.dataSync],
     ),
     iosConfiguration: IosConfiguration(
       onForeground: onStart,
@@ -29,10 +30,6 @@ Future<void> initializeService() async {
       autoStart: false,
     ),
   );
-  try {
-    await service.startService();
-  } catch (e) {
-    }
 }
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {

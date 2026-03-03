@@ -279,7 +279,13 @@ class TripDetailsDialog extends StatelessWidget {
   String _formatDateTime(dynamic dateStr) {
     if (dateStr == null) return '-';
     try {
-      final dt = DateTime.parse(dateStr.toString());
+      final str = dateStr.toString();
+      DateTime dt;
+      if (str.endsWith('Z') || str.contains('+') || str.contains('T') && str.length > 19) {
+        dt = DateTime.parse(str).toLocal();
+      } else {
+        dt = DateTime.parse(str + 'Z').toLocal();
+      }
       return '${dt.day}/${dt.month} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return dateStr.toString();
