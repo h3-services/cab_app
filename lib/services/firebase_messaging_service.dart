@@ -30,23 +30,45 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 Future<void> initializeFirebaseMessaging() async {
   final messaging = FirebaseMessaging.instance;
-  await messaging.requestPermission(
+  
+  // Request permissions
+  final settings = await messaging.requestPermission(
     alert: true,
     badge: true,
     sound: true,
+    provisional: false,
   );
+  
+  print('🔔 FCM Permission: ${settings.authorizationStatus}');
+  
   // Get and print FCM token
   final token = await messaging.getToken();
   print('🔔 FCM Token: $token');
   
-  // Send token to backend
+  // CRITICAL: Send token to backend immediately if driver is logged in
   if (token != null) {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('fcm_token_pending', token);
+    
     final driverId = prefs.getString('driverId');
-    if (driverId != null) {
+    if (driverId != null && driverId.isNotEmpty) {
       await _syncFcmToken(driverId, token);
+    } else {
+      print('⚠️ Driver not logged in yet, token will sync after login');
     }
   }
+  
+  // Listen for token refresh
+  messaging.onTokenRefresh.listen((newToken) async {
+    print('🔄 FCM Token refreshed: $newToken');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('fcm_token_pending', newToken);
+    
+    final driverId = prefs.getString('driverId');
+    if (driverId != null && driverId.isNotEmpty) {
+      await _syncFcmToken(driverId, newToken);
+    }
+  });
   // Handle message when app is launched from terminated state
   FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
     if (message != null) {
@@ -173,15 +195,40 @@ Future<void> _syncFcmToken(String driverId, String currentToken) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final storedToken = prefs.getString('fcm_token');
+    
     if (currentToken != storedToken) {
-      print('🔄 Syncing FCM token: $currentToken');
-      final response = await ApiService.addFcmToken(driverId, currentToken);
+      print('🔄 Syncing FCM token to backend...');
+      await ApiService.addFcmToken(driverId, currentToken);
       await prefs.setString('fcm_token', currentToken);
+      await prefs.remove('fcm_token_pending');
       print('✅ FCM token synced successfully');
     } else {
       print('ℹ️ FCM token already up to date');
     }
   } catch (e) {
     print('❌ FCM sync failed: $e');
+    // Keep pending token for retry
+  }
+}
+
+/// Call this after driver login to sync pending FCM token
+Future<void> syncPendingFcmToken(String driverId) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final pendingToken = prefs.getString('fcm_token_pending');
+    
+    if (pendingToken != null && pendingToken.isNotEmpty) {
+      print('🔄 Syncing pending FCM token after login...');
+      await _syncFcmToken(driverId, pendingToken);
+    } else {
+      // Try to get current token
+      final messaging = FirebaseMessaging.instance;
+      final token = await messaging.getToken();
+      if (token != null) {
+        await _syncFcmToken(driverId, token);
+      }
+    }
+  } catch (e) {
+    print('❌ Failed to sync pending token: $e');
   }
 }

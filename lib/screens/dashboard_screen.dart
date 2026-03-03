@@ -13,6 +13,7 @@ import '../services/api_service.dart';
 import '../services/location_service_manager.dart';
 import '../services/battery_optimization_service.dart';
 import '../services/background_service.dart';
+import '../services/firebase_messaging_service.dart';
 import '../constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -149,6 +150,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     setState(() {
       _driverId = prefs.getString('driverId');
     });
+    
+    // Sync FCM token after getting driver ID
+    if (_driverId != null && _driverId!.isNotEmpty) {
+      syncPendingFcmToken(_driverId!);
+    }
     // Check if we already have cached data (returning from another screen)
     final cachedDriverData = prefs.getString('driver_data');
     final isAvailable = prefs.getBool('is_available') ?? false;

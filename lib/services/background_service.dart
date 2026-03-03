@@ -9,7 +9,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'notification_plugin.dart';
 import 'alarm_manager_location_service.dart';
 Future<void> initializeService() async {
+  // DISABLED: Background service causing crashes on Android 12+
+  // Only use AlarmManager for location tracking
   await AlarmManagerLocationService.initialize();
+  await NotificationPlugin.initialize();
+  
+  // Service configuration disabled to prevent crashes
+  // TODO: Fix flutter_background_service plugin compatibility with Android 12+
+  return;
+  
+  /*
   final service = FlutterBackgroundService();
   await NotificationPlugin.initialize();
   await service.configure(
@@ -30,17 +39,25 @@ Future<void> initializeService() async {
       autoStart: false,
     ),
   );
+  */
 }
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  // CRITICAL: Set foreground IMMEDIATELY before ANY other code
   if (service is AndroidServiceInstance) {
-    service.setAsForegroundService();
-    service.setForegroundNotificationInfo(
-      title: "Chola Cabs Driver",
-      content: "Location tracking active",
-    );
+    try {
+      service.setAsForegroundService();
+      service.setForegroundNotificationInfo(
+        title: "Chola Cabs Driver",
+        content: "Starting...",
+      );
+    } catch (e) {
+      // If this fails, service will crash anyway
+      debugPrint('Failed to set foreground: $e');
+    }
   }
   
+  // Now safe to do async work
   try {
     if (service is AndroidServiceInstance) {
       service.on('setAsForeground').listen((event) {
@@ -67,6 +84,13 @@ void onStart(ServiceInstance service) async {
     try {
       await NotificationPlugin.initialize();
     } catch (e) {}
+    
+    if (service is AndroidServiceInstance) {
+      service.setForegroundNotificationInfo(
+        title: "Chola Cabs Driver",
+        content: "Location tracking active",
+      );
+    }
     
     Timer.periodic(const Duration(minutes: 5), (timer) async {
     try {
