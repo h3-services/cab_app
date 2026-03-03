@@ -37,7 +37,6 @@ class BottomNavigation extends StatelessWidget {
               }
             },
           ),
-          const SizedBox(width: 10),
           _buildNavItem(
             Icons.wallet,
             'Wallet',
@@ -47,6 +46,30 @@ class BottomNavigation extends StatelessWidget {
                 onTap!('/wallet');
               } else {
                 Navigator.pushReplacementNamed(context, '/wallet');
+              }
+            },
+          ),
+          _buildNavItem(
+            Icons.privacy_tip,
+            'Privacy',
+            currentRoute == '/privacy-policy',
+            () {
+              if (onTap != null) {
+                onTap!('/privacy-policy');
+              } else {
+                Navigator.pushReplacementNamed(context, '/privacy-policy');
+              }
+            },
+          ),
+          _buildNavItem(
+            Icons.help,
+            'Help',
+            currentRoute == '/help-support',
+            () {
+              if (onTap != null) {
+                onTap!('/help-support');
+              } else {
+                Navigator.pushReplacementNamed(context, '/help-support');
               }
             },
           ),

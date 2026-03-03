@@ -16,6 +16,8 @@ import 'screens/profile/wallet_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/profile/notifications_screen.dart';
 import 'screens/profile/settings_screen.dart';
+import 'screens/profile/privacy_policy_screen.dart';
+import 'screens/profile/help_support_screen.dart';
 import 'screens/trip/trip_process_screen.dart';
 import 'services/background_service.dart';
 import 'services/firebase_messaging_service.dart';
@@ -78,6 +80,8 @@ class _MyAppState extends State<MyApp> {
         '/profile': (context) => const ProfileScreen(),
         '/notifications': (context) => const NotificationsScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/privacy-policy': (context) => const PrivacyPolicyScreen(),
+        '/help-support': (context) => const HelpSupportScreen(),
         '/approval-pending': (context) => const ApprovalPendingScreen(),
         '/personal-details': (context) => const PersonalDetailsScreen(),
         '/kyc': (context) => const KycUploadScreen(),

@@ -2,6 +2,7 @@
 export 'common/gradient_background.dart';
 export 'common/app_logo.dart';
 export 'common/custom_app_bar.dart';
+export 'bottom_navigation.dart';
 // Button Widgets
 export 'buttons/gradient_button.dart';
 // Input Widgets
