@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/widgets.dart';
+import '../../constants/app_colors.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
@@ -8,6 +9,7 @@ class HelpSupportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFB0B0B0),
       appBar: CustomAppBar(title: 'Help & Support'),
       bottomNavigationBar: BottomNavigation(currentRoute: '/help-support'),
       body: SingleChildScrollView(
@@ -17,7 +19,7 @@ class HelpSupportScreen extends StatelessWidget {
           children: [
             const Text(
               'How can we help you?',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 24),
             _buildContactCard(
@@ -43,7 +45,7 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 32),
             const Text(
               'Frequently Asked Questions',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 16),
             _buildFAQ(
@@ -74,36 +76,62 @@ class HelpSupportScreen extends StatelessWidget {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 2,
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFC4C4C4),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue.shade100,
-          child: Icon(icon, color: Colors.blue),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.greenPrimary, AppColors.greenDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.white),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.black54)),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black54),
         onTap: onTap,
       ),
     );
   }
 
   Widget _buildFAQ(String question, String answer) {
-    return ExpansionTile(
-      title: Text(
-        question,
-        style: const TextStyle(fontWeight: FontWeight.w600),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC4C4C4),
+        borderRadius: BorderRadius.circular(12),
       ),
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            answer,
-            style: const TextStyle(height: 1.5),
-          ),
+      child: ExpansionTile(
+        title: Text(
+          question,
+          style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
         ),
-      ],
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              answer,
+              style: const TextStyle(height: 1.5, color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
