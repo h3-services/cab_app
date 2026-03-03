@@ -38,6 +38,10 @@ Future<void> initializeService() async {
 void onStart(ServiceInstance service) async {
   if (service is AndroidServiceInstance) {
     service.setAsForegroundService();
+    service.setForegroundNotificationInfo(
+      title: "Chola Cabs Driver",
+      content: "Location tracking active",
+    );
   }
   try {
     await dotenv.load();
