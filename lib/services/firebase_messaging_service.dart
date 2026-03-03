@@ -7,6 +7,7 @@ import 'notification_service.dart';
 import '../main.dart';
 import 'notification_plugin.dart';
 import 'audio_service.dart';
+import 'api_service.dart';
 // Global stream controller for wallet updates
 final StreamController<bool> walletUpdateController = StreamController<bool>.broadcast();
 @pragma('vm:entry-point')
@@ -36,6 +37,16 @@ Future<void> initializeFirebaseMessaging() async {
   );
   // Get and print FCM token
   final token = await messaging.getToken();
+  print('🔔 FCM Token: $token');
+  
+  // Send token to backend
+  if (token != null) {
+    final prefs = await SharedPreferences.getInstance();
+    final driverId = prefs.getString('driverId');
+    if (driverId != null) {
+      await _syncFcmToken(driverId, token);
+    }
+  }
   // Handle message when app is launched from terminated state
   FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
     if (message != null) {
@@ -157,4 +168,20 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
     }
   } catch (e) {
     }
+}
+Future<void> _syncFcmToken(String driverId, String currentToken) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final storedToken = prefs.getString('fcm_token');
+    if (currentToken != storedToken) {
+      print('🔄 Syncing FCM token: $currentToken');
+      final response = await ApiService.addFcmToken(driverId, currentToken);
+      await prefs.setString('fcm_token', currentToken);
+      print('✅ FCM token synced successfully');
+    } else {
+      print('ℹ️ FCM token already up to date');
+    }
+  } catch (e) {
+    print('❌ FCM sync failed: $e');
+  }
 }

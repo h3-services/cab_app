@@ -33,15 +33,15 @@ Future<void> initializeService() async {
 }
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  if (service is AndroidServiceInstance) {
+    service.setAsForegroundService();
+    service.setForegroundNotificationInfo(
+      title: "Chola Cabs Driver",
+      content: "Location tracking active",
+    );
+  }
+  
   try {
-    if (service is AndroidServiceInstance) {
-      service.setAsForegroundService();
-      service.setForegroundNotificationInfo(
-        title: "Chola Cabs Driver",
-        content: "Starting...",
-      );
-    }
-    
     if (service is AndroidServiceInstance) {
       service.on('setAsForeground').listen((event) {
         try {
@@ -68,13 +68,6 @@ void onStart(ServiceInstance service) async {
       await NotificationPlugin.initialize();
     } catch (e) {}
     
-    if (service is AndroidServiceInstance) {
-      service.setForegroundNotificationInfo(
-        title: "Chola Cabs Driver",
-        content: "Location tracking active",
-      );
-    }
-    
     Timer.periodic(const Duration(minutes: 5), (timer) async {
     try {
       debugPrint('📍 Background location update at ${DateTime.now()}');
@@ -100,17 +93,7 @@ void onStart(ServiceInstance service) async {
       } catch (fallbackError) {}
     }
   });
-  } catch (e) {
-    if (service is AndroidServiceInstance) {
-      try {
-        service.setAsForegroundService();
-        service.setForegroundNotificationInfo(
-          title: "Chola Cabs Driver",
-          content: "Service error - retrying",
-        );
-      } catch (notificationError) {}
-    }
-  }
+  } catch (e) {}
 }
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {

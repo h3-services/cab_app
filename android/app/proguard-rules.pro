@@ -18,6 +18,8 @@
     *;
 }
 -keep class io.flutter.plugins.firebase.messaging.** { *; }
+-keep class io.flutter.plugins.firebase.** { *; }
+-keep @com.google.firebase.messaging.FirebaseMessagingService class * { *; }
 
 # Razorpay
 -keep class com.razorpay.** { *; }
