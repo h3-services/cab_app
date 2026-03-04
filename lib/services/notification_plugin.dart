@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 import 'package:volume_controller/volume_controller.dart';
 import 'audio_service.dart';
+import 'native_audio_service.dart';
 class NotificationPlugin {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -64,7 +65,8 @@ class NotificationPlugin {
     required String source,
   }) async {
     try {
-      await AudioService.playNotificationSound();
+      // Audio is handled by notification channel configuration
+      
       final now = DateTime.now();
       final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       final notificationId = 1000 + (now.millisecondsSinceEpoch % 1000);
@@ -117,7 +119,9 @@ class NotificationPlugin {
       if (title.isEmpty || title == 'Notification' || body.isEmpty) {
         return;
       }
-      await AudioService.playNotificationSound();
+      
+      // Audio is handled by notification channel configuration
+      
       final AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'trip_notifications_v3',
@@ -170,8 +174,8 @@ class NotificationPlugin {
   // Test notification to verify notifications are working
   static Future<void> showTestNotification() async {
     try {
-      // Play NEW audio
-      await AudioService.playNotificationSound();
+      // Audio is handled by notification channel configuration
+      
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'terminated_location_v2',

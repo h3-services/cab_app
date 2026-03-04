@@ -471,17 +471,22 @@ class ApiService {
   static Future<List<dynamic>> getAvailableTrips() async {
     final url = Uri.parse('$baseUrl/trips/');
     try {
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('Network timeout'),
+      );
       if (response.statusCode == 200) {
         var decoded = jsonDecode(response.body);
         if (decoded is List) return decoded;
-        // Handle common wrapper cases if any, otherwise return empty or throw
         return [];
       } else {
         throw Exception('Failed to load trips: ${response.statusCode}');
       }
+    } on SocketException {
+      throw Exception('Network error: No internet connection');
+    } on TimeoutException {
+      throw Exception('Network error: Request timeout');
     } catch (e) {
-      // Return empty list on error to allow UI to show placeholder or empty state
       return [];
     }
   }
@@ -782,24 +787,47 @@ class ApiService {
     } catch (e) {
       }
   }
+  static Future<List<String>> getFcmTokens(String driverId) async {
+    final url = Uri.parse('https://api.cholacabs.in/api/v1/drivers/$driverId/fcm-tokens');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic> && decoded.containsKey('fcm_tokens')) {
+          final tokens = decoded['fcm_tokens'];
+          // Handle if fcm_tokens is a string (single token)
+          if (tokens is String) {
+            return [tokens];
+          }
+          // Handle if fcm_tokens is an array
+          if (tokens is List) {
+            return tokens.map((t) => t.toString()).toList();
+          }
+        }
+        return [];
+      }
+      return [];
+    } catch (e) {
+      debugPrint('❌ Get FCM tokens error: $e');
+      return [];
+    }
+  }
+
   static Future<void> addFcmToken(String driverId, String token) async {
-    final url = Uri.parse('$baseUrl/drivers/$driverId/fcm-token');
-    debugPrint('POST Request (FCM Token): $url');
-    final body = {
-      "fcm_token": token,
-    };
+    final url = Uri.parse('https://api.cholacabs.in/api/v1/drivers/$driverId/fcm-token');
+    final body = {"fcm_token": token};
     try {
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
       if (response.statusCode != 200 && response.statusCode != 201) {
-        }
-    } catch (e) {
+        debugPrint('⚠️ FCM token update failed: ${response.statusCode} - ${response.body}');
       }
+    } catch (e) {
+      debugPrint('❌ FCM token update error: $e');
+    }
   }
   static Future<Map<String, dynamic>> updateTripExtras(
     String tripId,

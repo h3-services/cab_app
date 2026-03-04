@@ -31,14 +31,38 @@ class _LoginScreenState extends State<LoginScreen> {
     return 'unknown';
   }
   Future<void> _checkAndUpdateFcmToken(String driverId, Map<String, dynamic> driverData) async {
+    print('[Login] _checkAndUpdateFcmToken() called for driver: $driverId');
     try {
-      final currentFcmToken = await FirebaseMessaging.instance.getToken();
-      final storedFcmToken = driverData['fcm_token']?.toString();
-      if (currentFcmToken != null && currentFcmToken != storedFcmToken) {
+      // Wait for FCM token to be available (may take a moment after reinstall)
+      String? currentFcmToken;
+      for (int i = 0; i < 5; i++) {
+        currentFcmToken = await FirebaseMessaging.instance.getToken();
+        if (currentFcmToken != null) break;
+        await Future.delayed(Duration(seconds: 1));
+      }
+      
+      if (currentFcmToken == null) {
+        print('[Login] ❌ Failed to get FCM token');
+        return;
+      }
+      
+      print('[Login] Current FCM Token: $currentFcmToken');
+      
+      // Get stored FCM tokens from backend
+      final storedTokens = await ApiService.getFcmTokens(driverId);
+      print('[Login] Stored FCM Tokens: $storedTokens');
+      
+      // Check if current token exists in stored tokens
+      if (!storedTokens.contains(currentFcmToken)) {
+        print('[Login] Token not found in backend. Updating...');
         await ApiService.addFcmToken(driverId, currentFcmToken);
+        print('[Login] ✅ FCM token updated successfully');
+      } else {
+        print('[Login] ℹ️ FCM token already exists in backend');
       }
     } catch (e) {
-      }
+      print('[Login] ❌ FCM token sync error: $e');
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -240,7 +264,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                       if (registeredDeviceId == null || registeredDeviceId.isEmpty || registeredDeviceId == 'unknown') {
                                         await ApiService.updateDriverDeviceId(driverId, currentDeviceId);
                                       }
+                                      
+                                      print('[Login] ========== FCM TOKEN SYNC START ==========');
                                       await _checkAndUpdateFcmToken(driverId, driverData);
+                                      print('[Login] ========== FCM TOKEN SYNC END ==========');
+                                      
                                       final prefs = await SharedPreferences.getInstance();
                                       await prefs.setString('phoneNumber', _phoneController.text);
                                       await prefs.setString('driverId', driverId);

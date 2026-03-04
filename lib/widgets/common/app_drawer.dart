@@ -201,26 +201,30 @@ class _AppDrawerState extends State<AppDrawer> {
                               onPressed: () async {
                                 Navigator.pop(context);
                                 final prefs = await SharedPreferences.getInstance();
-                                // Get driver ID before clearing
-                                final driverId = prefs.getString('driverId');
-                                // Save transaction data before clearing
-                                List<String>? localTxns;
-                                List<String>? adminTxns;
-                                if (driverId != null) {
-                                  localTxns = prefs.getStringList('local_transactions_$driverId');
-                                  adminTxns = prefs.getStringList('admin_transactions_$driverId');
+                                // Get all transaction keys before clearing
+                                final allKeys = prefs.getKeys();
+                                final transactionKeys = allKeys.where((key) => 
+                                  key.startsWith('local_transactions_') || 
+                                  key.startsWith('admin_transactions_')
+                                ).toList();
+                                
+                                // Save all transaction data
+                                Map<String, List<String>> savedTransactions = {};
+                                for (String key in transactionKeys) {
+                                  final data = prefs.getStringList(key);
+                                  if (data != null) {
+                                    savedTransactions[key] = data;
+                                  }
                                 }
+                                
                                 // Clear all data
                                 await prefs.clear();
-                                // Restore transaction data
-                                if (driverId != null) {
-                                  if (localTxns != null) {
-                                    await prefs.setStringList('local_transactions_$driverId', localTxns);
-                                  }
-                                  if (adminTxns != null) {
-                                    await prefs.setStringList('admin_transactions_$driverId', adminTxns);
-                                  }
+                                
+                                // Restore all transaction data
+                                for (var entry in savedTransactions.entries) {
+                                  await prefs.setStringList(entry.key, entry.value);
                                 }
+                                
                                 if (context.mounted) {
                                   Navigator.pushNamedAndRemoveUntil(
                                       context, '/login', (route) => false);

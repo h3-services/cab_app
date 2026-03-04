@@ -254,29 +254,24 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       setState(() => _isLoadingTrips = true);
     }
     try {
-      // Always fetch fresh driver data to get latest wallet balance
       if (_driverId != null) {
         final driverData = await ApiService.getDriverDetails(_driverId!);
         _walletBalance = (driverData['wallet_balance'] ?? 0.0).toDouble();
-        // Update cached driver data
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('driver_data', jsonEncode(driverData));
       }
-      // Fetch only essential data in parallel
       final results = await Future.wait([
         ApiService.getAvailableTrips(),
         _driverId != null ? ApiService.getDriverRequests(_driverId!) : Future.value([]),
       ]);
       final trips = results[0] as List<dynamic>;
       final requests = results[1] as List<dynamic>;
-      // Enhance requests with latest trip status
       final enhancedRequests = await Future.wait(requests.map((request) async {
         final tripId = request['trip_id']?.toString();
         if (tripId != null) {
           try {
             final tripDetails = await ApiService.getTripDetails(tripId);
             final enhanced = Map<String, dynamic>.from(request);
-            // CRITICAL: Update assigned_driver_id from latest trip details
             enhanced['assigned_driver_id'] = tripDetails['assigned_driver_id'] ?? tripDetails['driver_id'] ?? request['assigned_driver_id'];
             enhanced['trip_status'] = tripDetails['trip_status'] ?? tripDetails['status'] ?? request['trip_status'];
             enhanced['odo_start'] = tripDetails['odo_start'] ?? request['odo_start'];
@@ -293,7 +288,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         }
         return Map<String, dynamic>.from(request);
       }));
-      // Filter available trips
       final requestedTripIds = enhancedRequests
           .where((r) => (r['status'] ?? '').toString().toUpperCase() != 'CANCELLED')
           .map((r) => r['trip_id'].toString())
@@ -316,6 +310,20 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingTrips = false);
+        if (e.toString().contains('SocketException') || 
+            e.toString().contains('TimeoutException') ||
+            e.toString().contains('Network error')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Poor network connection. Retrying...'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          Future.delayed(const Duration(seconds: 3), () {
+            if (mounted) _fetchAvailableTrips(showLoading: false);
+          });
+        }
       }
     }
   }

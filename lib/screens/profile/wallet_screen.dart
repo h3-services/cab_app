@@ -36,6 +36,7 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initRazorpay();
+    _processPendingTransactions();
     _loadWalletData();
     _setupFCMListener();
     _setupWalletUpdateListener();
@@ -44,10 +45,8 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      // Add delay to ensure background processing is complete
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _loadWalletData();
-      });
+      // Reload immediately when app resumes
+      if (mounted) _loadWalletData();
     }
   }
   void _setupWalletUpdateListener() {
@@ -56,6 +55,24 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
         _loadWalletData();
       }
     });
+  }
+  
+  Future<void> _processPendingTransactions() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pending = prefs.getStringList('pending_wallet_txns') ?? [];
+      
+      if (pending.isNotEmpty) {
+        print('[Wallet Screen] Processing ${pending.length} pending transactions');
+        // Trigger processing in firebase_messaging_service
+        final driverId = prefs.getString('driverId');
+        if (driverId != null) {
+          await syncPendingFcmToken(driverId);
+        }
+      }
+    } catch (e) {
+      print('[Wallet Screen] Error processing pending: $e');
+    }
   }
   @override
   void didChangeDependencies() {
@@ -91,16 +108,23 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
   }
   Future<List<Map<String, dynamic>>> _safeGetAllPayments() async {
     try {
-      return await PaymentService.getAllPayments();
+      print('[Wallet] Fetching all payments from API...');
+      final payments = await PaymentService.getAllPayments();
+      print('[Wallet] Received ${payments.length} payments from API');
+      return payments;
     } catch (e) {
-      debugPrint('Payments API failed (404 expected): $e');
+      debugPrint('[Wallet] Payments API failed: $e');
       return [];
     }
   }
   Future<List<Map<String, dynamic>>> _safeGetWalletTransactions(String driverId) async {
     try {
-      return await PaymentService.getWalletTransactions(driverId);
+      print('[Wallet] Fetching wallet transactions for driver: $driverId');
+      final txns = await PaymentService.getWalletTransactions(driverId);
+      print('[Wallet] Received ${txns.length} wallet transactions from API');
+      return txns;
     } catch (e) {
+      print('[Wallet] Wallet transactions API failed: $e');
       return [];
     }
   }
@@ -131,6 +155,12 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
         final List payments = results[0];
         final List allTrips = results[1];
         final List walletTxns = results[2];
+        
+        print('[Wallet] ========== TRANSACTION LOADING ==========');
+        print('[Wallet] Payments count: ${payments.length}');
+        print('[Wallet] Trips count: ${allTrips.length}');
+        print('[Wallet] Wallet transactions count: ${walletTxns.length}');
+        
         List<Map<String, dynamic>> transactionHistory = [];
         int completedCount = 0;
         // Process Payments (Top-ups) from API
@@ -200,7 +230,7 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
             }
           }
         }
-        // Load local transactions (user-specific)
+        // Load local transactions (user-specific) - for backward compatibility
         final localTxns = prefs.getStringList('local_transactions_$driverId') ?? [];
         for (String txnStr in localTxns) {
           try {
@@ -209,7 +239,32 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
           } catch (e) {
             }
         }
-        // Load admin transactions (user-specific)
+        
+        // Load admin transactions from backend API (persists across reinstalls)
+        for (var txn in walletTxns) {
+          try {
+            final type = txn['transaction_type']?.toString().toUpperCase();
+            final amount = (num.tryParse(txn['amount']?.toString() ?? '0') ?? 0).toDouble();
+            final date = txn['created_at'] ?? DateTime.now().toIso8601String();
+            final displayDate = date.toString().split('T')[0];
+            
+            if (type == 'CREDIT' || type == 'DEBIT') {
+              transactionHistory.add({
+                'title': type == 'CREDIT' ? 'Admin Credit' : 'Admin Deduction',
+                'date': displayDate,
+                'tripId': 'N/A',
+                'transaction_id': txn['transaction_id'] ?? '',
+                'amount': '${type == "CREDIT" ? "+" : "-"}₹${amount.toStringAsFixed(2)}',
+                'type': type == 'CREDIT' ? 'earning' : 'spending',
+                'raw_date': date,
+                'reason': txn['description'] ?? (type == 'CREDIT' ? 'Wallet Credited' : 'Wallet Debited'),
+              });
+            }
+          } catch (e) {
+            }
+        }
+        
+        // Load local admin transactions (for backward compatibility with old data)
         final adminTxns = prefs.getStringList('admin_transactions_$driverId') ?? [];
         for (String txnStr in adminTxns) {
           try {

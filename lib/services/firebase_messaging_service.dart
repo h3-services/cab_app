@@ -6,27 +6,46 @@ import 'dart:convert';
 import 'notification_service.dart';
 import '../main.dart';
 import 'notification_plugin.dart';
-import 'audio_service.dart';
 import 'api_service.dart';
+import 'payment_service.dart';
+import 'native_audio_service.dart';
 // Global stream controller for wallet updates
 final StreamController<bool> walletUpdateController = StreamController<bool>.broadcast();
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   try {
+    print('[FCM-BG] Background handler called at ${DateTime.now()}');
     final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
     final body = message.notification?.body ?? message.data['body'] ?? '';
+    print('[FCM-BG] Title: $title, Body: $body');
+    
     await NotificationService.saveNotification(title, body);
+    
     // Handle wallet transactions in background
     final type = message.data['type'] as String?;
     if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
         title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
+      print('[FCM-BG] Wallet transaction detected');
       await _handleWalletDeduction(message.data, body);
+      
+      // Also save to pending queue as backup
+      final prefs = await SharedPreferences.getInstance();
+      final pending = prefs.getStringList('pending_wallet_txns') ?? [];
+      pending.add(jsonEncode({
+        'data': message.data,
+        'body': body,
+        'timestamp': DateTime.now().toIso8601String(),
+      }));
+      await prefs.setStringList('pending_wallet_txns', pending);
+      print('[FCM-BG] Saved to pending queue');
     }
-    // DON'T play audio here - let notification sound handle it
-    print("[FCM] Background notification saved (audio via notification channel)");
-  } catch (e) {
-    }
+    
+    print("[FCM-BG] Background notification saved, FCM will display with sound");
+  } catch (e, stackTrace) {
+    print('[FCM-BG] ERROR: $e');
+    print('[FCM-BG] Stack: $stackTrace');
+  }
 }
 Future<void> initializeFirebaseMessaging() async {
   final messaging = FirebaseMessaging.instance;
@@ -87,7 +106,7 @@ Future<void> initializeFirebaseMessaging() async {
         title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
       await _handleWalletDeduction(message.data, body);
     }
-    // Show notification in foreground (sound plays via notification channel)
+    // Show notification in foreground (audio plays via AudioService + channel sound)
     await NotificationPlugin.showNotification(
       id: message.hashCode,
       title: title,
@@ -139,27 +158,33 @@ void _handleNotificationClick(Map<String, dynamic> data) {
 }
 Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) async {
   try {
+    print('[Wallet] Processing wallet transaction...');
     final prefs = await SharedPreferences.getInstance();
     final driverId = prefs.getString('driverId');
     if (driverId == null) {
+      print('[Wallet] ERROR: Driver ID not found');
       return;
     }
+    print('[Wallet] Driver ID: $driverId');
+    
     // Determine if it's credit or debit
-    bool isCredit = body.contains('credited') || body.contains('added');
-    bool isDebit = body.contains('debited') || body.contains('deducted');
+    bool isCredit = body.contains('credited') || body.contains('added') || body.contains('Credited');
+    bool isDebit = body.contains('debited') || body.contains('deducted') || body.contains('Debited');
     String? amountStr;
     String? newBalance;
     // Extract amount - works for both credit and debit
-    final amountRegex = RegExp(r'(?:debited by|credited with|added|deducted) [₹\$]?\s*(\d+\.?\d*)');
+    final amountRegex = RegExp(r'(?:debited by|credited with|added|deducted|Debited by|Credited with) [₹\$]?\s*(\d+\.?\d*)', caseSensitive: false);
     final amountMatch = amountRegex.firstMatch(body);
     if (amountMatch != null) {
       amountStr = amountMatch.group(1);
+      print('[Wallet] Extracted amount: $amountStr');
     }
     // Extract new balance
-    final balanceRegex = RegExp(r'balance is [₹\$]?\s*(\d+\.?\d*)');
+    final balanceRegex = RegExp(r'balance is [₹\$]?\s*(\d+\.?\d*)', caseSensitive: false);
     final balanceMatch = balanceRegex.firstMatch(body);
     if (balanceMatch != null) {
       newBalance = balanceMatch.group(1);
+      print('[Wallet] Extracted new balance: $newBalance');
     }
     if (amountStr != null && amountStr.isNotEmpty) {
       final now = DateTime.now();
@@ -167,7 +192,7 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
         'title': isCredit ? 'Admin Credit' : 'Admin Deduction',
         'date': now.toString().split(' ')[0],
         'tripId': 'N/A',
-        'transaction_id': '',
+        'transaction_id': data['transaction_id'] ?? '',
         'amount': '${isCredit ? "+" : "-"}₹$amountStr',
         'type': isCredit ? 'earning' : 'spending',
         'raw_date': now.toIso8601String(),
@@ -176,6 +201,21 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
       final transactions = prefs.getStringList('admin_transactions_$driverId') ?? [];
       transactions.insert(0, jsonEncode(transaction));
       await prefs.setStringList('admin_transactions_$driverId', transactions);
+      print('[Wallet] ✅ Transaction saved locally: ${transaction['title']} ${transaction['amount']}');
+      
+      // Save to backend for persistence across app reinstalls
+      try {
+        await PaymentService.createWalletTransaction(
+          driverId: driverId,
+          amount: double.parse(amountStr),
+          transactionType: isCredit ? 'CREDIT' : 'DEBIT',
+          description: isCredit ? 'Admin Credit' : 'Admin Deduction',
+        );
+        print('[Wallet] ✅ Transaction saved to backend');
+      } catch (e) {
+        print('[Wallet] ⚠️ Backend save failed (local saved): $e');
+      }
+      
       // Notify wallet screen to update
       walletUpdateController.add(true);
       // Update cached wallet balance
@@ -185,11 +225,16 @@ Future<void> _handleWalletDeduction(Map<String, dynamic> data, String body) asyn
           final driverData = jsonDecode(cachedData);
           driverData['wallet_balance'] = newBalance;
           await prefs.setString('driver_data', jsonEncode(driverData));
-          }
+          print('[Wallet] ✅ Wallet balance updated: $newBalance');
+        }
       }
+    } else {
+      print('[Wallet] ERROR: Could not extract amount from message: $body');
     }
-  } catch (e) {
-    }
+  } catch (e, stackTrace) {
+    print('[Wallet] ERROR saving transaction: $e');
+    print('[Wallet] Stack trace: $stackTrace');
+  }
 }
 Future<void> _syncFcmToken(String driverId, String currentToken) async {
   try {
@@ -228,7 +273,37 @@ Future<void> syncPendingFcmToken(String driverId) async {
         await _syncFcmToken(driverId, token);
       }
     }
+    
+    // Process pending wallet transactions
+    await _processPendingWalletTransactions();
   } catch (e) {
     print('❌ Failed to sync pending token: $e');
+  }
+}
+
+/// Process any pending wallet transactions that were saved in background
+Future<void> _processPendingWalletTransactions() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final pending = prefs.getStringList('pending_wallet_txns') ?? [];
+    
+    if (pending.isEmpty) return;
+    
+    print('[Wallet] Processing ${pending.length} pending transactions');
+    
+    for (String txnStr in pending) {
+      try {
+        final txn = jsonDecode(txnStr);
+        await _handleWalletDeduction(txn['data'], txn['body']);
+      } catch (e) {
+        print('[Wallet] Failed to process pending txn: $e');
+      }
+    }
+    
+    // Clear pending queue
+    await prefs.remove('pending_wallet_txns');
+    print('[Wallet] ✅ Processed all pending transactions');
+  } catch (e) {
+    print('[Wallet] ERROR processing pending: $e');
   }
 }
