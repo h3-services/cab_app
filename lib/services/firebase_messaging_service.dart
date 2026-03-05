@@ -8,7 +8,7 @@ import '../main.dart';
 import 'notification_plugin.dart';
 import 'api_service.dart';
 import 'payment_service.dart';
-import 'native_audio_service.dart';
+
 // Global stream controller for wallet updates
 final StreamController<bool> walletUpdateController = StreamController<bool>.broadcast();
 @pragma('vm:entry-point')
@@ -106,7 +106,14 @@ Future<void> initializeFirebaseMessaging() async {
         title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
       await _handleWalletDeduction(message.data, body);
     }
-    // Show notification in foreground (audio plays via AudioService + channel sound)
+    // Handle rejection - navigate to upload screen
+    if (type == 'REGISTRATION_REJECTED') {
+      final navigator = navigatorKey.currentState;
+      if (navigator != null) {
+        navigator.pushNamedAndRemoveUntil('/approval-pending', (route) => false);
+      }
+    }
+    // Show notification in foreground (audio plays from channel config)
     await NotificationPlugin.showNotification(
       id: message.hashCode,
       title: title,

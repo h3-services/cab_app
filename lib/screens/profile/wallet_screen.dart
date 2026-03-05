@@ -241,27 +241,34 @@ class _WalletScreenState extends State<WalletScreen> with WidgetsBindingObserver
         }
         
         // Load admin transactions from backend API (persists across reinstalls)
+        print('[Wallet] Processing ${walletTxns.length} wallet transactions from backend');
         for (var txn in walletTxns) {
           try {
-            final type = txn['transaction_type']?.toString().toUpperCase();
+            print('[Wallet] Processing txn: ${jsonEncode(txn)}');
+            final type = txn['transaction_type']?.toString().toLowerCase();
             final amount = (num.tryParse(txn['amount']?.toString() ?? '0') ?? 0).toDouble();
             final date = txn['created_at'] ?? DateTime.now().toIso8601String();
             final displayDate = date.toString().split('T')[0];
             
-            if (type == 'CREDIT' || type == 'DEBIT') {
-              transactionHistory.add({
-                'title': type == 'CREDIT' ? 'Admin Credit' : 'Admin Deduction',
+            print('[Wallet] Type: $type, Amount: $amount, Date: $displayDate');
+            
+            if (type == 'credit' || type == 'debit') {
+              final transaction = {
+                'title': type == 'credit' ? 'Admin Credit' : 'Admin Deduction',
                 'date': displayDate,
                 'tripId': 'N/A',
-                'transaction_id': txn['transaction_id'] ?? '',
-                'amount': '${type == "CREDIT" ? "+" : "-"}₹${amount.toStringAsFixed(2)}',
-                'type': type == 'CREDIT' ? 'earning' : 'spending',
+                'transaction_id': txn['wallet_id'] ?? '',
+                'amount': '${type == "credit" ? "+" : "-"}₹${amount.toStringAsFixed(2)}',
+                'type': type == 'credit' ? 'earning' : 'spending',
                 'raw_date': date,
-                'reason': txn['description'] ?? (type == 'CREDIT' ? 'Wallet Credited' : 'Wallet Debited'),
-              });
+                'reason': type == 'credit' ? 'Wallet Credited' : 'Wallet Debited',
+              };
+              transactionHistory.add(transaction);
+              print('[Wallet] Added transaction: ${transaction['title']} ${transaction['amount']}');
             }
           } catch (e) {
-            }
+            print('[Wallet] Error processing wallet txn: $e');
+          }
         }
         
         // Load local admin transactions (for backward compatibility with old data)

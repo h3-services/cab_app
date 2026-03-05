@@ -1,15 +1,13 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
-import 'package:volume_controller/volume_controller.dart';
-import 'audio_service.dart';
-import 'native_audio_service.dart';
+
 class NotificationPlugin {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
   static Future<void> initialize() async {
     try {
-      // Create notification channels WITHOUT sound (we'll play audio separately)
+      // Create notification channels
       const AndroidNotificationChannel locationChannel = AndroidNotificationChannel(
         'location_tracking',
         'Location Tracking',

@@ -164,19 +164,16 @@ class PaymentService {
   }
   static Future<List<Map<String, dynamic>>> getWalletTransactions(
       String driverId) async {
-    final url =
-        Uri.parse('$baseUrl/api/v1/wallet-transactions/?driver_id=$driverId');
+    final url = Uri.parse('https://api.cholacabs.in/api/v1/wallet-transactions/driver/$driverId');
     try {
-      final response =
-          await http.get(url, headers: {'Content-Type': 'application/json'});
+      final response = await http.get(url, headers: {'Content-Type': 'application/json'});
       if (response.statusCode == 200) {
         final List<dynamic> transactions = jsonDecode(response.body);
         return transactions.cast<Map<String, dynamic>>();
-      } else {
-        throw Exception(
-            'Failed to get wallet transactions: ${response.statusCode}');
       }
+      return [];
     } catch (e) {
+      debugPrint('❌ Get wallet transactions error: $e');
       return [];
     }
   }
