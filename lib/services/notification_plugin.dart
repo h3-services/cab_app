@@ -7,6 +7,16 @@ class NotificationPlugin {
       FlutterLocalNotificationsPlugin();
   static Future<void> initialize() async {
     try {
+      debugPrint('[NotificationPlugin] Initializing...');
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      
+      // Delete old channels to force recreation with sound
+      await androidPlugin?.deleteNotificationChannel('trip_notifications_v3');
+      await androidPlugin?.deleteNotificationChannel('trip_notifications_v2');
+      await androidPlugin?.deleteNotificationChannel('trip_notifications');
+      debugPrint('[NotificationPlugin] Old channels deleted');
+      
       // Create notification channels
       const AndroidNotificationChannel locationChannel = AndroidNotificationChannel(
         'location_tracking',
@@ -28,7 +38,7 @@ class NotificationPlugin {
         showBadge: true,
       );
       const AndroidNotificationChannel tripChannel = AndroidNotificationChannel(
-        'trip_notifications_v3',
+        'trip_notifications_v4',
         'Trip Notifications',
         description: 'Notifications for new trips and trip updates',
         importance: Importance.max,
@@ -38,11 +48,12 @@ class NotificationPlugin {
         enableLights: true,
         showBadge: true,
       );
-      final androidPlugin = _notificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      
       await androidPlugin?.createNotificationChannel(locationChannel);
       await androidPlugin?.createNotificationChannel(terminatedChannel);
       await androidPlugin?.createNotificationChannel(tripChannel);
+      debugPrint('[NotificationPlugin] ✅ Channels created: trip_notifications_v4 with sound=chola_cabs');
+      
       // Initialize plugin
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -54,7 +65,9 @@ class NotificationPlugin {
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           },
       );
+      debugPrint('[NotificationPlugin] ✅ Initialization complete');
       } catch (e) {
+        debugPrint('[NotificationPlugin] ❌ Error: $e');
       }
   }
   static Future<void> showLocationCapturedNotification({
@@ -118,11 +131,11 @@ class NotificationPlugin {
         return;
       }
       
-      // Audio is handled by notification channel configuration
+      debugPrint('[NotificationPlugin] Showing notification: $title');
       
       final AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
-        'trip_notifications_v3',
+        'trip_notifications_v4',
         'Trip Notifications',
         channelDescription: 'Notifications for new trips and trip updates',
         importance: Importance.max,
@@ -154,7 +167,9 @@ class NotificationPlugin {
         platformChannelSpecifics,
         payload: payload,
       );
+      debugPrint('[NotificationPlugin] ✅ Notification shown with sound');
       } catch (e) {
+        debugPrint('[NotificationPlugin] ❌ Error showing notification: $e');
       }
   }
   static Future<void> cancelNotification(int id) async {
