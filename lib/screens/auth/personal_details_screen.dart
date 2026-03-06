@@ -76,45 +76,39 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     final args = ModalRoute.of(context)?.settings.arguments;
     final Map<String, dynamic> data =
         (args is Map<String, dynamic>) ? args : {};
+    
     setState(() {
-      // Prioritize args, then Prefs
       phoneNumber = data['phoneNumber'] ?? prefs.getString('phoneNumber');
-      _nameController.text = data['name'] ?? prefs.getString('name') ?? '';
-      _emailController.text = data['email'] ?? prefs.getString('email') ?? '';
-      _primaryLocationController.text =
-          data['primaryLocation'] ?? prefs.getString('primaryLocation') ?? '';
-      _licenseController.text =
-          data['licenceNumber'] ?? prefs.getString('licenseNumber') ?? '';
-      _aadharController.text =
-          data['aadharNumber'] ?? prefs.getString('aadhaarNumber') ?? '';
-      _vehicleMakeController.text =
-          data['vehicleBrand'] ?? prefs.getString('vehicleBrand') ?? '';
-      _vehicleModelController.text =
-          data['vehicleModel'] ?? prefs.getString('vehicleModel') ?? '';
-      _vehicleNumberController.text =
-          data['vehicleNumber'] ?? prefs.getString('vehicleNumber') ?? '';
-      _vehicleColorController.text =
-          data['vehicleColor'] ?? prefs.getString('vehicleColor') ?? '';
-      String? rawVehicleType =
-          data['vehicleType'] ?? prefs.getString('vehicleType');
+      _nameController.text = data['name']?.toString() ?? prefs.getString('name') ?? '';
+      _emailController.text = data['email']?.toString() ?? prefs.getString('email') ?? '';
+      _primaryLocationController.text = data['primaryLocation']?.toString() ?? prefs.getString('primaryLocation') ?? '';
+      _licenseController.text = data['licenceNumber']?.toString() ?? prefs.getString('licenseNumber') ?? '';
+      _aadharController.text = data['aadharNumber']?.toString() ?? prefs.getString('aadhaarNumber') ?? '';
+      _vehicleMakeController.text = data['vehicleBrand']?.toString() ?? prefs.getString('vehicleBrand') ?? '';
+      _vehicleModelController.text = data['vehicleModel']?.toString() ?? prefs.getString('vehicleModel') ?? '';
+      _vehicleNumberController.text = data['vehicleNumber']?.toString() ?? prefs.getString('vehicleNumber') ?? '';
+      _vehicleColorController.text = data['vehicleColor']?.toString() ?? prefs.getString('vehicleColor') ?? '';
+
+      String? rawVehicleType = data['vehicleType']?.toString() ?? prefs.getString('vehicleType');
       if (['SUV', 'Innova', 'Sedan'].contains(rawVehicleType)) {
         _selectedVehicleType = rawVehicleType;
       } else {
         _selectedVehicleType = null;
       }
-      String? rawSeating =
-          data['seatingCapacity'] ?? prefs.getString('seatingCapacity');
+
+      String? rawSeating = data['seatingCapacity']?.toString() ?? prefs.getString('seatingCapacity');
       if (['4', '6', '7'].contains(rawSeating)) {
         _selectedSeatingCapacity = rawSeating;
       } else {
-        _selectedSeatingCapacity = '4'; // Default safe fallback
+        _selectedSeatingCapacity = '4';
       }
+
       _drivingLicenseExpiryController.text = _formatDateForDisplay(
-          data['licenceExpiry'] ?? prefs.getString('licenceExpiry'));
+          data['licenceExpiry']?.toString() ?? prefs.getString('licenceExpiry'));
       _rcExpiryController.text = _formatDateForDisplay(
-          data['rcExpiryDate'] ?? prefs.getString('rcExpiryDate'));
+          data['rcExpiryDate']?.toString() ?? prefs.getString('rcExpiryDate'));
       _fcExpiryController.text = _formatDateForDisplay(
-          data['fcExpiryDate'] ?? prefs.getString('fcExpiryDate'));
+          data['fcExpiryDate']?.toString() ?? prefs.getString('fcExpiryDate'));
     });
   }
   String _formatDateForDisplay(String? dateStr) {

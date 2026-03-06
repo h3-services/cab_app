@@ -29,7 +29,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   Map<String, dynamic>? userData;
   bool _isEditing = false;
   bool _isSubmitting = false;
-  bool _isTestMode = false;
   List<String> _errorFields = [];
   final Map<String, String> _errorMessages = {};
   bool get _allDocumentsUploaded =>
@@ -38,7 +37,10 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      _loadSavedImages();
+      return;
+    }
     _isInitialized = true;
     userData =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
@@ -55,6 +57,35 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
           }
         }
       });
+    }
+    _loadSavedImages();
+  }
+
+  Future<void> _loadSavedImages() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      for (var key in _uploadedDocuments.keys) {
+        final path = prefs.getString('kyc_temp_$key');
+        if (path != null && path.isNotEmpty) {
+          final file = File(path);
+          if (file.existsSync()) {
+            _uploadedImages[key] = file;
+            _uploadedDocuments[key] = true;
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _saveImagePath(String key, String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('kyc_temp_$key', path);
+  }
+
+  Future<void> _clearSavedImages() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (var key in _uploadedDocuments.keys) {
+      await prefs.remove('kyc_temp_$key');
     }
   }
   @override
@@ -76,16 +107,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
           ),
         ],
         onBack: () {
-          if (_isEditing) {
-            Map<String, dynamic> args =
-                Map<String, dynamic>.from(userData ?? {});
-            args['isEditing'] = true;
-            args['errorFields'] = _errorFields;
-            Navigator.pushReplacementNamed(context, '/personal-details',
-                arguments: args);
-          } else {
-            Navigator.pop(context);
-          }
+          Navigator.pop(context);
         },
       ),
       body: SingleChildScrollView(
@@ -127,23 +149,6 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.black54,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Test Mode (Auto-Fill): "),
-                      Switch(
-                        value: _isTestMode,
-                        onChanged: (val) {
-                          setState(() {
-                            _isTestMode = val;
-                          });
-                        },
-                      ),
-                    ],
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -298,36 +303,13 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
     bool hasError = _errorFields.contains(title) && !isSelected;
     return GestureDetector(
       onTap: () async {
-        if (_isTestMode) {
-          final List<XFile> images = await ImagePicker().pickMultiImage();
-          if (images.isNotEmpty) {
-            int index = 0;
-            if (index < images.length) {
-              setState(() {
-                _uploadedImages[title] = File(images[index].path);
-                _uploadedDocuments[title] = true;
-              });
-              index++;
-            }
-            for (var key in _uploadedDocuments.keys) {
-              if (index >= images.length) break;
-              if (key != title && _uploadedDocuments[key] == false) {
-                setState(() {
-                  _uploadedImages[key] = File(images[index].path);
-                  _uploadedDocuments[key] = true;
-                });
-                index++;
-              }
-            }
-          }
-        } else {
-          File? image = await ImagePickerService.showImageSourceDialog(context);
-          if (image != null) {
-            setState(() {
-              _uploadedImages[title] = image;
-              _uploadedDocuments[title] = true;
-            });
-          }
+        File? image = await ImagePickerService.showImageSourceDialog(context);
+        if (image != null) {
+          setState(() {
+            _uploadedImages[title] = image;
+            _uploadedDocuments[title] = true;
+          });
+          await _saveImagePath(title, image.path);
         }
       },
       child: Container(
@@ -586,6 +568,7 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isKycSubmitted', true);
       await prefs.setBool('isLoggedIn', true);
+      await _clearSavedImages();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/approval-pending');
       }

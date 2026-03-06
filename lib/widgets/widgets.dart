@@ -4,7 +4,7 @@ export 'common/app_logo.dart';
 export 'common/custom_app_bar.dart';
 export 'bottom_navigation.dart';
 // Button Widgets
-export 'buttons/gradient_button.dart';
+export 'cards/buttons/gradient_button.dart';
 // Input Widgets
 export 'inputs/custom_text_field.dart';
 export 'inputs/otp_input_field.dart';

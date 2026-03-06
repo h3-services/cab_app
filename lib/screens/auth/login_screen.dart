@@ -277,8 +277,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                       // Cache driver data for profile, personal details, KYC
                                       await prefs.setString('driver_data', jsonEncode(driverData));
                                       await prefs.setString('vehicleId', driverData['vehicle_id']?.toString() ?? '');
+                                      
+                                      // Check approval status
+                                      final approvalStatus = driverData['approval_status']?.toString().toUpperCase();
+                                      print('[Login] Approval status: $approvalStatus');
+                                      
                                       if (!mounted) return;
-                                      Navigator.pushReplacementNamed(context, '/dashboard');
+                                      
+                                      if (approvalStatus == 'APPROVED') {
+                                        Navigator.pushReplacementNamed(context, '/dashboard');
+                                      } else if (approvalStatus == 'REJECTED') {
+                                        Navigator.pushReplacementNamed(context, '/approval-pending');
+                                      } else {
+                                        // PENDING or null
+                                        Navigator.pushReplacementNamed(context, '/approval-pending');
+                                      }
                                     } else {
                                       // New user - send OTP and go to verification
                                       await ApiService.sendOtp(_phoneController.text);

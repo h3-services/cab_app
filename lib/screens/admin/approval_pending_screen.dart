@@ -30,32 +30,44 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
     if (driverData['licence_number'] != null)
       await prefs.setString(
           'licenseNumber', driverData['licence_number'].toString());
-    if (driverData['aadhaar_number'] != null)
+    if (driverData['aadhar_number'] != null)
       await prefs.setString(
-          'aadhaarNumber', driverData['aadhaar_number'].toString());
-    if (driverData['licence_expiry_date'] != null)
+          'aadhaarNumber', driverData['aadhar_number'].toString());
+    if (driverData['licence_expiry'] != null)
       await prefs.setString(
-          'licenceExpiry', driverData['licence_expiry_date'].toString());
+          'licenceExpiry', driverData['licence_expiry'].toString());
+    if (driverData['driver_id'] != null)
+      await prefs.setString('driverId', driverData['driver_id'].toString());
+    else if (driverData['id'] != null)
+      await prefs.setString('driverId', driverData['id'].toString());
     // Vehicle data
     final vehicle = driverData['vehicle'];
     if (vehicle != null && vehicle is Map) {
       if (vehicle['vehicle_id'] != null)
         await prefs.setString('vehicleId', vehicle['vehicle_id'].toString());
+      else if (vehicle['id'] != null)
+        await prefs.setString('vehicleId', vehicle['id'].toString());
       if (vehicle['vehicle_type'] != null)
         await prefs.setString(
             'vehicleType', vehicle['vehicle_type'].toString());
       if (vehicle['vehicle_brand'] != null)
         await prefs.setString(
             'vehicleBrand', vehicle['vehicle_brand'].toString());
+      else if (vehicle['brand'] != null)
+        await prefs.setString('vehicleBrand', vehicle['brand'].toString());
       if (vehicle['vehicle_model'] != null)
         await prefs.setString(
             'vehicleModel', vehicle['vehicle_model'].toString());
+      else if (vehicle['model'] != null)
+        await prefs.setString('vehicleModel', vehicle['model'].toString());
       if (vehicle['vehicle_number'] != null)
         await prefs.setString(
             'vehicleNumber', vehicle['vehicle_number'].toString());
       if (vehicle['vehicle_color'] != null)
         await prefs.setString(
             'vehicleColor', vehicle['vehicle_color'].toString());
+      else if (vehicle['color'] != null)
+        await prefs.setString('vehicleColor', vehicle['color'].toString());
       if (vehicle['seating_capacity'] != null)
         await prefs.setString(
             'seatingCapacity', vehicle['seating_capacity'].toString());
@@ -404,58 +416,77 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
   }
   /// Navigate to Personal Details screen to review/update all AI-entered data
   Future<void> _handleUpdateApplication() async {
-    // Stop auto-reload timer before navigating
     _autoReloadTimer?.cancel();
     final prefs = await SharedPreferences.getInstance();
-    // Use fresh API data if available, otherwise fall back to Prefs
-    final driver = _driverProfileData ?? {};
-    final vehicle = driver['vehicle'] ?? {};
-    // Helper to get value from either source
-    String val(String key, String prefKey) {
-      return (driver[key] ?? driver[prefKey] ?? prefs.getString(prefKey))
-              ?.toString() ??
-          '';
-    }
-    // Vehicle helper
-    String vVal(String key, String prefKey) {
-      if (vehicle is Map) {
-        return (vehicle[key] ?? vehicle[prefKey] ?? prefs.getString(prefKey))
-                ?.toString() ??
-            '';
+    
+    final String? driverId = prefs.getString('driverId');
+    if (driverId != null && driverId.isNotEmpty) {
+      try {
+        final driver = await ApiService.getDriverDetails(driverId);
+        
+        // Fetch vehicle separately
+        Map<String, dynamic> vehicle = {};
+        try {
+          final vehicleData = await ApiService.getVehicleByDriverId(driverId);
+          if (vehicleData != null) {
+            vehicle = vehicleData;
+          }
+        } catch (e) {
+          vehicle = driver['vehicle'] ?? {};
+        }
+        
+        await _saveDriverDataToPrefs(prefs, {...driver, 'vehicle': vehicle});
+        
+        final Map<String, dynamic> args = {
+          'isEditing': true,
+          'driverId': driver['driver_id']?.toString() ?? driver['id']?.toString() ?? '',
+          'vehicleId': vehicle['vehicle_id']?.toString() ?? vehicle['id']?.toString() ?? '',
+          'name': driver['name']?.toString() ?? '',
+          'email': driver['email']?.toString() ?? '',
+          'phoneNumber': driver['phone_number']?.toString() ?? '',
+          'primaryLocation': driver['primary_location']?.toString() ?? '',
+          'licenceNumber': driver['licence_number']?.toString() ?? '',
+          'aadharNumber': driver['aadhar_number']?.toString() ?? '',
+          'licenceExpiry': driver['licence_expiry']?.toString() ?? '',
+          'vehicleType': vehicle['vehicle_type']?.toString() ?? '',
+          'vehicleBrand': vehicle['vehicle_brand']?.toString() ?? vehicle['brand']?.toString() ?? '',
+          'vehicleModel': vehicle['vehicle_model']?.toString() ?? vehicle['model']?.toString() ?? '',
+          'vehicleNumber': vehicle['vehicle_number']?.toString() ?? '',
+          'vehicleColor': vehicle['vehicle_color']?.toString() ?? vehicle['color']?.toString() ?? '',
+          'seatingCapacity': vehicle['seating_capacity']?.toString() ?? '4',
+          'rcExpiryDate': vehicle['rc_expiry_date']?.toString() ?? '',
+          'fcExpiryDate': vehicle['fc_expiry_date']?.toString() ?? '',
+          'errorFields': [],
+        };
+        
+        if (mounted) {
+          Navigator.pushNamed(context, '/personal-details', arguments: args);
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pushNamed(context, '/personal-details', arguments: {
+            'isEditing': true,
+            'driverId': prefs.getString('driverId') ?? '',
+            'vehicleId': prefs.getString('vehicleId') ?? '',
+            'name': prefs.getString('name') ?? '',
+            'email': prefs.getString('email') ?? '',
+            'phoneNumber': prefs.getString('phoneNumber') ?? '',
+            'primaryLocation': prefs.getString('primaryLocation') ?? '',
+            'licenceNumber': prefs.getString('licenseNumber') ?? '',
+            'aadharNumber': prefs.getString('aadhaarNumber') ?? '',
+            'licenceExpiry': prefs.getString('licenceExpiry') ?? '',
+            'vehicleType': prefs.getString('vehicleType') ?? '',
+            'vehicleBrand': prefs.getString('vehicleBrand') ?? '',
+            'vehicleModel': prefs.getString('vehicleModel') ?? '',
+            'vehicleNumber': prefs.getString('vehicleNumber') ?? '',
+            'vehicleColor': prefs.getString('vehicleColor') ?? '',
+            'seatingCapacity': prefs.getString('seatingCapacity') ?? '4',
+            'rcExpiryDate': prefs.getString('rcExpiryDate') ?? '',
+            'fcExpiryDate': prefs.getString('fcExpiryDate') ?? '',
+            'errorFields': [],
+          });
+        }
       }
-      return (prefs.getString(prefKey))?.toString() ?? '';
-    }
-    final Map<String, dynamic> args = {
-      'isEditing': true,
-      'driverId': val('driver_id', 'driverId'),
-      'vehicleId': vVal('vehicle_id', 'vehicleId'),
-      'name': val('name', 'name'),
-      'email': val('email', 'email'),
-      'phoneNumber': val('phone_number', 'phoneNumber'),
-      'primaryLocation': val('primary_location', 'primaryLocation'),
-      'licenceNumber': val('licence_number', 'licenseNumber'),
-      'aadharNumber': val('aadhaar_number', 'aadhaarNumber'),
-      'licenceExpiry': val('licence_expiry_date', 'licenceExpiry'),
-      // Vehicle details
-      'vehicleType': vVal('vehicle_type', 'vehicleType'),
-      'vehicleBrand': vVal('vehicle_brand', 'vehicleBrand') == ''
-          ? vVal('brand', 'vehicleBrand')
-          : vVal('vehicle_brand', 'vehicleBrand'),
-      'vehicleModel': vVal('vehicle_model', 'vehicleModel') == ''
-          ? vVal('model', 'vehicleModel')
-          : vVal('vehicle_model', 'vehicleModel'),
-      'vehicleNumber': vVal('vehicle_number', 'vehicleNumber'),
-      'vehicleColor': vVal('vehicle_color', 'vehicleColor') == ''
-          ? vVal('color', 'vehicleColor')
-          : vVal('vehicle_color', 'vehicleColor'),
-      'seatingCapacity': vVal('seating_capacity', 'seatingCapacity'),
-      'rcExpiryDate': vVal('rc_expiry_date', 'rcExpiryDate'),
-      'fcExpiryDate': vVal('fc_expiry_date', 'fcExpiryDate'),
-      'errorFields': [], // No specific error fields for general update
-    };
-    if (mounted) {
-      // Navigate to personal-details to show all AI-entered data
-      Navigator.pushNamed(context, '/personal-details', arguments: args);
     }
   }
 }
