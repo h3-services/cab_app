@@ -107,13 +107,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Help & Support',
                       'Get help and contact support',
                       Icons.help_outline,
-                      () => _showHelpDialog(),
+                      () => Navigator.pushNamed(context, '/help-support'),
                     ),
                     _buildActionTile(
                       'Privacy Policy',
                       'Read our privacy policy',
                       Icons.privacy_tip_outlined,
-                      () => _showPrivacyDialog(),
+                      () => Navigator.pushNamed(context, '/privacy-policy'),
                     ),
                   ],
                 ),
@@ -250,44 +250,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: Colors.grey.shade400,
         ),
         onTap: onTap,
-      ),
-    );
-  }
-  void _showHelpDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Help & Support'),
-        content: const Text(
-          'For assistance, please contact:\n\n'
-          'Email: support@cholacabs.com\n'
-          'Phone: +91 9876543210\n\n'
-          'Our support team is available 24/7.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-  void _showPrivacyDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Privacy Policy'),
-        content: const Text(
-          'Your privacy is important to us. We collect and use your data to provide the best cab service experience.\n\n'
-          'For full privacy policy, visit our website.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
       ),
     );
   }

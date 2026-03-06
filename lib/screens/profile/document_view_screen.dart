@@ -62,9 +62,14 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
             'Approval Status': (driverData['is_approved'] == true) ? 'Approved' : 'Pending',
           };
         });
-        // Update vehicle details from cached data
-        final vehicleData = await ApiService.getVehicleByDriverId(driverId);
-        if (vehicleData != null) {
+        // Update vehicle details from API with force refresh
+        final vehicleData = await ApiService.getAllVehicles(forceRefresh: true)
+            .then((vehicles) => vehicles.firstWhere(
+                  (v) => v['driver_id'] == driverId,
+                  orElse: () => {},
+                ));
+        
+        if (vehicleData != null && vehicleData.isNotEmpty) {
           setState(() {
             _vehicleDetails = {
               'Vehicle Type': vehicleData['vehicle_type'] ?? 'Not provided',
@@ -86,8 +91,10 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
           'Police Verification': driverData['police_verification_url'] ?? '',
         };
         if (vehicleData != null) {
+          print('Vehicle Data: $vehicleData');
+          print('vehicle_inside_url from API: ${vehicleData['vehicle_inside_url']}');
+          
           apiDocuments.addAll({
-            'Vehicle Photo': vehicleData['vehicle_front_url'] ?? '',
             'RC Document': vehicleData['rc_book_url'] ?? '',
             'FC Document': vehicleData['fc_certificate_url'] ?? '',
             'Vehicle Front': vehicleData['vehicle_front_url'] ?? '',
@@ -97,12 +104,9 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
             'Vehicle Inside': vehicleData['vehicle_inside_url'] ?? '',
           });
         }
-        // Merge with local paths, prioritizing API URLs
+        // Replace with API documents
         setState(() {
-          _documentPaths = {
-            ..._documentPaths,
-            ...apiDocuments,
-          };
+          _documentPaths = apiDocuments;
         });
       } catch (e) {
         // Continue with cached data if API fails
@@ -248,6 +252,14 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
   Widget _buildDocumentCard(String title, String imagePath) {
     final bool hasImage = imagePath.isNotEmpty;
     final bool isNetworkImage = imagePath.startsWith('http');
+    
+    // Debug print
+    if (title == 'Vehicle Inside') {
+      print('Vehicle Inside URL: $imagePath');
+      print('Has Image: $hasImage');
+      print('Is Network Image: $isNetworkImage');
+    }
+    
     return GestureDetector(
       onTap: hasImage ? () => _showFullScreenImage(imagePath, title) : null,
       child: Container(
@@ -268,11 +280,23 @@ class _DocumentViewScreenState extends State<DocumentViewScreen> {
                               imagePath,
                               fit: BoxFit.cover,
                               width: double.infinity,
-                              errorBuilder: (context, error, stackTrace) => const Icon(
-                                Icons.broken_image,
-                                size: 40,
-                                color: Colors.grey,
-                              ),
+                              errorBuilder: (context, error, stackTrace) {
+                                print('Image load error for $title: $error');
+                                return Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.broken_image,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
+                                    Text(
+                                      'Load failed',
+                                      style: TextStyle(fontSize: 10, color: Colors.grey),
+                                    ),
+                                  ],
+                                );
+                              },
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return const Center(

@@ -2,69 +2,84 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/widgets.dart';
 import '../../constants/app_colors.dart';
+import '../../widgets/common/app_drawer.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFB0B0B0),
-      appBar: CustomAppBar(title: 'Help & Support'),
-      bottomNavigationBar: BottomNavigation(currentRoute: '/help-support'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'How can we help you?',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 24),
-            _buildContactCard(
-              icon: Icons.phone,
-              title: 'Call Us',
-              subtitle: '+91 1234567890',
-              onTap: () => _launchUrl('tel:+911234567890'),
-            ),
-            const SizedBox(height: 16),
-            _buildContactCard(
-              icon: Icons.email,
-              title: 'Email Us',
-              subtitle: 'support@cholacabs.in',
-              onTap: () => _launchUrl('mailto:support@cholacabs.in'),
-            ),
-            const SizedBox(height: 16),
-            _buildContactCard(
-              icon: Icons.chat,
-              title: 'WhatsApp',
-              subtitle: 'Chat with us',
-              onTap: () => _launchUrl('https://wa.me/911234567890'),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'Frequently Asked Questions',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 16),
-            _buildFAQ(
-              'How do I accept a trip?',
-              'Go to the Available tab and tap "Request Ride" on any trip. Once approved, it will move to the Approved tab.',
-            ),
-            _buildFAQ(
-              'How do I track my earnings?',
-              'Go to the Wallet tab to see your balance and transaction history.',
-            ),
-            _buildFAQ(
-              'What if I have a problem during a trip?',
-              'Contact our support team immediately using the contact options above.',
-            ),
-            _buildFAQ(
-              'How do I update my documents?',
-              'Go to Profile > Settings to update your KYC documents.',
-            ),
-          ],
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFB0B0B0),
+        appBar: CustomAppBar(
+          title: 'Help & Support',
+          showBackButton: true,
+          showMenuIcon: true,
+          onBack: () => Navigator.pushReplacementNamed(context, '/dashboard'),
+        ),
+        endDrawer: AppDrawer(hideHelpSupport: true),
+        bottomNavigationBar: BottomNavigation(currentRoute: '/help-support'),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'How can we help you?',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+              const SizedBox(height: 24),
+              _buildContactCard(
+                icon: Icons.phone,
+                title: 'Call Us',
+                subtitle: '+91 1234567890',
+                onTap: () => _launchUrl('tel:+911234567890'),
+              ),
+              const SizedBox(height: 16),
+              _buildContactCard(
+                icon: Icons.email,
+                title: 'Email Us',
+                subtitle: 'support@cholacabs.in',
+                onTap: () => _launchUrl('mailto:support@cholacabs.in'),
+              ),
+              const SizedBox(height: 16),
+              _buildContactCard(
+                icon: Icons.chat,
+                title: 'WhatsApp',
+                subtitle: 'Chat with us',
+                onTap: () => _launchUrl('https://wa.me/911234567890'),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'Frequently Asked Questions',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+              const SizedBox(height: 16),
+              _buildFAQ(
+                'How do I accept a trip?',
+                'Go to the Available tab and tap "Request Ride" on any trip. Once approved, it will move to the Approved tab.',
+              ),
+              _buildFAQ(
+                'How do I track my earnings?',
+                'Go to the Wallet tab to see your balance and transaction history.',
+              ),
+              _buildFAQ(
+                'What if I have a problem during a trip?',
+                'Contact our support team immediately using the contact options above.',
+              ),
+              _buildFAQ(
+                'How do I update my documents?',
+                'Go to Profile > Settings to update your KYC documents.',
+              ),
+            ],
+          ),
         ),
       ),
     );

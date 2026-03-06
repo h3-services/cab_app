@@ -313,16 +313,23 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         if (e.toString().contains('SocketException') || 
             e.toString().contains('TimeoutException') ||
             e.toString().contains('Network error')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Poor network connection. Retrying...'),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 2),
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text('Network Error'),
+              content: const Text('Poor network connection. Please check your internet and try again.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _fetchAvailableTrips(showLoading: false);
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
           );
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) _fetchAvailableTrips(showLoading: false);
-          });
         }
       }
     }

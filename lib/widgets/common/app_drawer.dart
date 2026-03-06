@@ -4,7 +4,16 @@ import 'dart:io';
 class AppDrawer extends StatefulWidget {
   final bool hideProfile;
   final bool hideSettings;
-  const AppDrawer({super.key, this.hideProfile = false, this.hideSettings = false});
+  final bool hidePrivacyPolicy;
+  final bool hideHelpSupport;
+  
+  const AppDrawer({
+    super.key,
+    this.hideProfile = false,
+    this.hideSettings = false,
+    this.hidePrivacyPolicy = false,
+    this.hideHelpSupport = false,
+  });
   @override
   State<AppDrawer> createState() => _AppDrawerState();
 }
@@ -87,7 +96,22 @@ class _AppDrawerState extends State<AppDrawer> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  const SizedBox(height: 16),
+                  if (!widget.hidePrivacyPolicy)...[
+                    _buildDrawerMenuItem(
+                      context,
+                      Icons.privacy_tip_outlined,
+                      'Privacy Policy',
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (!widget.hideHelpSupport)...[
+                    _buildDrawerMenuItem(
+                      context,
+                      Icons.help_outline,
+                      'Help & Support',
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   _buildDrawerMenuItem(
                     context,
                     Icons.logout,
@@ -128,6 +152,10 @@ class _AppDrawerState extends State<AppDrawer> {
             Navigator.pushNamed(context, '/profile');
           } else if (title == 'Settings') {
             Navigator.pushNamed(context, '/settings');
+          } else if (title == 'Privacy Policy') {
+            Navigator.pushNamed(context, '/privacy-policy');
+          } else if (title == 'Help & Support') {
+            Navigator.pushNamed(context, '/help-support');
           } else if (title == 'Sign out') {
             showDialog(
               context: context,
