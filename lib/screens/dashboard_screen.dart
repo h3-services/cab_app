@@ -24,7 +24,7 @@ class DashboardScreen extends StatefulWidget {
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
-class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   final TripStateService _tripStateService = TripStateService();
   int selectedTab = 0; // 0: Available, 1: Pending, 2: Approved, 3: History
   String? _driverId;
@@ -44,6 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -53,13 +54,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
     _loadDriverId();
     _requestLocationPermissions();
-    // Initialize network monitoring
     NetworkService().initialize((isConnected) {
       if (!isConnected && mounted) {
         NetworkService.showNoNetworkDialog(context);
       }
     });
-    // Listen for foreground FCM messages to handle rejection
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final type = message.data['type'] as String?;
       if (type == 'REGISTRATION_REJECTED') {
@@ -67,6 +66,31 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       }
     });
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed && _driverId != null) {
+      try {
+        final driverData = await ApiService.getDriverDetails(_driverId!);
+        final String kycVerified = (driverData['kyc_verified'] ?? '').toString().toLowerCase();
+        if (kycVerified == 'rejected' && mounted) {
+          Navigator.pushReplacementNamed(context, '/approval-pending');
+        }
+      } catch (e) {
+        // Ignore errors on resume
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _shakeController?.dispose();
+    _autoRefreshTimer?.cancel();
+    NetworkService().dispose();
+    super.dispose();
+  }
+
   Future<void> _requestLocationPermissions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -103,12 +127,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         await PermissionService.showPermissionDialog(context);
       }
     } catch (e) {
-      }
+      // Ignore permission errors
+    }
     // Request battery optimization exemption
     if (mounted) {
       await BatteryOptimizationService.ensureBatteryOptimizationDisabled(context);
     }
   }
+
   void _showBackgroundPermissionDialog() {
     showDialog(
       context: context,
@@ -136,14 +162,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         _fetchAvailableTrips(showLoading: false);
       }
     });
-  }
-  @override
-  void dispose() {
-    _shakeController?.dispose();
-    _autoRefreshTimer?.cancel();
-    NetworkService().dispose();
-    // Don't stop location tracking when leaving dashboard - it should run continuously
-    super.dispose();
   }
   Future<void> _loadDriverId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -3142,6 +3160,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     return tripType;
   }
 }
+
 class MountainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

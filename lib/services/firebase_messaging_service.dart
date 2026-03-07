@@ -14,37 +14,49 @@ final StreamController<bool> walletUpdateController = StreamController<bool>.bro
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  await NotificationPlugin.initialize();
+  
   try {
-    print('[FCM-BG] Background handler called at ${DateTime.now()}');
     final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
     final body = message.notification?.body ?? message.data['body'] ?? '';
-    print('[FCM-BG] Title: $title, Body: $body');
+    
+    if (title.isEmpty || title == 'Notification' || body.isEmpty) return;
     
     await NotificationService.saveNotification(title, body);
     
-    // Handle wallet transactions in background
+    // Handle rejection in background - update cached status
     final type = message.data['type'] as String?;
-    if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
-        title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
-      print('[FCM-BG] Wallet transaction detected');
-      await _handleWalletDeduction(message.data, body);
-      
-      // Also save to pending queue as backup
+    if (type == 'REGISTRATION_REJECTED') {
       final prefs = await SharedPreferences.getInstance();
-      final pending = prefs.getStringList('pending_wallet_txns') ?? [];
-      pending.add(jsonEncode({
-        'data': message.data,
-        'body': body,
-        'timestamp': DateTime.now().toIso8601String(),
-      }));
-      await prefs.setStringList('pending_wallet_txns', pending);
-      print('[FCM-BG] Saved to pending queue');
+      final cachedData = prefs.getString('driver_data');
+      if (cachedData != null) {
+        final driverData = jsonDecode(cachedData);
+        driverData['approval_status'] = 'REJECTED';
+        await prefs.setString('driver_data', jsonEncode(driverData));
+      }
     }
     
-    print("[FCM-BG] Background notification saved, FCM will display with sound");
+    // Only show manually if data-only message
+    if (message.notification == null) {
+      await NotificationPlugin.showNotification(
+        id: message.hashCode,
+        title: title,
+        body: body,
+        payload: jsonEncode(message.data),
+      );
+    }
+    
+    // Handle wallet transactions
+    if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
+        title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
+      await _handleWalletDeduction(message.data, body);
+      final prefs = await SharedPreferences.getInstance();
+      final pending = prefs.getStringList('pending_wallet_txns') ?? [];
+      pending.add(jsonEncode({'data': message.data, 'body': body, 'timestamp': DateTime.now().toIso8601String()}));
+      await prefs.setStringList('pending_wallet_txns', pending);
+    }
   } catch (e, stackTrace) {
-    print('[FCM-BG] ERROR: $e');
-    print('[FCM-BG] Stack: $stackTrace');
+    print('[FCM-BG] ERROR: $e\n$stackTrace');
   }
 }
 Future<void> initializeFirebaseMessaging() async {
@@ -99,21 +111,24 @@ Future<void> initializeFirebaseMessaging() async {
   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
     final title = message.notification?.title ?? message.data['title'] ?? 'Notification';
     final body = message.notification?.body ?? message.data['body'] ?? '';
-    final type = message.data['type'] as String?;
+    
+    if (title.isEmpty || title == 'Notification' || body.isEmpty) return;
+    
     await NotificationService.saveNotification(title, body);
-    // Handle wallet deduction - check both type and title
+    
+    final type = message.data['type'] as String?;
     if (type == 'WALLET_DEDUCTION' || type == 'WALLET_UPDATE' || type == 'WALLET_CREDIT' || 
         title.contains('Wallet Debited') || title.contains('Wallet Credited')) {
       await _handleWalletDeduction(message.data, body);
     }
-    // Handle rejection - navigate to upload screen
     if (type == 'REGISTRATION_REJECTED') {
       final navigator = navigatorKey.currentState;
       if (navigator != null) {
         navigator.pushNamedAndRemoveUntil('/approval-pending', (route) => false);
       }
     }
-    // Show notification in foreground (audio plays from channel config)
+    
+    // ALWAYS show in foreground
     await NotificationPlugin.showNotification(
       id: message.hashCode,
       title: title,
@@ -121,7 +136,7 @@ Future<void> initializeFirebaseMessaging() async {
       payload: jsonEncode(message.data),
     );
     });
-  // Background/Terminated - navigate when tapped
+  // Background/Terminated - navigate when tapped AND handle rejection in background
   FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
     _handleNotificationClick(message.data);
   });

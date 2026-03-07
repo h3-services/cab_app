@@ -187,8 +187,6 @@ class NotificationPlugin {
   // Test notification to verify notifications are working
   static Future<void> showTestNotification() async {
     try {
-      // Audio is handled by notification channel configuration
-      
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
           AndroidNotificationDetails(
         'terminated_location_v2',
@@ -212,7 +210,7 @@ class NotificationPlugin {
         'This is a test notification to verify notifications are working',
         platformChannelSpecifics,
       );
-      } catch (e) {
-      }
+    } catch (e) {
+    }
   }
 }
