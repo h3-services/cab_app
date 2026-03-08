@@ -564,6 +564,8 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       if (_isEditing) {
         await ApiService.clearDriverErrors(driverId);
         await ApiService.updateKycStatus(driverId, 'pending');
+        // Force refresh vehicle cache to show updated data in admin panel
+        await ApiService.getAllVehicles(forceRefresh: true);
       }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isKycSubmitted', true);
