@@ -305,6 +305,19 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
       onTap: () async {
         File? image = await ImagePickerService.showImageSourceDialog(context);
         if (image != null) {
+          // Validate format
+          final extension = image.path.split('.').last.toLowerCase();
+          final allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
+          if (!allowedExtensions.contains(extension)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid format. Allowed: JPG, PNG, WEBP, HEIC, PDF.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+
           setState(() {
             _uploadedImages[title] = image;
             _uploadedDocuments[title] = true;
@@ -469,6 +482,19 @@ class _KycUploadScreenState extends State<KycUploadScreen> {
             'Driver ID missing. Please restart the registration process.');
       }
       if (driverId.isEmpty) throw Exception('Driver ID missing. Restart flow.');
+
+      // Final validation before sending API requests
+      final allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'pdf'];
+      for (var entry in _uploadedImages.entries) {
+        String title = entry.key;
+        File file = entry.value!;
+        
+        final extension = file.path.split('.').last.toLowerCase();
+        if (!allowedExtensions.contains(extension)) {
+          throw Exception('Invalid format for $title. Allowed: JPG, PNG, WEBP, HEIC, PDF.');
+        }
+      }
+
       for (var entry in _uploadedImages.entries) {
         String title = entry.key;
         File file = entry.value!;
