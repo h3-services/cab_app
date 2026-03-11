@@ -54,11 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
     _loadDriverId();
     _requestLocationPermissions();
-    NetworkService().initialize((isConnected) {
-      if (!isConnected && mounted) {
-        NetworkService.showNoNetworkDialog(context);
-      }
-    });
+    
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final type = message.data['type'] as String?;
       if (type == 'REGISTRATION_REJECTED') {
@@ -87,7 +83,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     WidgetsBinding.instance.removeObserver(this);
     _shakeController?.dispose();
     _autoRefreshTimer?.cancel();
-    NetworkService().dispose();
     super.dispose();
   }
 
@@ -328,27 +323,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingTrips = false);
-        if (e.toString().contains('SocketException') || 
-            e.toString().contains('TimeoutException') ||
-            e.toString().contains('Network error')) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              title: const Text('Network Error'),
-              content: const Text('Poor network connection. Please check your internet and try again.'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _fetchAvailableTrips(showLoading: false);
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          );
-        }
       }
     }
   }
