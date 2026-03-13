@@ -134,6 +134,8 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
                     errorFields.add('RC Book');
                   } else if (codeInt >= 1009 && codeInt <= 1010) {
                     errorFields.add('FC Certificate');
+                  } else if (codeInt == 1017) {
+                    errorFields.add('Police Verification');
                   } else if (codeInt == 1011 ||
                       codeInt == 1013 ||
                       codeInt == 1014 ||
@@ -181,13 +183,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
           }
           // Directly navigate to fix issues instead of showing rejection screen
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Application Rejected. Please fix the issues.'),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 2),
-              ),
-            );
             // Navigate directly to personal details to fix issues
             _navigateToFixIssues(errorFields);
           }
@@ -195,11 +190,6 @@ class _ApprovalPendingScreenState extends State<ApprovalPendingScreen> {
         } else if (isApproved &&
             (kycVerified == 'verified' || kycVerified == 'approved')) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('Account Approved!'),
-                  backgroundColor: Colors.green),
-            );
             Navigator.pushReplacementNamed(context, '/dashboard');
           }
         } else {

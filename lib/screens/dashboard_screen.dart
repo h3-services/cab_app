@@ -252,12 +252,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       // On network error, allow user to continue but show offline state
       if (mounted) {
         setState(() => _isCheckingStatus = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Network error. Working in offline mode.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
       }
     }
   }
@@ -424,27 +418,29 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
   }
   Future<void> _performCancelRequest(String requestId) async {
-    setState(() {
-      final index = _driverRequests
-          .indexWhere((r) => r['request_id'].toString() == requestId);
-      if (index != -1) {
-        _driverRequests[index]['status'] = 'CANCELLED';
-      }
-    });
     try {
       await ApiService.updateRequestStatus(requestId, "CANCELLED");
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Trip cancelled")));
-      await _fetchAvailableTrips();
-      if (!mounted) return;
+      
+      // Switch to available tab first
       setState(() {
         selectedTab = 0;
+        // Remove from requesting set when cancelled
+        final index = _driverRequests
+            .indexWhere((r) => r['request_id'].toString() == requestId);
+        if (index != -1) {
+          final tripId = _driverRequests[index]['trip_id']?.toString();
+          if (tripId != null) {
+            _requestingTripIds.remove(tripId);
+          }
+          _driverRequests[index]['status'] = 'CANCELLED';
+        }
       });
+      
+      // Then fetch updated trips
+      await _fetchAvailableTrips();
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Failed to cancel: $e"), backgroundColor: Colors.red));
+      // Silently handle error
     }
   }
   Future<void> _requestTrip(String tripId) async {
@@ -468,30 +464,15 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             await ApiService.updateRequestStatus(
                 existingRequest['request_id'].toString(), "PENDING");
             if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text("Request Resubmitted Successfully!"),
-                  backgroundColor: Colors.green),
-            );
             _fetchAvailableTrips();
             return;
           } catch (updateError) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text("Failed to resubmit: $updateError"),
-                  backgroundColor: Colors.red),
-            );
+            // Silently handle error
             return;
           }
         }
       }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text("Failed to send request: $e"),
-            backgroundColor: Colors.red),
-      );
+      // Silently handle error
     }
   }
   @override

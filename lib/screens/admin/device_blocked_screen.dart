@@ -22,13 +22,6 @@ class _DeviceBlockedScreenState extends State<DeviceBlockedScreen> {
   }
   void _copyDeviceId() {
     Clipboard.setData(ClipboardData(text: _deviceId));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Device ID copied to clipboard'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
   @override
   Widget build(BuildContext context) {
@@ -139,12 +132,6 @@ class _DeviceBlockedScreenState extends State<DeviceBlockedScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         // Contact admin functionality can be added here
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please contact admin for device authorization'),
-                            backgroundColor: Colors.orange,
-                          ),
-                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,

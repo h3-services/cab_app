@@ -39,22 +39,22 @@ class HelpSupportScreen extends StatelessWidget {
               _buildContactCard(
                 icon: Icons.phone,
                 title: 'Call Us',
-                subtitle: '+91 1234567890',
-                onTap: () => _launchUrl('tel:+911234567890'),
+                subtitle: '+91 9384282988',
+                onTap: () => _launchUrl('tel:+919384282988'),
               ),
               const SizedBox(height: 16),
               _buildContactCard(
                 icon: Icons.email,
                 title: 'Email Us',
-                subtitle: 'support@cholacabs.in',
-                onTap: () => _launchUrl('mailto:support@cholacabs.in'),
+                subtitle: 'cholacabs2021@gmail.com',
+                onTap: () => _launchUrl('mailto:cholacabs2021@gmail.com'),
               ),
               const SizedBox(height: 16),
               _buildContactCard(
                 icon: Icons.chat,
                 title: 'WhatsApp',
                 subtitle: 'Chat with us',
-                onTap: () => _launchUrl('https://wa.me/911234567890'),
+                onTap: () => _launchUrl('https://wa.me/919384282988'),
               ),
               const SizedBox(height: 32),
               const Text(
